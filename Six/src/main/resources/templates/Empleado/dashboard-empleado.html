@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Empleado - SIX Inventario</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="fas fa-box"></i>
+                    <span>SIX Inventario</span>
+                </div>
+                <div class="user-avatar">
+                    <div class="avatar">
+                        <span id="userInitial" th:text="${#strings.substring(session.usuario,0,1)}">E</span>
+                    </div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a th:href="@{/dashboard-empleado}" class="nav-link activate">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+                <a th:href="@{/inventario}" class="nav-link">
+                    <i class="fas fa-box-open"></i>
+                    <span>Inventario</span>
+                </a>
+                <a th:href="@{/ventas}" class="nav-link">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Ventas</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a th:href="@{/logout}" class="logout-button">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Cerrar Sesión</span>
+                </a>
+                <p class="copyright">© 2025 SIX. Todos los derechos reservados.</p>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="main-content">
+            <header class="header">
+                <button class="mobile-menu-button">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="header-actions">
+                    <!-- Se eliminó el texto de bienvenida -->
+                </div>
+            </header>
+
+            <div class="content">
+                <div class="page-header">
+                    <h1>Dashboard Empleado</h1>
+                </div>
+
+                <!-- Cards de resumen -->
+                <div class="card-grid">
+                    <div class="card dashboard-card">
+                        <div class="card-header">
+                            <div class="card-title">Mis Ventas Hoy</div>
+                            <i class="fas fa-dollar-sign text-muted"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-value">S/. 1,234.56</div>
+                            <p class="card-description">12 ventas realizadas hoy</p>
+                        </div>
+                    </div>
+                    <div class="card dashboard-card">
+                        <div class="card-header">
+                            <div class="card-title">Productos Vendidos</div>
+                            <i class="fas fa-box text-muted"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-value">24</div>
+                            <p class="card-description">+8 respecto a ayer</p>
+                        </div>
+                    </div>
+                    <div class="card dashboard-card">
+                        <div class="card-header">
+                            <div class="card-title">Clientes Atendidos</div>
+                            <i class="fas fa-users text-muted"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-value">18</div>
+                            <p class="card-description">Promedio de 2.5 productos por cliente</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ventas recientes -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Mis Ventas Recientes</div>
+                        <div class="card-description">Últimas ventas realizadas por ti</div>
+                    </div>
+                    <div class="card-content">
+                        <div class="recent-sales">
+                            <div class="sale-item">
+                                <div class="sale-avatar">
+                                    <span>JM</span>
+                                </div>
+                                <div class="sale-details">
+                                    <p class="sale-name">Juan Mendoza</p>
+                                    <p class="sale-product">Camiseta Slim Fit - Talla M, Negro</p>
+                                </div>
+                                <div class="sale-amount">S/. 79.90</div>
+                            </div>
+                            <div class="sale-item">
+                                <div class="sale-avatar">
+                                    <span>LR</span>
+                                </div>
+                                <div class="sale-details">
+                                    <p class="sale-name">Laura Ríos</p>
+                                    <p class="sale-product">Vestido Casual - Talla S, Azul</p>
+                                </div>
+                                <div class="sale-amount">S/. 129.90</div>
+                            </div>
+                            <div class="sale-item">
+                                <div class="sale-avatar">
+                                    <span>CV</span>
+                                </div>
+                                <div class="sale-details">
+                                    <p class="sale-name">Carlos Vega</p>
+                                    <p class="sale-product">Pantalón Chino - Talla 32, Beige</p>
+                                </div>
+                                <div class="sale-amount">S/. 99.90</div>
+                            </div>
+                            <div class="sale-item">
+                                <div class="sale-avatar">
+                                    <span>MP</span>
+                                </div>
+                                <div class="sale-details">
+                                    <p class="sale-name">María Pérez</p>
+                                    <p class="sale-product">Blusa Estampada - Talla L, Multicolor</p>
+                                </div>
+                                <div class="sale-amount">S/. 89.90</div>
+                            </div>
+                            <div class="sale-item">
+                                <div class="sale-avatar">
+                                    <span>RG</span>
+                                </div>
+                                <div class="sale-details">
+                                    <p class="sale-name">Roberto Gómez</p>
+                                    <p class="sale-product">Chaqueta Denim - Talla XL, Azul</p>
+                                </div>
+                                <div class="sale-amount">S/. 159.90</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast para notificaciones -->
+    <div id="toast" class="toast hidden">
+        <div class="toast-content">
+            <div class="toast-title">Título</div>
+            <div class="toast-message">Mensaje</div>
+        </div>
+        <button class="toast-close"><i class="fas fa-times"></i></button>
+    </div>
+
+    <script th:src="@{/js/dashboard-empleado.js}"></script>
+</body>
+
+</html>

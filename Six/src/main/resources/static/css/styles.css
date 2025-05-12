@@ -1,0 +1,350 @@
+/* Variables y reset */
+
+:root {
+    --primary: #000000;
+    --primary-foreground: #ffffff;
+    --secondary: #f4f4f5;
+    --secondary-foreground: #000000;
+    --background: #ffffff;
+    --foreground: #18181b;
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+    --accent: #f4f4f5;
+    --accent-foreground: #18181b;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #e4e4e7;
+    --input: #e4e4e7;
+    --ring: #18181b;
+    --radius: 0.5rem;
+    --font-sans: Arial, Helvetica, sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-sans);
+    background-color: var(--background);
+    color: var(--foreground);
+    line-height: 1.5;
+}
+
+
+/* Estilos generales */
+
+.hidden {
+    display: none !important;
+}
+
+.card {
+    background-color: var(--background);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    width: 100%;
+}
+
+.card-header {
+    padding: 1.5rem;
+}
+
+.card-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.card-header p {
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+}
+
+.card-content {
+    padding: 0 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.card-footer {
+    padding: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+label {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+input {
+    height: 2.5rem;
+    width: 100%;
+    border-radius: var(--radius);
+    border: 1px solid var(--input);
+    background-color: var(--background);
+    padding: 0 0.75rem;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus {
+    border-color: var(--ring);
+    box-shadow: 0 0 0 2px rgba(24, 24, 27, 0.1);
+}
+
+.password-input {
+    position: relative;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    padding: 0 0.75rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--muted-foreground);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius);
+    font-weight: 500;
+    font-size: 0.875rem;
+    height: 2.5rem;
+    padding: 0 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    border: 1px solid transparent;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+}
+
+.btn-primary:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.btn-block {
+    width: 100%;
+}
+
+.link-button {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    text-align: left;
+}
+
+.link-button:hover {
+    text-decoration: underline;
+}
+
+
+/* Estilos específicos para la página de login */
+
+.login-container {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+}
+
+.login-brand {
+    display: none;
+    position: relative;
+    background-color: #000 !important;
+    background-image: none !important;
+    color: white;
+}
+
+.brand-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem;
+    z-index: 2;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.logo {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.25rem;
+}
+
+.brand-content h1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+}
+
+.brand-content h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.brand-content p {
+    max-width: 24rem;
+    text-align: center;
+    color: rgba(209, 213, 219, 1);
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgb(0, 0, 0), transparent);
+    opacity: 0.5;
+    z-index: 1;
+}
+
+.background-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.3;
+    background-color: #000 !important;
+    background-image: none !important;
+}
+
+.login-form-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background-color: white;
+    flex: 1;
+}
+
+.login-form-wrapper {
+    width: 100%;
+    max-width: 24rem;
+}
+
+.mobile-logo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.mobile-logo .logo {
+    width: 3.75rem;
+    height: 3.75rem;
+    margin-bottom: 1rem;
+}
+
+.mobile-logo h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.mobile-logo p {
+    color: var(--muted-foreground);
+}
+
+
+/* Toast notifications */
+
+.toast {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    background-color: var(--background);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    max-width: 24rem;
+    z-index: 50;
+    animation: slideIn 0.3s ease-out;
+}
+
+.toast-content {
+    flex: 1;
+}
+
+.toast-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.toast-message {
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted-foreground);
+    padding: 0.25rem;
+}
+
+.toast.error .toast-title {
+    color: var(--destructive);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+
+/* Media queries */
+
+@media (min-width: 768px) {
+    .login-container {
+        flex-direction: row;
+    }
+    .login-brand {
+        display: block;
+        width: 50%;
+    }
+    .login-form-container {
+        width: 50%;
+    }
+    .mobile-logo {
+        display: none;
+    }
+}

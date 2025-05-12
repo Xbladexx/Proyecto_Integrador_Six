@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Usuarios - SIX Sistema de Gestión</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/usuarios.css}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="fas fa-box"></i>
+                    <span>SIX Inventario</span>
+                </div>
+                <div class="user-avatar">
+                    <div class="avatar">
+                        <span id="userInitial" th:data-usuario="${session.usuario}">A</span>
+                    </div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a th:href="@{/dashboard-admin}" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+                <a th:href="@{/inventario}" class="nav-link">
+                    <i class="fas fa-box-open"></i>
+                    <span>Inventario</span>
+                </a>
+                <a th:href="@{/productos}" class="nav-link">
+                    <i class="fas fa-tshirt"></i>
+                    <span>Productos</span>
+                </a>
+                <a th:href="@{/reportes}" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reportes</span>
+                </a>
+                <a th:href="@{/admin/usuarios}" class="nav-link active">
+                    <i class="fas fa-users"></i>
+                    <span>Usuarios</span>
+                </a>
+                <a th:href="@{/alertas}" class="nav-link">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Alertas</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a th:href="@{/logout}" class="sidebar-logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Cerrar Sesión</span>
+                </a>
+                <p class="copyright">© 2025 SIX. Todos los derechos reservados.</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="dashboard-header">
+                <button class="mobile-menu-button">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </header>
+
+            <div class="content-wrapper">
+                <div class="content-container">
+                    <div class="page-header">
+                        <h1>Gestión de Usuarios</h1>
+                    </div>
+
+                    <!-- Mensaje de error, si existe -->
+                    <div th:if="${error}" class="alert alert-error" style="margin-bottom: 1rem; padding: 1rem; background-color: #fee2e2; border: 1px solid #f87171; border-radius: 0.375rem; color: #b91c1c;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span th:text="${error}">Error</span>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-header-content">
+                                <div>
+                                    <h2 class="card-title">Lista de Usuarios</h2>
+                                    <p class="card-description">
+                                        Administra los usuarios del sistema
+                                    </p>
+                                </div>
+                                <button id="newUserButton" class="new-user-button">
+                                    <i class="fas fa-plus"></i>
+                                    Nuevo Usuario
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="users-controls">
+                                <div class="search-container">
+                                    <i class="fas fa-search search-icon"></i>
+                                    <input type="search" id="usersSearch" placeholder="Buscar usuarios..." class="search-input">
+                                </div>
+                            </div>
+
+                            <div class="table-container">
+                                <table class="data-table" id="usersTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Email</th>
+                                            <th>Rol</th>
+                                            <th>Estado</th>
+                                            <th>Último Acceso</th>
+                                            <th>Fecha Creación</th>
+                                            <th class="text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usersTableBody">
+                                        <!-- Mostrar mensaje si no hay usuarios -->
+                                        <tr th:if="${#lists.isEmpty(usuarios)}">
+                                            <td colspan="7" class="text-center">No se encontraron usuarios</td>
+                                        </tr>
+                                        
+                                        <!-- Listar los usuarios -->
+                                        <tr th:each="usuario : ${usuarios}">
+                                            <td th:text="${usuario.nombre}">Nombre</td>
+                                            <td th:text="${usuario.email}">Email</td>
+                                            <td>
+                                                <span th:class="${usuario.rol != null && #strings.containsIgnoreCase(usuario.rol, 'admin') ? 'role-badge role-admin' : 'role-badge role-empleado'}" 
+                                                      th:text="${usuario.rol}">Rol</span>
+                                            </td>
+                                            <td>
+                                                <span th:class="${usuario.activo ? 'status-badge status-active' : 'status-badge status-inactive'}" 
+                                                      th:text="${usuario.activo ? 'Activo' : 'Inactivo'}">Estado</span>
+                                            </td>
+                                            <td th:text="${usuario.ultimoAcceso != null ? #temporals.format(usuario.ultimoAcceso, 'dd/MM/yyyy HH:mm') : 'Nunca'}">Último Acceso</td>
+                                            <td th:text="${usuario.fechaCreacion != null ? #temporals.format(usuario.fechaCreacion, 'dd/MM/yyyy HH:mm') : 'Desconocida'}">Fecha Creación</td>
+                                            <td class="text-right">
+                                                <div class="dropdown">
+                                                    <button class="action-button">
+                                                        <i class="fas fa-ellipsis-h"></i>
+                                                    </button>
+                                                    <div class="dropdown-content">
+                                                        <a th:href="@{/admin/usuarios/editar/{id}(id=${usuario.id})}" class="edit-user">
+                                                            <i class="fas fa-edit"></i> Editar usuario
+                                                        </a>
+                                                        <a th:href="@{/admin/usuarios/resetear-password/{id}(id=${usuario.id})}" class="reset-password">
+                                                            <i class="fas fa-key"></i> Resetear contraseña
+                                                        </a>
+                                                        <a th:href="${usuario.activo ? '/admin/usuarios/desactivar/' + usuario.id : '/admin/usuarios/activar/' + usuario.id}" class="toggle-status">
+                                                            <i th:class="${usuario.activo ? 'fas fa-ban' : 'fas fa-check'}"></i> 
+                                                            <span th:text="${usuario.activo ? 'Desactivar usuario' : 'Activar usuario'}">Toggle estado</span>
+                                                        </a>
+                                                        <a th:href="@{/admin/usuarios/eliminar/{id}(id=${usuario.id})}" class="delete-user text-red">
+                                                            <i class="fas fa-trash"></i> Eliminar
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-6">
+                        <div class="card-header">
+                            <h2 class="card-title">Roles del Sistema</h2>
+                            <p class="card-description">Roles disponibles y número de usuarios asignados</p>
+                        </div>
+                        <div class="card-content">
+                            <div class="table-container">
+                                <table class="data-table" id="rolesTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Descripción</th>
+                                            <th>Usuarios</th>
+                                            <th class="text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="font-medium">Administrador</td>
+                                            <td>Acceso completo a todas las funcionalidades del sistema</td>
+                                            <td th:text="${countAdmin}">0</td>
+                                            <td class="text-right">
+                                                <button class="button button-sm">Editar</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-medium">Empleado</td>
+                                            <td>Acceso limitado a funciones de venta e inventario</td>
+                                            <td th:text="${countEmpleado}">0</td>
+                                            <td class="text-right">
+                                                <button class="button button-sm">Editar</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Script para manejar el menú móvil -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const mobileMenuButton = document.querySelector('.mobile-menu-button');
+            
+            if (mobileMenuButton) {
+                mobileMenuButton.addEventListener('click', function() {
+                    sidebar.classList.toggle('open');
+                });
+            }
+            
+            // Cerrar el sidebar al hacer clic fuera de él en dispositivos móviles
+            document.addEventListener('click', function(event) {
+                const isMobile = window.innerWidth <= 768;
+                const isClickInsideSidebar = sidebar && sidebar.contains(event.target);
+                const isClickOnMenuButton = mobileMenuButton && mobileMenuButton.contains(event.target);
+                
+                if (isMobile && sidebar && sidebar.classList.contains('open') && !isClickInsideSidebar && !isClickOnMenuButton) {
+                    sidebar.classList.remove('open');
+                }
+            });
+            
+            // Manejar los dropdowns de acciones
+            const actionButtons = document.querySelectorAll('.action-button');
+            
+            actionButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const dropdown = this.closest('.dropdown');
+                    
+                    // Cerrar todos los otros dropdowns
+                    document.querySelectorAll('.dropdown.open').forEach(dd => {
+                        if (dd !== dropdown) {
+                            dd.classList.remove('open');
+                        }
+                    });
+                    
+                    // Toggle el dropdown actual
+                    dropdown.classList.toggle('open');
+                });
+            });
+            
+            // Cerrar dropdowns al hacer clic fuera
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.dropdown')) {
+                    document.querySelectorAll('.dropdown.open').forEach(dropdown => {
+                        dropdown.classList.remove('open');
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+
+</html> 

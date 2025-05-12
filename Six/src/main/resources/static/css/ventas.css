@@ -1,0 +1,248 @@
+/* Estilos específicos para la página de ventas */
+.ventas-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.ventas-card {
+    grid-column: span 1;
+}
+
+.ventas-sidebar {
+    grid-column: span 1;
+}
+
+.ventas-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.ventas-form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.search-group {
+    grid-column: span 1;
+}
+
+.search-container {
+    position: relative;
+}
+
+.search-input {
+    padding-right: 2.5rem;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.search-button {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 2.5rem;
+    background-color: var(--secondary);
+    border: 1px solid var(--input);
+    border-left: none;
+    border-top-right-radius: var(--radius);
+    border-bottom-right-radius: var(--radius);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-button:hover {
+    background-color: var(--muted);
+}
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 0.25rem;
+    background-color: var(--background);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.882), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    max-height: 15rem;
+    overflow-y: auto;
+    z-index: 10;
+}
+
+.search-result-item {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.search-result-item:hover {
+    background-color: var(--muted);
+}
+
+.search-result-name {
+    font-weight: 500;
+}
+
+.search-result-details {
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+}
+
+.quantity-input {
+    display: flex;
+    align-items: center;
+}
+
+.quantity-button {
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: var(--secondary);
+    border: 1px solid var(--input);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.quantity-button:first-child {
+    border-top-left-radius: var(--radius);
+    border-bottom-left-radius: var(--radius);
+}
+
+.quantity-button:last-child {
+    border-top-right-radius: var(--radius);
+    border-bottom-right-radius: var(--radius);
+}
+
+.quantity-button:hover {
+    background-color: var(--muted);
+}
+
+.quantity-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.quantity-value {
+    width: 100%;
+    height: 2.5rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    text-align: center;
+}
+
+.table-container {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.data-table th {
+    font-weight: 500;
+    background-color: var(--muted);
+}
+
+.data-table tr:last-child td {
+    border-bottom: none;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.empty-cart td {
+    height: 6rem;
+}
+
+.remove-item-button {
+    background: none;
+    border: none;
+    color: var(--destructive);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.remove-item-button:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+.ventas-sidebar-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.ventas-totals {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.total-final {
+    font-weight: 700;
+}
+
+.ventas-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.btn-outline {
+    background-color: transparent;
+    border: 1px solid var(--input);
+    color: var(--foreground);
+}
+
+.btn-outline:hover {
+    background-color: var(--muted);
+}
+
+/* Estilos para los elementos específicos de roles */
+.admin-only {
+    display: none;
+}
+
+/* Media queries */
+@media (min-width: 768px) {
+    .ventas-form-grid {
+        grid-template-columns: 6fr 2fr 2fr 2fr;
+    }
+}
+
+@media (min-width: 1024px) {
+    .ventas-grid {
+        grid-template-columns: 3fr 1fr;
+    }
+}

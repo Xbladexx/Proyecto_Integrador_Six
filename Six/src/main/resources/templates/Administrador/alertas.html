@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alertas de Inventario - SIX Sistema de Gestión</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/alertas.css}">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="fas fa-box"></i>
+                    <span>SIX Inventario</span>
+                </div>
+                <div class="user-avatar">
+                    <div class="avatar">
+                        <span id="userInitial" th:data-usuario="${session.usuario}">A</span>
+                    </div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a th:href="@{/dashboard-admin}" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+                <a th:href="@{/inventario}" class="nav-link">
+                    <i class="fas fa-box-open"></i>
+                    <span>Inventario</span>
+                </a>
+                <a th:href="@{/productos}" class="nav-link">
+                    <i class="fas fa-tshirt"></i>
+                    <span>Productos</span>
+                </a>
+                <a th:href="@{/reportes}" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reportes</span>
+                </a>
+                <a th:href="@{/usuarios}" class="nav-link">
+                    <i class="fas fa-users"></i>
+                    <span>Usuarios</span>
+                </a>
+                <a th:href="@{/alertas}" class="nav-link active">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Alertas</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a th:href="@{/logout}" class="sidebar-logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Cerrar Sesión</span>
+                </a>
+                <p class="copyright">© 2025 SIX. Todos los derechos reservados.</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" style="padding-left: 1.5rem; max-width: 100vw;">
+            <header class="dashboard-header">
+                <button class="mobile-menu-button">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </header>
+
+            <div class="page-header" style="margin-left: 0;">
+                <h1>Alertas de Inventario</h1>
+            </div>
+
+            <div class="tab-content active" id="current-tab">
+                <div class="card" style="width:100%;max-width:none;">
+                    <div class="tabs" style="margin-bottom: 0;">
+                        <div class="tab-list">
+                            <button class="tab-button active" data-tab="current">Alertas Actuales</button>
+                        </div>
+                    </div>
+                    <div class="card-header">
+                        <h2 class="card-title">Alertas de Stock</h2>
+                        <p class="card-description">
+                            Productos que requieren atención inmediata
+                        </p>
+                    </div>
+                    <div class="card-content">
+                        <div class="alerts-controls">
+                            <div class="search-container">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="search" id="alertsSearch" placeholder="Buscar alertas..." class="search-input">
+                            </div>
+                            <div class="filter-select">
+                                <select id="statusFilter" class="form-control">
+                                    <option value="all">Todos</option>
+                                    <option value="critical">Crítico</option>
+                                    <option value="low">Bajo</option>
+                                    <option value="resolved">Resuelto</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <table class="data-table" id="alertsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Estado</th>
+                                        <th>Código</th>
+                                        <th>Producto</th>
+                                        <th>Variante</th>
+                                        <th>Stock Actual</th>
+                                        <th>Stock Mínimo</th>
+                                        <th>Categoría</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="alertsTableBody">
+                                    <!-- Los datos se cargarán dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="settings-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Configuración de Alertas</h2>
+                        <p class="card-description">
+                            Personaliza los niveles de alerta y notificaciones
+                        </p>
+                    </div>
+                    <div class="card-content">
+                        <div class="settings-tabs">
+                            <div class="settings-tab-list">
+                                <button class="settings-tab-button active" data-settings-tab="stock">Configuración de Stock</button>
+                                <button class="settings-tab-button" data-settings-tab="notifications">Notificaciones</button>
+                                <button class="settings-tab-button" data-settings-tab="categories">Por Categoría</button>
+                            </div>
+
+                            <div class="settings-tab-content active" id="stock-settings-tab">
+                                <div class="settings-section">
+                                    <div class="settings-item">
+                                        <div class="settings-item-header">
+                                            <div class="settings-item-title">
+                                                <h3>Activar alertas de stock bajo</h3>
+                                                <p>Recibe notificaciones cuando el stock esté por debajo del umbral</p>
+                                            </div>
+                                            <div class="toggle-switch">
+                                                <input type="checkbox" id="enableLowStock" class="toggle-input" checked>
+                                                <label for="enableLowStock" class="toggle-label"></label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="settings-row">
+                                        <div class="settings-column">
+                                            <div class="form-group">
+                                                <label for="lowStockThreshold">Umbral de stock bajo</label>
+                                                <input type="number" id="lowStockThreshold" class="form-control" min="1" value="5">
+                                                <p class="form-help">Se generará una alerta cuando el stock sea menor o igual a este valor</p>
+                                            </div>
+                                        </div>
+                                        <div class="settings-column">
+                                            <div class="form-group">
+                                                <label for="criticalStockThreshold">Umbral de stock crítico</label>
+                                                <input type="number" id="criticalStockThreshold" class="form-control" min="0" value="3">
+                                                <p class="form-help">Se generará una alerta crítica cuando el stock sea menor o igual a este valor</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="settings-item">
+                                        <div class="settings-item-header">
+                                            <div class="settings-item-title">
+                                                <h3>Activar pedido automático</h3>
+                                                <p>Genera pedidos automáticamente cuando el stock llegue al umbral crítico</p>
+                                            </div>
+                                            <div class="toggle-switch">
+                                                <input type="checkbox" id="enableAutoOrder" class="toggle-input">
+                                                <label for="enableAutoOrder" class="toggle-label"></label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="settings-row">
+                                        <div class="settings-column">
+                                            <div class="form-group">
+                                                <label for="autoOrderThreshold">Umbral de pedido automático</label>
+                                                <input type="number" id="autoOrderThreshold" class="form-control" min="0" value="2" disabled>
+                                            </div>
+                                        </div>
+                                        <div class="settings-column">
+                                            <div class="form-group">
+                                                <label for="defaultOrderQuantity">Cantidad de pedido por defecto</label>
+                                                <input type="number" id="defaultOrderQuantity" class="form-control" min="1" value="10" disabled>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="settings-actions">
+                                    <button id="saveStockSettings" class="button button-primary">Guardar Configuración</button>
+                                </div>
+                            </div>
+
+                            <div class="settings-tab-content" id="notifications-settings-tab">
+                                <div class="settings-section">
+                                    <div class="settings-item">
+                                        <div class="settings-item-header">
+                                            <div class="settings-item-title">
+                                                <h3>Notificaciones por email</h3>
+                                                <p>Recibe alertas por correo electrónico</p>
+                                            </div>
+                                            <div class="toggle-switch">
+                                                <input type="checkbox" id="emailNotifications" class="toggle-input" checked>
+                                                <label for="emailNotifications" class="toggle-label"></label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="emailRecipients">Destinatarios de email</label>
+                                        <input type="text" id="emailRecipients" class="form-control" value="admin@six.com">
+                                        <p class="form-help">Puedes agregar múltiples direcciones separadas por comas</p>
+                                    </div>
+
+                                    <div class="settings-item">
+                                        <div class="settings-item-header">
+                                            <div class="settings-item-title">
+                                                <h3>Notificaciones en el dashboard</h3>
+                                                <p>Muestra alertas en el panel de control</p>
+                                            </div>
+                                            <div class="toggle-switch">
+                                                <input type="checkbox" id="dashboardNotifications" class="toggle-input" checked>
+                                                <label for="dashboardNotifications" class="toggle-label"></label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="settings-item">
+                                        <div class="settings-item-header">
+                                            <div class="settings-item-title">
+                                                <h3>Resumen diario</h3>
+                                                <p>Recibe un resumen diario de todas las alertas</p>
+                                            </div>
+                                            <div class="toggle-switch">
+                                                <input type="checkbox" id="dailyDigest" class="toggle-input">
+                                                <label for="dailyDigest" class="toggle-label"></label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="settings-item">
+                                        <div class="settings-item-header">
+                                            <div class="settings-item-title">
+                                                <h3>Solo alertas críticas</h3>
+                                                <p>Recibe notificaciones solo para alertas críticas</p>
+                                            </div>
+                                            <div class="toggle-switch">
+                                                <input type="checkbox" id="criticalOnly" class="toggle-input">
+                                                <label for="criticalOnly" class="toggle-label"></label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="settings-actions">
+                                    <button id="saveNotificationSettings" class="button button-primary">Guardar Configuración</button>
+                                </div>
+                            </div>
+
+                            <div class="settings-tab-content" id="categories-settings-tab">
+                                <div class="settings-section">
+                                    <div class="table-container">
+                                        <table class="data-table" id="categoriesTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Categoría</th>
+                                                    <th>Stock Bajo</th>
+                                                    <th>Stock Crítico</th>
+                                                    <th>Pedido Auto.</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>Camisetas</td>
+                                                    <td><input type="number" min="1" value="5" class="form-control small-input"></td>
+                                                    <td><input type="number" min="0" value="3" class="form-control small-input"></td>
+                                                    <td>
+                                                        <div class="toggle-switch small">
+                                                            <input type="checkbox" id="autoOrderCamisetas" class="toggle-input" checked>
+                                                            <label for="autoOrderCamisetas" class="toggle-label"></label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Pantalones</td>
+                                                    <td><input type="number" min="1" value="8" class="form-control small-input"></td>
+                                                    <td><input type="number" min="0" value="4" class="form-control small-input"></td>
+                                                    <td>
+                                                        <div class="toggle-switch small">
+                                                            <input type="checkbox" id="autoOrderPantalones" class="toggle-input" checked>
+                                                            <label for="autoOrderPantalones" class="toggle-label"></label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Vestidos</td>
+                                                    <td><input type="number" min="1" value="5" class="form-control small-input"></td>
+                                                    <td><input type="number" min="0" value="3" class="form-control small-input"></td>
+                                                    <td>
+                                                        <div class="toggle-switch small">
+                                                            <input type="checkbox" id="autoOrderVestidos" class="toggle-input">
+                                                            <label for="autoOrderVestidos" class="toggle-label"></label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Chaquetas</td>
+                                                    <td><input type="number" min="1" value="6" class="form-control small-input"></td>
+                                                    <td><input type="number" min="0" value="3" class="form-control small-input"></td>
+                                                    <td>
+                                                        <div class="toggle-switch small">
+                                                            <input type="checkbox" id="autoOrderChaquetas" class="toggle-input" checked>
+                                                            <label for="autoOrderChaquetas" class="toggle-label"></label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Blusas</td>
+                                                    <td><input type="number" min="1" value="5" class="form-control small-input"></td>
+                                                    <td><input type="number" min="0" value="2" class="form-control small-input"></td>
+                                                    <td>
+                                                        <div class="toggle-switch small">
+                                                            <input type="checkbox" id="autoOrderBlusas" class="toggle-input">
+                                                            <label for="autoOrderBlusas" class="toggle-label"></label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="settings-actions">
+                                    <button id="saveCategorySettings" class="button button-primary">Guardar Configuración</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="history-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Historial de Alertas</h2>
+                        <p class="card-description">
+                            Registro de alertas anteriores y acciones tomadas
+                        </p>
+                    </div>
+                    <div class="card-content">
+                        <div class="empty-state">
+                            <i class="fas fa-history empty-icon"></i>
+                            <p>No hay alertas históricas para mostrar</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast para notificaciones -->
+    <div id="toast" class="toast hidden">
+        <div class="toast-content">
+            <div class="toast-header">
+                <h3 class="toast-title">Título</h3>
+                <button class="toast-close">&times;</button>
+            </div>
+            <p class="toast-message">Mensaje</p>
+        </div>
+    </div>
+
+    <script th:src="@{/js/alertas.js}"></script>
+</body>
+
+</html>

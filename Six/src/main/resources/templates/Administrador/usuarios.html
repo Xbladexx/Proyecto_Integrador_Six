@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Usuarios - SIX Sistema de Gestión</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/usuarios.css}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="fas fa-box"></i>
+                    <span>SIX Inventario</span>
+                </div>
+                <div class="user-avatar">
+                    <div class="avatar">
+                        <span id="userInitial" th:data-usuario="${session.usuario}">A</span>
+                    </div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a th:href="@{/dashboard-admin}" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+                <a th:href="@{/inventario}" class="nav-link">
+                    <i class="fas fa-box-open"></i>
+                    <span>Inventario</span>
+                </a>
+                <a th:href="@{/productos}" class="nav-link">
+                    <i class="fas fa-tshirt"></i>
+                    <span>Productos</span>
+                </a>
+                <a th:href="@{/reportes}" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reportes</span>
+                </a>
+                <a th:href="@{/usuarios}" class="nav-link active">
+                    <i class="fas fa-users"></i>
+                    <span>Usuarios</span>
+                </a>
+                <a th:href="@{/alertas}" class="nav-link">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Alertas</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a th:href="@{/logout}" class="sidebar-logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Cerrar Sesión</span>
+                </a>
+                <p class="copyright">© 2025 SIX. Todos los derechos reservados.</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="dashboard-header">
+                <button class="mobile-menu-button">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </header>
+
+            <div class="content-wrapper">
+                <div class="content-container">
+                    <div class="page-header">
+                        <h1>Gestión de Usuarios</h1>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-header-content">
+                                <div>
+                                    <h2 class="card-title">Lista de Usuarios</h2>
+                                    <p class="card-description">
+                                        Administra los usuarios del sistema
+                                    </p>
+                                </div>
+                                <button id="newUserButton" class="new-user-button">
+                                    <i class="fas fa-plus"></i>
+                                    Nuevo Usuario
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="users-controls">
+                                <div class="search-container">
+                                    <i class="fas fa-search search-icon"></i>
+                                    <input type="search" id="usersSearch" placeholder="Buscar usuarios..." class="search-input">
+                                </div>
+                            </div>
+
+                            <div class="table-container">
+                                <table class="data-table" id="usersTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Email</th>
+                                            <th>Rol</th>
+                                            <th>Estado</th>
+                                            <th>Último Acceso</th>
+                                            <th>Fecha Creación</th>
+                                            <th class="text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usersTableBody">
+                                        <!-- Los datos se cargarán dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-6">
+                        <div class="card-header">
+                            <h2 class="card-title">Roles del Sistema</h2>
+                            <p class="card-description">Roles disponibles y número de usuarios asignados</p>
+                        </div>
+                        <div class="card-content">
+                            <div class="table-container">
+                                <table class="data-table" id="rolesTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Descripción</th>
+                                            <th>Usuarios</th>
+                                            <th class="text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="font-medium">Administrador</td>
+                                            <td>Acceso completo a todas las funcionalidades del sistema</td>
+                                            <td>2</td>
+                                            <td class="text-right">
+                                                <button class="button button-sm">Editar</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="font-medium">Empleado</td>
+                                            <td>Acceso limitado a funciones de venta e inventario</td>
+                                            <td>4</td>
+                                            <td class="text-right">
+                                                <button class="button button-sm">Editar</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast para notificaciones -->
+    <div id="toast" class="toast hidden">
+        <div class="toast-content">
+            <div class="toast-header">
+                <h3 class="toast-title">Título</h3>
+                <button class="toast-close">&times;</button>
+            </div>
+            <p class="toast-message">Mensaje</p>
+        </div>
+    </div>
+
+    <!-- Modal para nuevo/editar usuario -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="userModalTitle">Nuevo Usuario</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="userName">Nombre completo:</label>
+                        <input type="text" id="userName" class="form-control" placeholder="Nombre del usuario">
+                    </div>
+                    <div class="form-group">
+                        <label for="userEmail">Email:</label>
+                        <input type="email" id="userEmail" class="form-control" placeholder="correo@ejemplo.com">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="userRole">Rol:</label>
+                        <select id="userRole" class="form-control">
+                            <option value="">Seleccionar rol</option>
+                            <option value="admin">Administrador</option>
+                            <option value="empleado">Empleado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="userStatus">Estado:</label>
+                        <select id="userStatus" class="form-control">
+                            <option value="active">Activo</option>
+                            <option value="inactive">Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="userPassword">Contraseña:</label>
+                        <input type="password" id="userPassword" class="form-control" placeholder="Contraseña">
+                    </div>
+                    <div class="form-group">
+                        <label for="userPasswordConfirm">Confirmar contraseña:</label>
+                        <input type="password" id="userPasswordConfirm" class="form-control" placeholder="Confirmar contraseña">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="userNotes">Notas:</label>
+                    <textarea id="userNotes" class="form-control" rows="3" placeholder="Notas adicionales"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelUserButton" class="button button-secondary">Cancelar</button>
+                <button id="saveUserButton" class="button button-primary">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Script de depuración
+        console.log('Cargando página de usuarios - Depuración HTML');
+        
+        // Función para verificar si podemos acceder a la API
+        function verificarAPI() {
+            console.log('Verificando API manualmente...');
+            fetch('/api/usuarios/detalles')
+                .then(response => {
+                    console.log('Respuesta API:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Datos obtenidos desde script de depuración:', data);
+                    if (data && data.length > 0) {
+                        console.log('Se recibieron ' + data.length + ' usuarios');
+                        
+                        // Intentar cargar manualmente
+                        const tabla = document.getElementById('usersTableBody');
+                        if (tabla) {
+                            console.log('Intentando cargar datos manualmente...');
+                            tabla.innerHTML = '';
+                            
+                            // Crear al menos una fila para verificar
+                            const usuario = data[0];
+                            const fila = document.createElement('tr');
+                            fila.innerHTML = `
+                                <td>${usuario.nombre || 'Sin nombre'}</td>
+                                <td>${usuario.email || 'Sin email'}</td>
+                                <td>${usuario.rol || 'Sin rol'}</td>
+                                <td>${usuario.activo ? 'Activo' : 'Inactivo'}</td>
+                                <td>${usuario.ultimoAcceso || 'Nunca'}</td>
+                                <td>${usuario.fechaCreacion || 'Desconocida'}</td>
+                                <td>Acciones</td>
+                            `;
+                            tabla.appendChild(fila);
+                            console.log('Fila añadida manualmente.');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error verificando API:', error);
+                });
+        }
+        
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM cargado completamente');
+            // Verificar elementos clave
+            const usersTableBody = document.getElementById('usersTableBody');
+            console.log('¿Existe usersTableBody?', !!usersTableBody);
+            
+            // Intentar verificar la API después de 2 segundos
+            setTimeout(verificarAPI, 2000);
+        });
+    </script>
+    <script th:src="@{/js/usuarios.js}"></script>
+</body>
+
+</html>

@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - SIX Sistema de Gestión</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/reportes.css}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="fas fa-box"></i>
+                    <span>SIX Inventario</span>
+                </div>
+                <div class="user-avatar">
+                    <div class="avatar">
+                        <span id="userInitial" th:data-usuario="${session.usuario}">A</span>
+                    </div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a th:href="@{/dashboard-admin}" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+                <a th:href="@{/inventario}" class="nav-link">
+                    <i class="fas fa-box-open"></i>
+                    <span>Inventario</span>
+                </a>
+                <a th:href="@{/productos}" class="nav-link">
+                    <i class="fas fa-tshirt"></i>
+                    <span>Productos</span>
+                </a>
+                <a th:href="@{/reportes}" class="nav-link active">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reportes</span>
+                </a>
+                <a th:href="@{/usuarios}" class="nav-link">
+                    <i class="fas fa-users"></i>
+                    <span>Usuarios</span>
+                </a>
+                <a th:href="@{/alertas}" class="nav-link">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Alertas</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a th:href="@{/logout}" class="sidebar-logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Cerrar Sesión</span>
+                </a>
+                <p class="copyright">© 2025 SIX. Todos los derechos reservados.</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="dashboard-header">
+                <button class="mobile-menu-button">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </header>
+
+            <div class="content-wrapper">
+                <div class="page-header">
+                    <h1>Reportes</h1>
+                    <div class="date-range-picker">
+                        <div class="date-input-group">
+                            <label for="startDate">Desde:</label>
+                            <input type="date" id="startDate" class="date-input">
+                        </div>
+                        <div class="date-input-group">
+                            <label for="endDate">Hasta:</label>
+                            <input type="date" id="endDate" class="date-input">
+                        </div>
+                        <button id="applyDateRange" class="button button-primary">Aplicar</button>
+                    </div>
+                </div>
+
+                <div class="report-tabs">
+                    <div class="tab-list">
+                        <button class="tab-button active" data-tab="sales">Ventas</button>
+                        <button class="tab-button" data-tab="inventory">Inventario</button>
+                        <button class="tab-button" data-tab="products">Productos</button>
+                    </div>
+
+                    <div class="tab-content active" id="sales-tab">
+                        <div class="report-grid">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Ventas por Período</h2>
+                                </div>
+                                <div class="card-content">
+                                    <div class="chart-container">
+                                        <canvas id="salesChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Ventas por Categoría</h2>
+                                </div>
+                                <div class="card-content">
+                                    <div class="chart-container">
+                                        <canvas id="categorySalesChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Productos Más Vendidos</h2>
+                                </div>
+                                <div class="card-content">
+                                    <div class="table-container">
+                                        <table class="data-table" id="topProductsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Producto</th>
+                                                    <th>Categoría</th>
+                                                    <th>Unidades</th>
+                                                    <th>Ingresos</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>Camiseta Slim Fit</td>
+                                                    <td>Camisetas</td>
+                                                    <td>45</td>
+                                                    <td>S/. 3,595.50</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Pantalón Chino</td>
+                                                    <td>Pantalones</td>
+                                                    <td>32</td>
+                                                    <td>S/. 3,196.80</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Vestido Casual</td>
+                                                    <td>Vestidos</td>
+                                                    <td>28</td>
+                                                    <td>S/. 3,637.20</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Blusa Estampada</td>
+                                                    <td>Blusas</td>
+                                                    <td>25</td>
+                                                    <td>S/. 2,247.50</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Chaqueta Denim</td>
+                                                    <td>Chaquetas</td>
+                                                    <td>18</td>
+                                                    <td>S/. 2,878.20</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Resumen de Ventas</h2>
+                                </div>
+                                <div class="card-content">
+                                    <div class="stats-grid">
+                                        <div class="stat-card">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-shopping-cart"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <h3 class="stat-title">Total Ventas</h3>
+                                                <p class="stat-value">S/. 15,555.00</p>
+                                                <p class="stat-change positive">+12.5% vs mes anterior</p>
+                                            </div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-receipt"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <h3 class="stat-title">Transacciones</h3>
+                                                <p class="stat-value">148</p>
+                                                <p class="stat-change positive">+8.2% vs mes anterior</p>
+                                            </div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-dollar-sign"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <h3 class="stat-title">Ticket Promedio</h3>
+                                                <p class="stat-value">S/. 105.10</p>
+                                                <p class="stat-change positive">+4.3% vs mes anterior</p>
+                                            </div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-percentage"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <h3 class="stat-title">Margen Bruto</h3>
+                                                <p class="stat-value">48.2%</p>
+                                                <p class="stat-change negative">-1.5% vs mes anterior</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="inventory-tab">
+                        <div class="report-grid">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Valor de Inventario por Categoría</h2>
+                                </div>
+                                <div class="card-content">
+                                    <div class="chart-container">
+                                        <canvas id="inventoryValueChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Rotación de Inventario</h2>
+                                </div>
+                                <div class="card-content">
+                                    <div class="chart-container">
+                                        <canvas id="inventoryTurnoverChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Productos con Bajo Stock</h2>
+                                </div>
+                                <div class="card-content">
+                                    <div class="table-container">
+                                        <table class="data-table" id="lowStockTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Producto</th>
+                                                    <th>Variante</th>
+                                                    <th>Stock Actual</th>
+                                                    <th>Stock Mínimo</th>
+                                                    <th>Estado</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>Vestido Casual</td>
+                                                    <td>Azul, S</td>
+                                                    <td>2</td>
+                                                    <td>5</td>
+                                                    <td><span class="status-badge status-critical">Crítico</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Chaqueta Denim</td>
+                                                    <td>Azul, XL</td>
+                                                    <td>4</td>
+                                                    <td>6</td>
+                                                    <td><span class="status-badge status-low">Bajo</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Pantalón Chino</td>
+                                                    <td>Beige, 32</td>
+                                                    <td>5</td>
+                                                    <td>8</td>
+                                                    <td><span class="status-badge status-low">Bajo</span></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Resumen de Inventario</h2>
+                                </div>
+                                <div class="card-content">
+                                    <div class="stats-grid">
+                                        <div class="stat-card">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-box"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <h3 class="stat-title">Valor Total</h3>
+                                                <p class="stat-value">S/. 42,850.00</p>
+                                                <p class="stat-change positive">+5.2% vs mes anterior</p>
+                                            </div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-boxes"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <h3 class="stat-title">Unidades</h3>
+                                                <p class="stat-value">857</p>
+                                                <p class="stat-change positive">+3.8% vs mes anterior</p>
+                                            </div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-sync"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <h3 class="stat-title">Rotación</h3>
+                                                <p class="stat-value">4.2</p>
+                                                <p class="stat-change positive">+0.3 vs mes anterior</p>
+                                            </div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <h3 class="stat-title">Alertas</h3>
+                                                <p class="stat-value">3</p>
+                                                <p class="stat-change negative">+1 vs mes anterior</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="products-tab">
+                        <div class="report-grid">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Rendimiento por Categoría</h2>
+                                </div>
+                                <div class="card-content">
+                                    <div class="chart-container">
+                                        <canvas id="categoryPerformanceChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Margen por Producto</h2>
+                                </div>
+                                <div class="card-content">
+                                    <div class="chart-container">
+                                        <canvas id="productMarginChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Productos con Mayor Margen</h2>
+                                </div>
+                                <div class="card-content">
+                                    <div class="table-container">
+                                        <table class="data-table" id="topMarginTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Producto</th>
+                                                    <th>Categoría</th>
+                                                    <th>Precio</th>
+                                                    <th>Costo</th>
+                                                    <th>Margen</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>Vestido Casual</td>
+                                                    <td>Vestidos</td>
+                                                    <td>S/. 129.90</td>
+                                                    <td>S/. 64.95</td>
+                                                    <td>50.0%</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Chaqueta Denim</td>
+                                                    <td>Chaquetas</td>
+                                                    <td>S/. 159.90</td>
+                                                    <td>S/. 79.95</td>
+                                                    <td>50.0%</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Pantalón Chino</td>
+                                                    <td>Pantalones</td>
+                                                    <td>S/. 99.90</td>
+                                                    <td>S/. 49.95</td>
+                                                    <td>50.0%</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Camiseta Slim Fit</td>
+                                                    <td>Camisetas</td>
+                                                    <td>S/. 79.90</td>
+                                                    <td>S/. 39.95</td>
+                                                    <td>50.0%</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Blusa Estampada</td>
+                                                    <td>Blusas</td>
+                                                    <td>S/. 89.90</td>
+                                                    <td>S/. 44.95</td>
+                                                    <td>50.0%</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Resumen de Productos</h2>
+                                </div>
+                                <div class="card-content">
+                                    <div class="stats-grid">
+                                        <div class="stat-card">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-tshirt"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <h3 class="stat-title">Total Productos</h3>
+                                                <p class="stat-value">48</p>
+                                                <p class="stat-change positive">+3 vs mes anterior</p>
+                                            </div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-tags"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <h3 class="stat-title">Categorías</h3>
+                                                <p class="stat-value">8</p>
+                                                <p class="stat-change neutral">Sin cambios</p>
+                                            </div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-percentage"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <h3 class="stat-title">Margen Promedio</h3>
+                                                <p class="stat-value">48.5%</p>
+                                                <p class="stat-change negative">-0.5% vs mes anterior</p>
+                                            </div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-star"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <h3 class="stat-title">Nuevos Productos</h3>
+                                                <p class="stat-value">5</p>
+                                                <p class="stat-change positive">+2 vs mes anterior</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="report-actions">
+                    <button id="exportPdfButton" class="button">
+                        <i class="fas fa-file-pdf"></i>
+                        Exportar PDF
+                    </button>
+                    <button id="exportExcelButton" class="button">
+                        <i class="fas fa-file-excel"></i>
+                        Exportar Excel
+                    </button>
+                    <button id="printReportButton" class="button">
+                        <i class="fas fa-print"></i>
+                        Imprimir
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast para notificaciones -->
+    <div id="toast" class="toast hidden">
+        <div class="toast-content">
+            <div class="toast-header">
+                <h3 class="toast-title">Título</h3>
+                <button class="toast-close">&times;</button>
+            </div>
+            <p class="toast-message">Mensaje</p>
+        </div>
+    </div>
+
+    <script th:src="@{/js/reportes.js}"></script>
+</body>
+
+</html>

@@ -9,14 +9,13 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class InventarioDTO {
-    private Long id;
+public class DetalleVentaDTO {
     private Long varianteId;
-    private String sku;
-    private String nombreProducto;
-    private String nombreCategoria;
+    private String codigo;
+    private String nombre;
     private String color;
     private String talla;
-    private Integer stock;
-    private BigDecimal precio;
+    private Integer cantidad;
+    private BigDecimal precioUnitario;
+    private BigDecimal subtotal;
 } 

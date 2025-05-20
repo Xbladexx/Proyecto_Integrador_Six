@@ -136,6 +136,17 @@
         </div>
     </div>
 
+    <!-- Toast para errores -->
+    <div id="errorToast" class="toast error hidden">
+        <div class="toast-content">
+            <div class="toast-header">
+                <h3 class="toast-title">Error</h3>
+                <button class="toast-close" onclick="document.getElementById('errorToast').classList.add('hidden')">&times;</button>
+            </div>
+            <p class="toast-message">Error al eliminar el producto</p>
+        </div>
+    </div>
+
     <!-- Modal para nuevo/editar producto -->
     <div id="productModal" class="modal">
         <div class="modal-content">

@@ -3,6 +3,8 @@ package com.darkcode.spring.six.models.entities;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -37,6 +39,7 @@ public class Categoria {
     private boolean activo = true;
     
     @OneToMany(mappedBy = "categoria")
+    @JsonIgnore
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     private Set<Producto> productos = new HashSet<>();

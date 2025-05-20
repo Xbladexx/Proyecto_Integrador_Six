@@ -80,6 +80,12 @@
                         <i class="fas fa-exclamation-circle"></i>
                         <span th:text="${error}">Error</span>
                     </div>
+                    
+                    <!-- Mensaje de éxito, si existe -->
+                    <div th:if="${mensaje}" class="alert alert-success" style="margin-bottom: 1rem; padding: 1rem; background-color: #d1fae5; border: 1px solid #34d399; border-radius: 0.375rem; color: #065f46;">
+                        <i class="fas fa-check-circle"></i>
+                        <span th:text="${mensaje}">Mensaje</span>
+                    </div>
 
                     <div class="card">
                         <div class="card-header">
@@ -143,17 +149,19 @@
                                                         <i class="fas fa-ellipsis-h"></i>
                                                     </button>
                                                     <div class="dropdown-content">
-                                                        <a th:href="@{/admin/usuarios/editar/{id}(id=${usuario.id})}" class="edit-user">
+                                                        <a href="#" class="edit-user" th:data-id="${usuario.id}" th:data-nombre="${usuario.nombre}" 
+                                                           th:data-usuario="${usuario.usuario}" th:data-email="${usuario.email}" 
+                                                           th:data-rol="${usuario.rol}" th:data-activo="${usuario.activo}">
                                                             <i class="fas fa-edit"></i> Editar usuario
                                                         </a>
-                                                        <a th:href="@{/admin/usuarios/resetear-password/{id}(id=${usuario.id})}" class="reset-password">
+                                                        <a href="#" class="reset-password" th:data-id="${usuario.id}" th:data-nombre="${usuario.nombre}">
                                                             <i class="fas fa-key"></i> Resetear contraseña
                                                         </a>
-                                                        <a th:href="${usuario.activo ? '/admin/usuarios/desactivar/' + usuario.id : '/admin/usuarios/activar/' + usuario.id}" class="toggle-status">
+                                                        <a href="#" class="toggle-status" th:data-id="${usuario.id}" th:data-activo="${usuario.activo}">
                                                             <i th:class="${usuario.activo ? 'fas fa-ban' : 'fas fa-check'}"></i> 
                                                             <span th:text="${usuario.activo ? 'Desactivar usuario' : 'Activar usuario'}">Toggle estado</span>
                                                         </a>
-                                                        <a th:href="@{/admin/usuarios/eliminar/{id}(id=${usuario.id})}" class="delete-user text-red">
+                                                        <a href="#" class="delete-user text-red" th:data-id="${usuario.id}" th:data-nombre="${usuario.nombre}">
                                                             <i class="fas fa-trash"></i> Eliminar
                                                         </a>
                                                     </div>
@@ -179,7 +187,6 @@
                                             <th>Nombre</th>
                                             <th>Descripción</th>
                                             <th>Usuarios</th>
-                                            <th class="text-right">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -187,17 +194,11 @@
                                             <td class="font-medium">Administrador</td>
                                             <td>Acceso completo a todas las funcionalidades del sistema</td>
                                             <td th:text="${countAdmin}">0</td>
-                                            <td class="text-right">
-                                                <button class="button button-sm">Editar</button>
-                                            </td>
                                         </tr>
                                         <tr>
                                             <td class="font-medium">Empleado</td>
                                             <td>Acceso limitado a funciones de venta e inventario</td>
                                             <td th:text="${countEmpleado}">0</td>
-                                            <td class="text-right">
-                                                <button class="button button-sm">Editar</button>
-                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -209,12 +210,328 @@
         </main>
     </div>
 
-    <!-- Script para manejar el menú móvil -->
+    <!-- Modal para editar usuario -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Editar Usuario</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm" method="post" action="/admin/usuarios/guardar">
+                    <input type="hidden" id="editUserId" name="id">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editNombre">Nombre completo:</label>
+                            <input type="text" id="editNombre" name="nombre" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editEmail">Email:</label>
+                            <input type="email" id="editEmail" name="email" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editRol">Rol:</label>
+                            <select id="editRol" name="rol" class="form-control" required>
+                                <option value="ADMIN">Administrador</option>
+                                <option value="EMPLEADO">Empleado</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editEstado">Estado:</label>
+                            <select id="editEstado" name="activo" class="form-control">
+                                <option value="true">Activo</option>
+                                <option value="false">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editNotas">Notas:</label>
+                        <textarea id="editNotas" name="notas" class="form-control" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="button button-secondary modal-cancel">Cancelar</button>
+                <button class="button button-primary" id="saveUserButton">Guardar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para resetear contraseña -->
+    <div id="resetPasswordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Resetear Contraseña</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Ingrese la nueva contraseña para el usuario <strong id="resetPasswordUserName"></strong></p>
+                <form id="resetPasswordForm" method="post" action="/admin/usuarios/resetear-password">
+                    <input type="hidden" id="resetPasswordUserId" name="id">
+                    
+                    <div class="form-group">
+                        <label for="newPassword">Nueva Contraseña:</label>
+                        <input type="password" id="newPassword" name="password" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirmar Contraseña:</label>
+                        <input type="password" id="confirmPassword" class="form-control" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="button button-secondary modal-cancel">Cancelar</button>
+                <button class="button button-primary" id="resetPasswordButton">Resetear Contraseña</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de confirmación para eliminar usuario -->
+    <div id="deleteUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Eliminar Usuario</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea eliminar al usuario <strong id="deleteUserName"></strong>?</p>
+                <p class="text-red">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="button button-secondary modal-cancel">Cancelar</button>
+                <button class="button button-danger" id="confirmDeleteButton">Eliminar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de confirmación para activar/desactivar usuario -->
+    <div id="toggleStatusModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="toggleStatusTitle">Cambiar Estado</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="toggleStatusMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="button button-secondary modal-cancel">Cancelar</button>
+                <button class="button button-primary" id="confirmToggleButton">Confirmar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de confirmación/mensaje -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="messageTitle">Mensaje</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="messageText"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="button button-primary modal-close">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.querySelector('.sidebar');
             const mobileMenuButton = document.querySelector('.mobile-menu-button');
             
+            // Modales
+            const editUserModal = document.getElementById('editUserModal');
+            const resetPasswordModal = document.getElementById('resetPasswordModal');
+            const deleteUserModal = document.getElementById('deleteUserModal');
+            const toggleStatusModal = document.getElementById('toggleStatusModal');
+            const messageModal = document.getElementById('messageModal');
+            
+            // Formularios
+            const editUserForm = document.getElementById('editUserForm');
+            const resetPasswordForm = document.getElementById('resetPasswordForm');
+            
+            // Botones de acción
+            const saveUserButton = document.getElementById('saveUserButton');
+            const resetPasswordButton = document.getElementById('resetPasswordButton');
+            const confirmDeleteButton = document.getElementById('confirmDeleteButton');
+            const confirmToggleButton = document.getElementById('confirmToggleButton');
+            
+            // Variables para almacenar IDs temporales
+            let currentUserId = null;
+            let currentAction = null;
+            
+            // Funciones para mostrar/ocultar modales
+            function showModal(modal) {
+                modal.style.display = 'block';
+            }
+            
+            function hideModal(modal) {
+                modal.style.display = 'none';
+            }
+            
+            function hideAllModals() {
+                hideModal(editUserModal);
+                hideModal(resetPasswordModal);
+                hideModal(deleteUserModal);
+                hideModal(toggleStatusModal);
+                hideModal(messageModal);
+            }
+            
+            // Cerrar modales con el botón X o haciendo clic fuera
+            document.querySelectorAll('.modal-close, .modal-cancel').forEach(button => {
+                button.addEventListener('click', function() {
+                    hideAllModals();
+                });
+            });
+            
+            // Cerrar modal al hacer clic fuera
+            window.addEventListener('click', function(event) {
+                if (event.target.classList.contains('modal')) {
+                    hideAllModals();
+                }
+            });
+            
+            // Manejar clic en el botón de editar usuario
+            document.querySelectorAll('.edit-user').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const userId = this.getAttribute('data-id');
+                    const nombre = this.getAttribute('data-nombre');
+                    const usuario = this.getAttribute('data-usuario');
+                    const email = this.getAttribute('data-email');
+                    const rol = this.getAttribute('data-rol');
+                    const activo = this.getAttribute('data-activo') === 'true';
+                    
+                    // Llenar el formulario
+                    document.getElementById('editUserId').value = userId;
+                    document.getElementById('editNombre').value = nombre;
+                    document.getElementById('editEmail').value = email;
+                    document.getElementById('editRol').value = rol;
+                    document.getElementById('editEstado').value = activo ? 'true' : 'false';
+                    
+                    // Mostrar el modal
+                    showModal(editUserModal);
+                });
+            });
+            
+            // Manejar clic en el botón de resetear contraseña
+            document.querySelectorAll('.reset-password').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const userId = this.getAttribute('data-id');
+                    const nombre = this.getAttribute('data-nombre');
+                    
+                    document.getElementById('resetPasswordUserId').value = userId;
+                    document.getElementById('resetPasswordUserName').textContent = nombre;
+                    
+                    // Limpiar campos
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                    
+                    showModal(resetPasswordModal);
+                });
+            });
+            
+            // Manejar clic en el botón de eliminar usuario
+            document.querySelectorAll('.delete-user').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const userId = this.getAttribute('data-id');
+                    const nombre = this.getAttribute('data-nombre');
+                    
+                    currentUserId = userId;
+                    document.getElementById('deleteUserName').textContent = nombre;
+                    
+                    showModal(deleteUserModal);
+                });
+            });
+            
+            // Manejar clic en el botón de cambiar estado
+            document.querySelectorAll('.toggle-status').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const userId = this.getAttribute('data-id');
+                    const activo = this.getAttribute('data-activo') === 'true';
+                    
+                    currentUserId = userId;
+                    currentAction = activo ? 'desactivar' : 'activar';
+                    
+                    document.getElementById('toggleStatusTitle').textContent = activo ? 'Desactivar Usuario' : 'Activar Usuario';
+                    document.getElementById('toggleStatusMessage').textContent = activo ? 
+                        '¿Está seguro que desea desactivar este usuario? El usuario no podrá acceder al sistema.' : 
+                        '¿Está seguro que desea activar este usuario? El usuario podrá acceder al sistema.';
+                    
+                    showModal(toggleStatusModal);
+                });
+            });
+            
+            // Guardar usuario
+            saveUserButton.addEventListener('click', function() {
+                if (editUserForm.checkValidity()) {
+                    editUserForm.submit();
+                } else {
+                    editUserForm.reportValidity();
+                }
+            });
+            
+            // Resetear contraseña
+            resetPasswordButton.addEventListener('click', function() {
+                const password = document.getElementById('newPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                if (password !== confirmPassword) {
+                    document.getElementById('messageTitle').textContent = 'Error';
+                    document.getElementById('messageText').textContent = 'Las contraseñas no coinciden';
+                    hideModal(resetPasswordModal);
+                    showModal(messageModal);
+                    return;
+                }
+                
+                if (resetPasswordForm.checkValidity()) {
+                    resetPasswordForm.submit();
+                } else {
+                    resetPasswordForm.reportValidity();
+                }
+            });
+            
+            // Confirmar eliminación
+            confirmDeleteButton.addEventListener('click', function() {
+                window.location.href = `/admin/usuarios/eliminar/${currentUserId}`;
+            });
+            
+            // Confirmar cambio de estado
+            confirmToggleButton.addEventListener('click', function() {
+                window.location.href = `/admin/usuarios/${currentAction}/${currentUserId}`;
+            });
+            
+            // Nuevo usuario
+            document.getElementById('newUserButton').addEventListener('click', function() {
+                // Limpiar formulario
+                document.getElementById('editUserId').value = '';
+                document.getElementById('editNombre').value = '';
+                document.getElementById('editEmail').value = '';
+                document.getElementById('editRol').value = 'EMPLEADO';
+                document.getElementById('editEstado').value = 'true';
+                document.getElementById('editNotas').value = '';
+                
+                showModal(editUserModal);
+            });
+            
+            // Sidebar móvil
             if (mobileMenuButton) {
                 mobileMenuButton.addEventListener('click', function() {
                     sidebar.classList.toggle('open');
@@ -260,6 +577,27 @@
                     });
                 }
             });
+            
+            // Búsqueda de usuarios
+            const searchInput = document.getElementById('usersSearch');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    const rows = document.querySelectorAll('#usersTableBody tr');
+                    
+                    rows.forEach(row => {
+                        const nombre = row.cells[0].textContent.toLowerCase();
+                        const email = row.cells[1].textContent.toLowerCase();
+                        const rol = row.cells[2].textContent.toLowerCase();
+                        
+                        if (nombre.includes(searchTerm) || email.includes(searchTerm) || rol.includes(searchTerm)) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                });
+            }
         });
     </script>
 </body>

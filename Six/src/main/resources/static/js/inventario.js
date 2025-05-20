@@ -5,21 +5,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const inventorySearch = document.getElementById('inventorySearch');
     const inventoryTableBody = document.getElementById('inventoryTableBody');
     const toastCloseButton = document.querySelector('.toast-close');
+    
+    // Elementos para el modal de stock (solo en vista admin)
     const stockModal = document.getElementById('stockModal');
-    const stockModalTitle = document.getElementById('stockModalTitle');
-    const stockProductInfo = document.getElementById('stockProductInfo');
-    const stockProductId = document.getElementById('stockProductId');
-    const stockAction = document.getElementById('stockAction');
-    const stockQuantity = document.getElementById('stockQuantity');
-    const stockReason = document.getElementById('stockReason');
-    const otherReasonGroup = document.getElementById('otherReasonGroup');
-    const otherReason = document.getElementById('otherReason');
-    const btnSaveStock = document.getElementById('btnSaveStock');
-    const modalCloseButtons = document.querySelectorAll('.modal-close, .modal-close-btn');
-    const inventarioTable = document.getElementById('inventarioTable');
-    const searchInput = document.getElementById('searchInventario');
-    const stockFilter = document.getElementById('stockFilter');
-    let inventarioData = [];
+    const stockModalTitle = stockModal ? document.getElementById('stockModalTitle') : null;
+    const stockProductInfo = stockModal ? document.getElementById('stockProductInfo') : null;
+    const stockProductId = stockModal ? document.getElementById('stockProductId') : null;
+    const stockAction = stockModal ? document.getElementById('stockAction') : null;
+    const stockQuantity = stockModal ? document.getElementById('stockQuantity') : null;
+    const stockReason = stockModal ? document.getElementById('stockReason') : null;
+    const otherReasonGroup = stockModal ? document.getElementById('otherReasonGroup') : null;
+    const otherReason = stockModal ? document.getElementById('otherReason') : null;
+    const btnSaveStock = stockModal ? document.getElementById('btnSaveStock') : null;
+    const modalCloseButtons = stockModal ? document.querySelectorAll('.modal-close, .modal-close-btn') : null;
+    
+    // Elementos para acciones de la tabla (solo en vista admin)
+    const inventoryTable = document.getElementById('inventoryTable');
+    const addStockButtons = document.querySelectorAll('.add-stock-action');
+    const reduceStockButtons = document.querySelectorAll('.reduce-stock-action');
 
     // Verificar si estamos en la vista de administrador
     let esAdmin = false;
@@ -34,28 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelector('.sidebar-nav a[href*="productos"]') !== null;
     }
 
-    // Función para cargar los datos de inventario desde la API
-    function cargarDatosInventario() {
-        fetch('/api/inventario/detalles')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Error al cargar los datos del inventario');
-                }
-                return response.json();
-            })
-            .then(data => {
-                inventarioData = data; // Guardamos los datos para búsquedas y filtrado
-                loadInventoryData(data);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Error', 'No se pudieron cargar los datos del inventario', 'error');
-                // Si hay un error, mostramos datos vacíos
-                loadInventoryData([]);
-            });
-    }
-
-    // Función para mostrar toast
+    // Función para mostrar toast (común para ambas vistas)
     window.showToast = function(title, message, type = 'success') {
         const toast = document.getElementById('toast');
         if (!toast) return;
@@ -75,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     };
 
-    // Cerrar toast al hacer clic en el botón de cerrar
+    // Cerrar toast al hacer clic en el botón de cerrar (común para ambas vistas)
     if (toastCloseButton) {
         toastCloseButton.addEventListener('click', function() {
             const toast = document.getElementById('toast');
@@ -83,245 +65,240 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Manejar clic en el botón de menú móvil
+    // Manejar clic en el botón de menú móvil (común para ambas vistas)
     if (mobileMenuButton) {
         mobileMenuButton.addEventListener('click', function() {
             sidebar.classList.toggle('open');
         });
     }
 
-    // Función para cerrar todos los menús de acciones abiertos
-    function closeAllActionMenus() {
-        document.querySelectorAll('.actions-menu.show').forEach(menu => {
-            menu.classList.remove('show');
-        });
-    }
-
-    // Agregar evento para cerrar menús al hacer clic en cualquier parte
-    document.addEventListener('click', function(event) {
-        // Si el clic no fue en un botón de toggle o dentro de un menú, cerrar todos los menús
-        if (!event.target.closest('.actions-toggle') && !event.target.closest('.actions-menu')) {
-            closeAllActionMenus();
-        }
-    });
-
-    // Función para cargar los datos del inventario
-    function loadInventoryData(data) {
-        // Limpiar el cuerpo de la tabla
-        inventoryTableBody.innerHTML = '';
-
-        // Si no hay datos, mostrar mensaje
-        if (!data || data.length === 0) {
-            const emptyRow = document.createElement('tr');
-            const emptyCell = document.createElement('td');
-            emptyCell.setAttribute('colspan', esAdmin ? '8' : '7');
-            emptyCell.textContent = 'No hay productos para mostrar';
-            emptyCell.className = 'empty-data';
-            emptyRow.appendChild(emptyCell);
-            inventoryTableBody.appendChild(emptyRow);
-            return;
+    // FUNCIONALIDAD ESPECÍFICA PARA LA VISTA DE ADMINISTRADOR
+    if (esAdmin && stockModal) {
+        // Función para cerrar todos los menús de acciones abiertos
+        function closeAllActionMenus() {
+            document.querySelectorAll('.actions-menu.show').forEach(menu => {
+                menu.classList.remove('show');
+            });
         }
 
-        // Agregar filas de datos
-        data.forEach(item => {
-            const row = document.createElement('tr');
-
-            // Agregar celdas con los datos del producto
-            const codeCell = document.createElement('td');
-            codeCell.textContent = item.sku || '';
-            row.appendChild(codeCell);
-
-            const nameCell = document.createElement('td');
-            nameCell.textContent = item.nombreProducto || '';
-            row.appendChild(nameCell);
-
-            const categoryCell = document.createElement('td');
-            categoryCell.textContent = item.nombreCategoria || '';
-            row.appendChild(categoryCell);
-
-            const colorCell = document.createElement('td');
-            colorCell.textContent = item.color || '';
-            row.appendChild(colorCell);
-
-            const sizeCell = document.createElement('td');
-            sizeCell.textContent = item.talla || '';
-            row.appendChild(sizeCell);
-
-            const stockCell = document.createElement('td');
-            stockCell.classList.add('stock-column');
-            // Crear un elemento span para el círculo del stock
-            const stockSpan = document.createElement('span');
-            stockSpan.textContent = item.stock || 0;
-            stockSpan.classList.add('stock-badge');
-
-            // Aplicar diferentes clases según el nivel de stock
-            if (item.stock <= 3) {
-                stockSpan.classList.add('stock-critical'); // Rojo
-            } else if (item.stock <= 10) {
-                stockSpan.classList.add('stock-warning'); // Amarillo
-            } else {
-                stockSpan.classList.add('stock-normal'); // Verde
+        // Agregar evento para cerrar menús al hacer clic en cualquier parte
+        document.addEventListener('click', function(event) {
+            // Si el clic no fue en un botón de toggle o dentro de un menú, cerrar todos los menús
+            if (!event.target.closest('.actions-toggle') && !event.target.closest('.actions-menu')) {
+                closeAllActionMenus();
             }
-
-            stockCell.appendChild(stockSpan);
-            row.appendChild(stockCell);
-
-            const priceCell = document.createElement('td');
-            priceCell.textContent = `S/. ${item.precio ? item.precio.toFixed(2) : '0.00'}`;
-            row.appendChild(priceCell);
-
-            // Solo añadir la columna de acciones si es administrador
-            if (esAdmin) {
-                const actionsCell = document.createElement('td');
-                actionsCell.classList.add('actions-cell');
-
-                // Crear el dropdown con los tres puntos (...)
-                const actionsDropdown = document.createElement('div');
-                actionsDropdown.classList.add('actions-dropdown');
-
-                // Botón de tres puntos
-                const toggleButton = document.createElement('button');
-                toggleButton.classList.add('actions-toggle');
-                toggleButton.innerHTML = '...';
-                toggleButton.addEventListener('click', function(e) {
-                    e.stopPropagation(); // Evitar que el clic se propague
-                    closeAllActionMenus();
-                    const menu = this.nextElementSibling;
-                    menu.classList.toggle('show');
-                });
-
-                // Menú de acciones
-                const actionsMenu = document.createElement('div');
-                actionsMenu.classList.add('actions-menu');
-
-                // Opción: Añadir stock
-                const addStockLink = document.createElement('a');
-                addStockLink.href = '#';
-                addStockLink.innerHTML = '<i class="fas fa-plus-circle"></i> Añadir stock';
-                addStockLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    openStockModal(item, 'add');
-                });
-
-                // Opción: Reducir stock
-                const reduceStockLink = document.createElement('a');
-                reduceStockLink.href = '#';
-                reduceStockLink.innerHTML = '<i class="fas fa-minus-circle"></i> Reducir stock';
-                reduceStockLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    openStockModal(item, 'reduce');
-                });
-
-                // Agregar opciones al menú
-                actionsMenu.appendChild(addStockLink);
-                actionsMenu.appendChild(reduceStockLink);
-
-                // Añadir el botón y el menú al dropdown
-                actionsDropdown.appendChild(toggleButton);
-                actionsDropdown.appendChild(actionsMenu);
-
-                // Añadir el dropdown a la celda de acciones
-                actionsCell.appendChild(actionsDropdown);
-                row.appendChild(actionsCell);
-            }
-
-            // Agregar la fila a la tabla
-            inventoryTableBody.appendChild(row);
         });
-    }
 
-    // Función para abrir el modal de gestión de stock
-    function openStockModal(product, action) {
-        // Establecer el título según la acción
-        stockModalTitle.textContent = action === 'add' ? 'Añadir Stock' : 'Reducir Stock';
-
-        // Configurar la información del producto
-        stockProductInfo.value = `${product.nombreProducto} - ${product.color} - ${product.talla}`;
-        stockProductId.value = product.id;
-
-        // Configurar la acción (añadir o reducir)
-        stockAction.value = action;
-
-        // Mostrar el modal
-        stockModal.style.display = 'block';
-    }
-
-    // Función para cerrar el modal de stock
-    function closeStockModal() {
-        stockModal.style.display = 'none';
-        // Resetear formulario
-        document.getElementById('stockForm').reset();
-    }
-
-    // Manejar evento de cambio en el motivo del movimiento
-    if (stockReason) {
-        stockReason.addEventListener('change', function() {
-            otherReasonGroup.style.display = this.value === 'other' ? 'block' : 'none';
+        // Configurar los botones de toggle para los menús de acciones
+        document.querySelectorAll('.actions-toggle').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation(); // Evitar que el clic se propague
+                closeAllActionMenus();
+                const menu = this.nextElementSibling;
+                menu.classList.toggle('show');
+            });
         });
-    }
 
-    // Manejar botones para cerrar modales
-    modalCloseButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            closeStockModal();
+        // Configurar los botones de añadir stock
+        addStockButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const id = this.getAttribute('data-id');
+                const nombre = this.getAttribute('data-nombre');
+                const color = this.getAttribute('data-color');
+                const talla = this.getAttribute('data-talla');
+                openStockModal({
+                    id: id,
+                    nombreProducto: nombre,
+                    color: color,
+                    talla: talla
+                }, 'add');
+            });
         });
-    });
 
-    // Manejar el botón de guardar en el modal de stock
-    if (btnSaveStock) {
-        btnSaveStock.addEventListener('click', function() {
-            const productId = stockProductId.value;
-            const action = stockAction.value;
-            const quantity = parseInt(stockQuantity.value, 10);
-            const reason = stockReason.value;
-            const reasonDetail = reason === 'other' ? otherReason.value : '';
+        // Configurar los botones de reducir stock
+        reduceStockButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const id = this.getAttribute('data-id');
+                const nombre = this.getAttribute('data-nombre');
+                const color = this.getAttribute('data-color');
+                const talla = this.getAttribute('data-talla');
+                openStockModal({
+                    id: id,
+                    nombreProducto: nombre,
+                    color: color,
+                    talla: talla
+                }, 'reduce');
+            });
+        });
 
-            // Validar cantidad
-            if (isNaN(quantity) || quantity <= 0) {
-                showToast('Error', 'La cantidad debe ser un número mayor que cero', 'error');
-                return;
-            }
+        // Función para abrir el modal de gestión de stock
+        function openStockModal(product, action) {
+            // Establecer el título según la acción
+            stockModalTitle.textContent = action === 'add' ? 'Añadir Stock' : 'Reducir Stock';
 
-            // Validar motivo personalizado
-            if (reason === 'other' && !reasonDetail.trim()) {
-                showToast('Error', 'Debe especificar el motivo', 'error');
-                return;
-            }
+            // Configurar la información del producto
+            stockProductInfo.value = `${product.nombreProducto} - ${product.color} - ${product.talla}`;
+            stockProductId.value = product.id;
 
-            // Simular llamada a la API (en un sistema real, esto enviaría una solicitud al servidor)
-            // Ejemplo: POST a /api/inventario/{productId}/stock con los datos necesarios
+            // Configurar la acción (añadir o reducir)
+            stockAction.value = action;
 
-            // Aquí deberíamos tener el código para enviar una solicitud al servidor
-            // Por ahora, simularemos una respuesta exitosa
-            setTimeout(() => {
-                showToast(
-                    'Éxito',
-                    `Stock ${action === 'add' ? 'aumentado' : 'reducido'} correctamente`,
-                    'success'
-                );
+            // Mostrar el modal
+            stockModal.style.display = 'block';
+        }
+
+        // Función para cerrar el modal de stock
+        function closeStockModal() {
+            stockModal.style.display = 'none';
+            // Resetear formulario
+            document.getElementById('stockForm').reset();
+        }
+
+        // Manejar evento de cambio en el motivo del movimiento
+        if (stockReason) {
+            stockReason.addEventListener('change', function() {
+                otherReasonGroup.style.display = this.value === 'other' ? 'block' : 'none';
+            });
+        }
+
+        // Manejar botones para cerrar modales
+        modalCloseButtons.forEach(button => {
+            button.addEventListener('click', function() {
                 closeStockModal();
-
-                // Recargar datos del inventario para reflejar los cambios
-                cargarDatosInventario();
-            }, 500);
+            });
         });
+
+        // Manejar el botón de guardar en el modal de stock
+        if (btnSaveStock) {
+            btnSaveStock.addEventListener('click', function() {
+                const productId = stockProductId.value;
+                const action = stockAction.value;
+                const quantity = parseInt(stockQuantity.value, 10);
+                const reason = stockReason.value;
+                const reasonDetail = reason === 'other' ? otherReason.value : '';
+
+                // Validar cantidad
+                if (isNaN(quantity) || quantity <= 0) {
+                    showToast('Error', 'La cantidad debe ser un número mayor que cero', 'error');
+                    return;
+                }
+
+                // Validar motivo personalizado
+                if (reason === 'other' && !reasonDetail.trim()) {
+                    showToast('Error', 'Debe especificar el motivo', 'error');
+                    return;
+                }
+
+                // Enviar solicitud al servidor para actualizar el stock
+                const motivoParam = reason === 'other' ? reasonDetail : reason;
+                // Obtener el ID de usuario de la sesión
+                let usuarioId = 1; // Valor por defecto
+                try {
+                    const userElement = document.getElementById('userInitial');
+                    if (userElement && userElement.getAttribute('data-usuario-id')) {
+                        usuarioId = userElement.getAttribute('data-usuario-id');
+                    }
+                } catch (e) {
+                    console.error('Error al obtener ID de usuario:', e);
+                }
+                
+                const url = action === 'add' ? 
+                    `/api/inventario/${productId}/aumentar?cantidad=${quantity}&motivo=${encodeURIComponent(motivoParam)}&usuarioId=${usuarioId}` : 
+                    `/api/inventario/${productId}/disminuir?cantidad=${quantity}&motivo=${encodeURIComponent(motivoParam)}&usuarioId=${usuarioId}`;
+                
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(text || 'Error al actualizar el stock');
+                        });
+                    }
+                    // Primero intentamos obtener el texto de la respuesta
+                    return response.text();
+                })
+                .then(text => {
+                    // Si la respuesta está vacía, simplemente continuamos
+                    if (!text) return {};
+                    
+                    // Si hay contenido, intentamos parsearlo como JSON
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.warn('Respuesta no es JSON válido pero continuamos:', text);
+                        // Si no es JSON válido, seguimos sin error
+                        return {};
+                    }
+                })
+                .then(data => {
+                    // Usar el mensaje de la respuesta si está disponible
+                    let mensaje;
+                    if (data && typeof data === 'object') {
+                        // Si tenemos una respuesta en formato RespuestaDTO
+                        if (data.hasOwnProperty('exito') && data.hasOwnProperty('mensaje')) {
+                            // Si no fue exitoso, lanzamos un error para ir al catch
+                            if (data.exito === false) {
+                                throw new Error(data.mensaje);
+                            }
+                            mensaje = data.mensaje;
+                        } else {
+                            // Formato antiguo o formato desconocido
+                            mensaje = data.mensaje || `Stock ${action === 'add' ? 'aumentado' : 'reducido'} correctamente`;
+                        }
+                    } else {
+                        // Sin datos o datos no válidos
+                        mensaje = `Stock ${action === 'add' ? 'aumentado' : 'reducido'} correctamente`;
+                    }
+                    
+                    showToast(
+                        'Éxito',
+                        mensaje,
+                        'success'
+                    );
+                    closeStockModal();
+                    
+                    // Recargar la página para mostrar los cambios
+                    // Dar un pequeño retraso para que el usuario vea el mensaje de éxito
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const errorMessage = error.message || 'No se pudo actualizar el stock';
+                    showToast('Error', errorMessage, 'error');
+                });
+            });
+        }
     }
 
+    // FUNCIONALIDAD COMÚN PARA AMBAS VISTAS (ADMIN Y EMPLEADO)
+    
     // Manejar la búsqueda en la tabla de inventario
     if (inventorySearch) {
         inventorySearch.addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
-            const filteredData = inventarioData.filter(item =>
-                (item.sku && item.sku.toLowerCase().includes(searchTerm)) ||
-                (item.nombreProducto && item.nombreProducto.toLowerCase().includes(searchTerm)) ||
-                (item.nombreCategoria && item.nombreCategoria.toLowerCase().includes(searchTerm)) ||
-                (item.color && item.color.toLowerCase().includes(searchTerm)) ||
-                (item.talla && item.talla.toLowerCase().includes(searchTerm))
-            );
-            loadInventoryData(filteredData);
+            const rows = inventoryTableBody.querySelectorAll('tr');
+            
+            rows.forEach(row => {
+                // Ignorar la fila de "No hay productos"
+                if (row.cells.length === 1 && row.cells[0].classList.contains('empty-data')) {
+                    return;
+                }
+                
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
         });
     }
-
-    // Inicializar: cargar datos del inventario
-    cargarDatosInventario();
 });

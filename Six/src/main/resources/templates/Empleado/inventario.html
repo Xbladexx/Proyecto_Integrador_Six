@@ -198,7 +198,24 @@
                                     </tr>
                                 </thead>
                                 <tbody id="inventoryTableBody">
-                                    <!-- Los datos se cargarán dinámicamente -->
+                                    <!-- Renderizado usando Thymeleaf en lugar de JavaScript -->
+                                    <tr th:if="${inventarioItems == null || inventarioItems.empty}">
+                                        <td colspan="7" class="empty-data">No hay productos para mostrar</td>
+                                    </tr>
+                                    <tr th:each="item : ${inventarioItems}">
+                                        <td th:text="${item.sku}">CAM-001-M-NEG</td>
+                                        <td th:text="${item.nombreProducto}">Camiseta Slim Fit</td>
+                                        <td th:text="${item.nombreCategoria}">Camisetas</td>
+                                        <td th:text="${item.color}">Negro</td>
+                                        <td th:text="${item.talla}">M</td>
+                                        <td class="stock-column">
+                                            <span th:text="${item.stock}" 
+                                                  th:class="${item.stock <= 3 ? 'stock-badge stock-critical' : 
+                                                            (item.stock <= 10 ? 'stock-badge stock-warning' : 
+                                                            'stock-badge stock-normal')}">15</span>
+                                        </td>
+                                        <td th:text="${'S/. ' + #numbers.formatDecimal(item.precio, 1, 2)}">S/. 79.90</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>

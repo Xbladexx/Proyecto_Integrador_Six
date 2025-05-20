@@ -43,6 +43,9 @@ public class Cliente {
     @Column
     private String direccion;
     
+    /**
+     * Fecha y hora de registro del cliente en zona horaria de Perú (America/Lima) sin milisegundos
+     */
     @Column(name = "fecha_registro")
     private LocalDateTime fechaRegistro = LocalDateTime.now();
     

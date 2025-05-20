@@ -31,8 +31,18 @@ public class CategoriaController {
     @GetMapping
     public ResponseEntity<List<Categoria>> obtenerTodas() {
         log.info("Obteniendo lista de categorías");
-        List<Categoria> categorias = categoriaRepository.findAll();
-        return ResponseEntity.ok(categorias);
+        try {
+            List<Categoria> categorias = categoriaRepository.findAll();
+            
+            // Para evitar referencias circulares, eliminamos las referencias a productos
+            categorias.forEach(cat -> cat.setProductos(null));
+            
+            log.info("Se encontraron {} categorías", categorias.size());
+            return ResponseEntity.ok(categorias);
+        } catch (Exception e) {
+            log.error("Error al obtener categorías", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
     
     @GetMapping("/{id}")

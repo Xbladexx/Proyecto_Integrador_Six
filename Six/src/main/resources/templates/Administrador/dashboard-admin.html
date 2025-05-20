@@ -90,27 +90,27 @@
                                 <i class="fas fa-box text-muted"></i>
                             </div>
                             <div class="card-content">
-                                <div class="card-value">1,234</div>
-                                <p class="card-description">+180 nuevos productos este mes</p>
+                                <div class="card-value" th:text="${totalProductos}">0</div>
+                                <p class="card-description">Total de productos en el sistema</p>
                             </div>
                         </div>
                         <div class="card dashboard-card">
                             <div class="card-header">
                                 <div class="card-title">Productos Activos</div>
-                                <i class="fas fa-users text-muted"></i>
+                                <i class="fas fa-check-circle text-muted"></i>
                             </div>
                             <div class="card-content">
-                                <div class="card-value">1,234</div>
-                                <p class="card-description">+180 nuevos productos este mes</p>
+                                <div class="card-value" th:text="${productosActivos}">0</div>
+                                <p class="card-description">Productos con estado ACTIVO</p>
                             </div>
                         </div>
                         <div class="card dashboard-card">
                             <div class="card-header">
                                 <div class="card-title">Productos con Bajo Stock</div>
-                                <i class="fas fa-credit-card text-muted"></i>
+                                <i class="fas fa-exclamation-triangle text-muted"></i>
                             </div>
                             <div class="card-content">
-                                <div class="card-value">42</div>
+                                <div class="card-value" th:text="${productosBajoStock}">0</div>
                                 <p class="card-description">Requieren reposición inmediata</p>
                             </div>
                         </div>
@@ -120,8 +120,8 @@
                                 <i class="fas fa-chart-line text-muted"></i>
                             </div>
                             <div class="card-content">
-                                <div class="card-value">4.2</div>
-                                <p class="card-description">+0.5 respecto al trimestre anterior</p>
+                                <div class="card-value" th:text="${tasaRotacion}">0</div>
+                                <p class="card-description">Índice de rotación trimestral</p>
                             </div>
                         </div>
                     </div>
@@ -146,59 +146,15 @@
                         <div class="card chart-card">
                             <div class="card-header">
                                 <div class="card-title">Ventas Recientes</div>
-                                <div class="card-description">Se realizaron 128 ventas este mes.</div>
                             </div>
                             <div class="card-content">
-                                <div class="recent-sales">
-                                    <div class="sale-item">
-                                        <div class="sale-avatar">
-                                            <span>JM</span>
+                                <div class="recent-sales-container">
+                                    <div class="recent-sales" id="ventasRecientes">
+                                        <!-- Las ventas recientes se cargarán dinámicamente aquí -->
+                                        <div class="loading-indicator">
+                                            <i class="fas fa-spinner fa-spin"></i>
+                                            <span>Cargando ventas recientes...</span>
                                         </div>
-                                        <div class="sale-details">
-                                            <p class="sale-name">Juan Mendoza</p>
-                                            <p class="sale-product">Camiseta Slim Fit - Talla M, Negro</p>
-                                        </div>
-                                        <div class="sale-amount">S/. 79.90</div>
-                                    </div>
-                                    <div class="sale-item">
-                                        <div class="sale-avatar">
-                                            <span>LR</span>
-                                        </div>
-                                        <div class="sale-details">
-                                            <p class="sale-name">Laura Ríos</p>
-                                            <p class="sale-product">Vestido Casual - Talla S, Azul</p>
-                                        </div>
-                                        <div class="sale-amount">S/. 129.90</div>
-                                    </div>
-                                    <div class="sale-item">
-                                        <div class="sale-avatar">
-                                            <span>CV</span>
-                                        </div>
-                                        <div class="sale-details">
-                                            <p class="sale-name">Carlos Vega</p>
-                                            <p class="sale-product">Pantalón Chino - Talla 32, Beige</p>
-                                        </div>
-                                        <div class="sale-amount">S/. 99.90</div>
-                                    </div>
-                                    <div class="sale-item">
-                                        <div class="sale-avatar">
-                                            <span>MP</span>
-                                        </div>
-                                        <div class="sale-details">
-                                            <p class="sale-name">María Pérez</p>
-                                            <p class="sale-product">Blusa Estampada - Talla L, Multicolor</p>
-                                        </div>
-                                        <div class="sale-amount">S/. 89.90</div>
-                                    </div>
-                                    <div class="sale-item">
-                                        <div class="sale-avatar">
-                                            <span>RG</span>
-                                        </div>
-                                        <div class="sale-details">
-                                            <p class="sale-name">Roberto Gómez</p>
-                                            <p class="sale-product">Chaqueta Denim - Talla XL, Azul</p>
-                                        </div>
-                                        <div class="sale-amount">S/. 159.90</div>
                                     </div>
                                 </div>
                             </div>
@@ -316,6 +272,138 @@
 
     <script th:src="@{/js/dashboard.js}"></script>
     <script th:src="@{/js/charts.js}"></script>
+    <script>
+        // Variable para almacenar el intervalo de actualización
+        let ventasUpdateInterval;
+        
+        // Función para cargar las ventas recientes
+        function cargarVentasRecientes() {
+            fetch('/api/ventas/ventas-recientes-admin')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error al cargar las ventas recientes');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Limpiar el contenedor de ventas
+                    const ventasContainer = document.getElementById('ventasRecientes');
+                    ventasContainer.innerHTML = '';
+                    
+                    // Verificar si hay ventas para mostrar
+                    if (!data.ventasRecientes || data.ventasRecientes.length === 0) {
+                        ventasContainer.innerHTML = '<div class="no-data">No hay ventas recientes para mostrar</div>';
+                        return;
+                    }
+                    
+                    // Filtrar ventas sin productos
+                    const ventasConProductos = data.ventasRecientes.filter(venta => 
+                        venta.productos && venta.productos.length > 0
+                    );
+                    
+                    if (ventasConProductos.length === 0) {
+                        ventasContainer.innerHTML = '<div class="no-data">No hay ventas con productos para mostrar</div>';
+                        return;
+                    }
+                    
+                    // Limitar a máximo 10 ventas para no hacer la lista muy larga
+                    const ventasMostrar = ventasConProductos.slice(0, 10);
+                    
+                    // Añadir cada venta al contenedor
+                    ventasMostrar.forEach(venta => {
+                        // Formatear el precio
+                        const monto = typeof venta.total === 'number' 
+                            ? 'S/. ' + venta.total.toFixed(2)
+                            : 'S/. ' + parseFloat(venta.total).toFixed(2);
+                        
+                        // Crear el elemento de venta
+                        const ventaItem = document.createElement('div');
+                        ventaItem.className = 'sale-item';
+                        
+                        // Construir el HTML para esta venta
+                        ventaItem.innerHTML = `
+                            <div class="sale-avatar">
+                                <span>${venta.clienteInicial || 'NA'}</span>
+                            </div>
+                            <div class="sale-details">
+                                <p class="sale-name">${venta.clienteNombre}</p>
+                                <p class="sale-product">${venta.productos[0]}</p>
+                                ${venta.productos.length > 1 ? `<p class="sale-additional">+${venta.productos.length - 1} producto(s) adicional(es)</p>` : ''}
+                            </div>
+                            <div class="sale-amount">${monto}</div>
+                        `;
+                        
+                        // Añadir al contenedor
+                        ventasContainer.appendChild(ventaItem);
+                    });
+                    
+                    // Si hay más ventas de las que se muestran, añadir un mensaje
+                    if (ventasConProductos.length > ventasMostrar.length) {
+                        const verMasItem = document.createElement('div');
+                        verMasItem.className = 'sale-item more-sales';
+                        verMasItem.innerHTML = `
+                            <div class="more-sales-text">
+                                <i class="fas fa-ellipsis-h"></i>
+                                <span>Mostrando ${ventasMostrar.length} de ${ventasConProductos.length} ventas</span>
+                            </div>
+                        `;
+                        ventasContainer.appendChild(verMasItem);
+                    }
+                    
+                    // Añadir información de última actualización
+                    const lastUpdateItem = document.createElement('div');
+                    lastUpdateItem.className = 'last-update-info';
+                    lastUpdateItem.innerHTML = `
+                        <div class="last-update-text">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Actualizado: ${new Date().toLocaleTimeString()}</span>
+                        </div>
+                    `;
+                    ventasContainer.appendChild(lastUpdateItem);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const ventasContainer = document.getElementById('ventasRecientes');
+                    ventasContainer.innerHTML = `
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>Error al cargar las ventas: ${error.message}</p>
+                        </div>
+                    `;
+                });
+        }
+        
+        // Iniciar cuando el DOM esté cargado
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cargar ventas recientes inmediatamente
+            cargarVentasRecientes();
+            
+            // Configurar actualización automática cada 60 segundos (1 minuto)
+            ventasUpdateInterval = setInterval(cargarVentasRecientes, 60000);
+            
+            // Limpiar el intervalo cuando el usuario abandona la página
+            window.addEventListener('beforeunload', function() {
+                if (ventasUpdateInterval) {
+                    clearInterval(ventasUpdateInterval);
+                }
+            });
+            
+            // Añadir botón de actualización manual
+            const ventasHeader = document.querySelector('.card-chart:nth-child(2) .card-header');
+            const refreshButton = document.createElement('button');
+            refreshButton.className = 'refresh-button';
+            refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            refreshButton.title = 'Actualizar ventas recientes';
+            refreshButton.addEventListener('click', function() {
+                this.classList.add('refreshing');
+                cargarVentasRecientes();
+                setTimeout(() => {
+                    this.classList.remove('refreshing');
+                }, 1000);
+            });
+            ventasHeader.appendChild(refreshButton);
+        });
+    </script>
 </body>
 
 </html>

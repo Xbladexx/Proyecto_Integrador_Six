@@ -21,6 +21,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
 @Table(name = "productos")
@@ -64,6 +65,7 @@ public class Producto {
     private LocalDateTime fechaCreacion = LocalDateTime.now();
     
     @OneToMany(mappedBy = "producto")
+    @JsonManagedReference
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     private Set<VarianteProducto> variantes = new HashSet<>();

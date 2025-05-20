@@ -72,8 +72,8 @@
                             <i class="fas fa-dollar-sign text-muted"></i>
                         </div>
                         <div class="card-content">
-                            <div class="card-value">S/. 1,234.56</div>
-                            <p class="card-description">12 ventas realizadas hoy</p>
+                            <div class="card-value" th:text="${'S/. ' + #numbers.formatDecimal(dashboardData.ventasDiarias, 1, 2, 'POINT')}">S/. 1,234.56</div>
+                            <p class="card-description" th:text="${dashboardData.cantidadVentas + ' ventas realizadas hoy'}">12 ventas realizadas hoy</p>
                         </div>
                     </div>
                     <div class="card dashboard-card">
@@ -82,8 +82,8 @@
                             <i class="fas fa-box text-muted"></i>
                         </div>
                         <div class="card-content">
-                            <div class="card-value">24</div>
-                            <p class="card-description">+8 respecto a ayer</p>
+                            <div class="card-value" th:text="${dashboardData.productosVendidos}">24</div>
+                            <p class="card-description">Productos vendidos hoy</p>
                         </div>
                     </div>
                     <div class="card dashboard-card">
@@ -92,8 +92,8 @@
                             <i class="fas fa-users text-muted"></i>
                         </div>
                         <div class="card-content">
-                            <div class="card-value">18</div>
-                            <p class="card-description">Promedio de 2.5 productos por cliente</p>
+                            <div class="card-value" th:text="${dashboardData.clientesAtendidos}">18</div>
+                            <p class="card-description">Total de clientes atendidos</p>
                         </div>
                     </div>
                 </div>
@@ -102,59 +102,29 @@
                 <div class="card">
                     <div class="card-header">
                         <div class="card-title">Mis Ventas Recientes</div>
-                        <div class="card-description">Últimas ventas realizadas por ti</div>
+                        <div class="card-description">Todas las ventas realizadas por ti</div>
                     </div>
                     <div class="card-content">
                         <div class="recent-sales">
-                            <div class="sale-item">
-                                <div class="sale-avatar">
-                                    <span>JM</span>
-                                </div>
-                                <div class="sale-details">
-                                    <p class="sale-name">Juan Mendoza</p>
-                                    <p class="sale-product">Camiseta Slim Fit - Talla M, Negro</p>
-                                </div>
-                                <div class="sale-amount">S/. 79.90</div>
+                            <div th:if="${dashboardData.ventasRecientes.isEmpty()}" class="no-data-message">
+                                <p>No hay ventas para mostrar.</p>
                             </div>
-                            <div class="sale-item">
+                            <div th:each="venta : ${dashboardData.ventasRecientes}" class="sale-item">
                                 <div class="sale-avatar">
-                                    <span>LR</span>
+                                    <span th:text="${venta.clienteInicial}">JM</span>
                                 </div>
                                 <div class="sale-details">
-                                    <p class="sale-name">Laura Ríos</p>
-                                    <p class="sale-product">Vestido Casual - Talla S, Azul</p>
+                                    <p class="sale-name">
+                                        <span th:text="${venta.clienteNombre}">Juan Mendoza</span>
+                                    </p>
+                                    <div class="sale-products">
+                                        <ul>
+                                            <li th:each="producto : ${venta.productos}" th:text="${producto}">Camiseta Slim Fit - Talla M, Negro</li>
+                                        </ul>
                                 </div>
-                                <div class="sale-amount">S/. 129.90</div>
-                            </div>
-                            <div class="sale-item">
-                                <div class="sale-avatar">
-                                    <span>CV</span>
+                                    <p class="sale-date" th:text="${#temporals.format(venta.fecha, 'dd/MM/yyyy HH:mm')}">14/05/2025 15:30</p>
                                 </div>
-                                <div class="sale-details">
-                                    <p class="sale-name">Carlos Vega</p>
-                                    <p class="sale-product">Pantalón Chino - Talla 32, Beige</p>
-                                </div>
-                                <div class="sale-amount">S/. 99.90</div>
-                            </div>
-                            <div class="sale-item">
-                                <div class="sale-avatar">
-                                    <span>MP</span>
-                                </div>
-                                <div class="sale-details">
-                                    <p class="sale-name">María Pérez</p>
-                                    <p class="sale-product">Blusa Estampada - Talla L, Multicolor</p>
-                                </div>
-                                <div class="sale-amount">S/. 89.90</div>
-                            </div>
-                            <div class="sale-item">
-                                <div class="sale-avatar">
-                                    <span>RG</span>
-                                </div>
-                                <div class="sale-details">
-                                    <p class="sale-name">Roberto Gómez</p>
-                                    <p class="sale-product">Chaqueta Denim - Talla XL, Azul</p>
-                                </div>
-                                <div class="sale-amount">S/. 159.90</div>
+                                <div class="sale-amount" th:text="${'S/. ' + #numbers.formatDecimal(venta.monto, 1, 2, 'POINT')}">S/. 79.90</div>
                             </div>
                         </div>
                     </div>

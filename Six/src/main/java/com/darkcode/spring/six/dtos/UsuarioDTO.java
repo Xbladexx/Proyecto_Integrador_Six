@@ -18,4 +18,5 @@ public class UsuarioDTO {
     private boolean activo;
     private LocalDateTime ultimoAcceso;
     private LocalDateTime fechaCreacion;
+    private String notas;
 } 

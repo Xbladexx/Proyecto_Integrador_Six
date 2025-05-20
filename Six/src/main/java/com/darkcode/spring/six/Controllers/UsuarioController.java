@@ -71,18 +71,102 @@ public class UsuarioController {
     @PostMapping
     public ResponseEntity<Usuario> crear(@RequestBody Usuario usuario) {
         log.info("Creando nuevo usuario: {}", usuario.getNombre());
+        
+        try {
+            // Verificar campos obligatorios
+            if (usuario.getNombre() == null || usuario.getNombre().isEmpty()) {
+                log.error("Intento de crear usuario sin nombre");
+                return ResponseEntity.badRequest().build();
+            }
+            
+            // Verificar rol (el servicio asignará EMPLEADO si es nulo)
+            if (usuario.getRol() == null || usuario.getRol().isEmpty()) {
+                log.warn("Rol no especificado, se asignará EMPLEADO por defecto");
+                usuario.setRol("EMPLEADO");
+            } else {
+                // Normalizar el rol para que coincida con el formato esperado
+                if (usuario.getRol().toUpperCase().contains("ADMIN")) {
+                    usuario.setRol("ADMIN");
+                } else {
+                    usuario.setRol("EMPLEADO");
+                }
+            }
+            
+            // Asegurarse de que no se proporcione un nombre de usuario (el servicio lo generará)
+            if (usuario.getUsuario() != null && !usuario.getUsuario().isEmpty()) {
+                log.warn("Se proporcionó un nombre de usuario, pero será generado por el sistema");
+                // No lo establecemos a null, permitiendo que la entidad mantenga un valor temporal
+                // El servicio se encargará de reemplazarlo con el valor correcto
+            }
+            
+            // Si el ID no es nulo, rechazamos la solicitud
         if (usuario.getId() != null) {
+                log.error("Intento de crear usuario con ID predefinido: {}", usuario.getId());
             return ResponseEntity.badRequest().build();
         }
         
-        // Verificamos si ya existe un usuario con el mismo nombre de usuario
-        if (usuarioRepository.existsByUsuario(usuario.getUsuario())) {
+            log.info("Datos del usuario a crear: nombre={}, email={}, rol={}", 
+                    usuario.getNombre(), usuario.getEmail(), usuario.getRol());
+            
+            // Usamos el método del servicio para crear usuarios con comprobación adicional
+            Usuario nuevoUsuario = null;
+            try {
+                // El servicio generará automáticamente: usuario, teléfono y contraseña
+                nuevoUsuario = usuarioService.crearUsuarioConContraseña(usuario);
+                log.info("Usuario creado en el servicio: id={}, usuario={}", 
+                        nuevoUsuario.getId(), nuevoUsuario.getUsuario());
+            } catch (Exception e) {
+                log.error("Error al crear usuario en el servicio: {}", e.getMessage(), e);
+                throw e;
+            }
+            
+            // Verificar que el usuario se haya generado correctamente
+            if (nuevoUsuario.getUsuario() == null || nuevoUsuario.getUsuario().isEmpty()) {
+                log.error("Error: el servicio no generó un nombre de usuario válido");
+                throw new IllegalStateException("No se pudo generar un nombre de usuario válido");
+            }
+            
+            // Por seguridad, no devolvemos la contraseña en la respuesta
+            Usuario respuesta = new Usuario();
+            respuesta.setId(nuevoUsuario.getId());
+            respuesta.setNombre(nuevoUsuario.getNombre());
+            
+            // Asegurarnos de que el usuario nunca sea nulo en la respuesta
+            String nombreUsuario = nuevoUsuario.getUsuario();
+            if (nombreUsuario == null || nombreUsuario.isEmpty()) {
+                // Esto no debería ocurrir con las validaciones implementadas
+                // Pero como última línea de defensa, generamos un valor
+                nombreUsuario = (nuevoUsuario.getRol() != null && nuevoUsuario.getRol().toUpperCase().contains("ADMIN") 
+                    ? "ADM" : "EMP") + (System.currentTimeMillis() % 9999);
+                // Asegurar que no exceda 10 caracteres
+                if (nombreUsuario.length() > 10) {
+                    nombreUsuario = nombreUsuario.substring(0, 10);
+                }
+                log.warn("Se generó un usuario de emergencia en el controlador: {}", nombreUsuario);
+            } else if (nombreUsuario.length() > 10) {
+                // Si ya tiene un valor pero es demasiado largo, lo truncamos
+                nombreUsuario = nombreUsuario.substring(0, 10);
+                log.warn("Se truncó el usuario a 10 caracteres: {}", nombreUsuario);
+            }
+            respuesta.setUsuario(nombreUsuario);
+            
+            respuesta.setEmail(nuevoUsuario.getEmail());
+            respuesta.setTelefono(nuevoUsuario.getTelefono());
+            respuesta.setRol(nuevoUsuario.getRol());
+            respuesta.setActivo(nuevoUsuario.isActivo());
+            respuesta.setFechaCreacion(nuevoUsuario.getFechaCreacion());
+            respuesta.setNotas(nuevoUsuario.getNotas());
+            
+            log.info("Usuario creado exitosamente: id={}, usuario={}, telefono={}", 
+                    respuesta.getId(), respuesta.getUsuario(), respuesta.getTelefono());
+            return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
+        } catch (IllegalArgumentException e) {
+            log.error("Error al crear usuario: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (Exception e) {
+            log.error("Error interno al crear usuario: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        
-        Usuario nuevoUsuario = usuarioRepository.save(usuario);
-        nuevoUsuario.setPassword(null); // No devolvemos la contraseña
-        return ResponseEntity.status(HttpStatus.CREATED).body(nuevoUsuario);
     }
     
     @PutMapping("/{id}")

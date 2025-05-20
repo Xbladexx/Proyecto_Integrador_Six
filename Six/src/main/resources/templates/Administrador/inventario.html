@@ -165,7 +165,7 @@
                 </div>
                 <div class="user-avatar">
                     <div class="avatar">
-                        <span id="userInitial" th:data-usuario="${session.usuario}">A</span>
+                        <span id="userInitial" th:data-usuario="${session.usuario}" th:data-usuario-id="${session.usuarioId}">A</span>
                     </div>
                 </div>
             </div>
@@ -250,7 +250,43 @@
                                     </tr>
                                 </thead>
                                 <tbody id="inventoryTableBody">
-                                    <!-- Los datos se cargarán dinámicamente -->
+                                    <!-- Renderizado usando Thymeleaf en lugar de JavaScript -->
+                                    <tr th:if="${inventarioItems == null || inventarioItems.empty}">
+                                        <td colspan="8" class="empty-data">No hay productos para mostrar</td>
+                                    </tr>
+                                    <tr th:each="item : ${inventarioItems}">
+                                        <td th:text="${item.sku}">CAM-001-M-NEG</td>
+                                        <td th:text="${item.nombreProducto}">Camiseta Slim Fit</td>
+                                        <td th:text="${item.nombreCategoria}">Camisetas</td>
+                                        <td th:text="${item.color}">Negro</td>
+                                        <td th:text="${item.talla}">M</td>
+                                        <td class="stock-column">
+                                            <span th:text="${item.stock}" 
+                                                  th:class="${item.stock <= 3 ? 'stock-badge stock-critical' : 
+                                                            (item.stock <= 10 ? 'stock-badge stock-warning' : 
+                                                            'stock-badge stock-normal')}">15</span>
+                                        </td>
+                                        <td th:text="${'S/. ' + #numbers.formatDecimal(item.precio, 1, 2)}">S/. 79.90</td>
+                                        <td class="actions-cell">
+                                            <div class="actions-dropdown">
+                                                <button class="actions-toggle">...</button>
+                                                <div class="actions-menu">
+                                                    <a href="#" th:data-id="${item.id}" 
+                                                       th:data-nombre="${item.nombreProducto}"
+                                                       th:data-color="${item.color}"
+                                                       th:data-talla="${item.talla}"
+                                                       class="add-stock-action">
+                                                       <i class="fas fa-plus-circle"></i> Añadir stock</a>
+                                                    <a href="#" th:data-id="${item.id}" 
+                                                       th:data-nombre="${item.nombreProducto}"
+                                                       th:data-color="${item.color}"
+                                                       th:data-talla="${item.talla}"
+                                                       class="reduce-stock-action">
+                                                       <i class="fas fa-minus-circle"></i> Reducir stock</a>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>

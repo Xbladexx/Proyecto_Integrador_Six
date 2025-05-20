@@ -104,6 +104,8 @@
                                         <tr>
                                             <th>Nombre</th>
                                             <th>Email</th>
+                                            <th>Usuario</th>
+                                            <th>Teléfono</th>
                                             <th>Rol</th>
                                             <th>Estado</th>
                                             <th>Último Acceso</th>
@@ -132,7 +134,6 @@
                                             <th>Nombre</th>
                                             <th>Descripción</th>
                                             <th>Usuarios</th>
-                                            <th class="text-right">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -140,17 +141,11 @@
                                             <td class="font-medium">Administrador</td>
                                             <td>Acceso completo a todas las funcionalidades del sistema</td>
                                             <td>2</td>
-                                            <td class="text-right">
-                                                <button class="button button-sm">Editar</button>
-                                            </td>
                                         </tr>
                                         <tr>
                                             <td class="font-medium">Empleado</td>
                                             <td>Acceso limitado a funciones de venta e inventario</td>
                                             <td>4</td>
-                                            <td class="text-right">
-                                                <button class="button button-sm">Editar</button>
-                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -177,24 +172,28 @@
     <div id="userModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="userModalTitle">Nuevo Usuario</h2>
+                <h2 id="userModalTitle">Agregar Usuario</h2>
                 <button class="modal-close">&times;</button>
             </div>
             <div class="modal-body">
+                <div id="error-alert" class="alert alert-error hidden">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="error-message">Error al procesar la solicitud</span>
+                </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="userName">Nombre completo:</label>
-                        <input type="text" id="userName" class="form-control" placeholder="Nombre del usuario">
+                        <input type="text" id="userName" class="form-control" placeholder="Nombre del usuario" required>
                     </div>
                     <div class="form-group">
                         <label for="userEmail">Email:</label>
-                        <input type="email" id="userEmail" class="form-control" placeholder="correo@ejemplo.com">
+                        <input type="email" id="userEmail" class="form-control" placeholder="correo@ejemplo.com" required>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="userRole">Rol:</label>
-                        <select id="userRole" class="form-control">
+                        <select id="userRole" class="form-control" required>
                             <option value="">Seleccionar rol</option>
                             <option value="admin">Administrador</option>
                             <option value="empleado">Empleado</option>
@@ -208,20 +207,14 @@
                         </select>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="userPassword">Contraseña:</label>
-                        <input type="password" id="userPassword" class="form-control" placeholder="Contraseña">
-                    </div>
-                    <div class="form-group">
-                        <label for="userPasswordConfirm">Confirmar contraseña:</label>
-                        <input type="password" id="userPasswordConfirm" class="form-control" placeholder="Confirmar contraseña">
-                    </div>
-                </div>
                 <div class="form-group">
                     <label for="userNotes">Notas:</label>
                     <textarea id="userNotes" class="form-control" rows="3" placeholder="Notas adicionales"></textarea>
                 </div>
+                <p class="form-text">
+                    <i class="fas fa-info-circle"></i> 
+                    Se generará automáticamente una contraseña para el nuevo usuario.
+                </p>
             </div>
             <div class="modal-footer">
                 <button id="cancelUserButton" class="button button-secondary">Cancelar</button>
@@ -259,6 +252,8 @@
                             fila.innerHTML = `
                                 <td>${usuario.nombre || 'Sin nombre'}</td>
                                 <td>${usuario.email || 'Sin email'}</td>
+                                <td>${usuario.usuario || 'Sin usuario'}</td>
+                                <td>${usuario.telefono || 'Sin teléfono'}</td>
                                 <td>${usuario.rol || 'Sin rol'}</td>
                                 <td>${usuario.activo ? 'Activo' : 'Inactivo'}</td>
                                 <td>${usuario.ultimoAcceso || 'Nunca'}</td>

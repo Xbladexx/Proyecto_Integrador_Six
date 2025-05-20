@@ -1,4 +1,5 @@
 /* Estilos específicos para la página de ventas */
+
 .ventas-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -20,24 +21,42 @@
 }
 
 .ventas-form-grid {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    align-items: flex-end;
     gap: 1rem;
     margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 .search-group {
-    grid-column: span 1;
+    flex: 3;
+    min-width: 200px;
+}
+
+.form-group:not(.search-group) {
+    flex: 1;
+    min-width: 100px;
 }
 
 .search-container {
     position: relative;
+    display: flex;
+    align-items: center;
 }
 
 .search-input {
+    width: 100%;
     padding-right: 2.5rem;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
+    padding-left: 0.75rem;
+    flex: 1;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
 }
 
 .search-button {
@@ -46,19 +65,17 @@
     top: 0;
     height: 100%;
     width: 2.5rem;
-    background-color: var(--secondary);
-    border: 1px solid var(--input);
-    border-left: none;
-    border-top-right-radius: var(--radius);
-    border-bottom-right-radius: var(--radius);
+    background-color: transparent;
+    border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: #6c757d;
 }
 
 .search-button:hover {
-    background-color: var(--muted);
+    color: #000;
 }
 
 .search-results {
@@ -77,27 +94,58 @@
 }
 
 .search-result-item {
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1rem;
     cursor: pointer;
     transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
 }
 
 .search-result-item:hover {
     background-color: var(--muted);
 }
 
-.search-result-name {
+.no-results {
+    padding: 1rem;
+    text-align: center;
+    color: var(--muted-foreground);
+    font-style: italic;
+}
+
+.result-code {
+    font-weight: 600;
+    min-width: 80px;
+}
+
+.result-details {
+    flex: 1;
+    padding: 0 0.5rem;
+}
+
+.result-name {
     font-weight: 500;
 }
 
-.search-result-details {
+.result-info {
     font-size: 0.75rem;
     color: var(--muted-foreground);
+}
+
+.result-price {
+    font-weight: 600;
+    color: var(--primary);
 }
 
 .quantity-input {
     display: flex;
     align-items: center;
+    height: 2.5rem;
 }
 
 .quantity-button {
@@ -137,6 +185,22 @@
     border-left: none;
     border-right: none;
     text-align: center;
+}
+
+
+/* Ensure all form inputs have the same height */
+
+select,
+input,
+.btn {
+    height: 2.5rem;
+}
+
+
+/* Make the AGREGAR button align with other elements */
+
+.form-group .btn {
+    margin-top: auto;
 }
 
 .table-container {
@@ -229,12 +293,16 @@
     background-color: var(--muted);
 }
 
+
 /* Estilos para los elementos específicos de roles */
+
 .admin-only {
     display: none;
 }
 
+
 /* Media queries */
+
 @media (min-width: 768px) {
     .ventas-form-grid {
         grid-template-columns: 6fr 2fr 2fr 2fr;
@@ -245,4 +313,17 @@
     .ventas-grid {
         grid-template-columns: 3fr 1fr;
     }
+}
+
+
+/* Estilos para campos válidos e inválidos */
+
+.valid-input {
+    border-color: #4CAF50 !important;
+    background-color: rgba(76, 175, 80, 0.05) !important;
+}
+
+.invalid-input {
+    border-color: #F44336 !important;
+    background-color: rgba(244, 67, 54, 0.05) !important;
 }

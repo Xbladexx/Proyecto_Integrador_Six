@@ -20,66 +20,34 @@ document.addEventListener('DOMContentLoaded', function() {
     const processPaymentButton = document.getElementById('processPaymentButton');
     const toastCloseButton = document.querySelector('.toast-close');
 
-    // Datos de ejemplo de productos
-    const productsData = [{
-            id: 1,
-            code: "CAM-001",
-            name: "Camiseta Slim Fit",
-            color: "Negro",
-            sizes: ["S", "M", "L", "XL"],
-            price: 79.9,
-            stock: 15
-        },
-        {
-            id: 2,
-            code: "CAM-002",
-            name: "Camiseta Slim Fit",
-            color: "Blanco",
-            sizes: ["S", "M", "L"],
-            price: 79.9,
-            stock: 8
-        },
-        {
-            id: 3,
-            code: "VES-001",
-            name: "Vestido Casual",
-            color: "Azul",
-            sizes: ["XS", "S", "M"],
-            price: 129.9,
-            stock: 2
-        },
-        {
-            id: 4,
-            code: "PAN-001",
-            name: "Pantalón Chino",
-            color: "Beige",
-            sizes: ["28", "30", "32", "34"],
-            price: 99.9,
-            stock: 5
-        },
-        {
-            id: 5,
-            code: "BLU-001",
-            name: "Blusa Estampada",
-            color: "Multicolor",
-            sizes: ["S", "M", "L"],
-            price: 89.9,
-            stock: 12
-        },
-        {
-            id: 6,
-            code: "CHA-001",
-            name: "Chaqueta Denim",
-            color: "Azul",
-            sizes: ["M", "L", "XL", "XXL"],
-            price: 159.9,
-            stock: 4
-        }
-    ];
+    // Datos de productos cargados desde la API
+    let productsData = [];
 
     // Variables de estado
     let selectedProduct = null;
     let cartItems = [];
+
+    // Cargar productos al iniciar
+    loadProducts();
+
+    // Función para cargar productos desde la API
+    function loadProducts() {
+        fetch('/api/productos/buscar-ventas')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error al cargar productos');
+                }
+                return response.json();
+            })
+            .then(data => {
+                productsData = data;
+                console.log('Productos cargados:', productsData.length);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error', 'No se pudieron cargar los productos', 'error');
+            });
+    }
 
     // Función para mostrar toast
     window.showToast = function(title, message, type = 'success') {
@@ -128,17 +96,50 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Buscar productos mientras se escribe
     if (productSearchInput) {
+        let debounceTimer;
+
         productSearchInput.addEventListener('input', function() {
             const searchTerm = this.value.trim().toLowerCase();
 
+            // Limpiar el temporizador anterior
+            clearTimeout(debounceTimer);
+
             if (searchTerm.length > 0) {
-                const results = productsData.filter(product =>
-                    product.code.toLowerCase().includes(searchTerm) ||
-                    product.name.toLowerCase().includes(searchTerm) ||
+                // Buscar en productos locales primero para respuesta instantánea
+                const localResults = productsData.filter(product =>
+                    product.codigo.toLowerCase().includes(searchTerm) ||
+                    product.nombre.toLowerCase().includes(searchTerm) ||
                     product.color.toLowerCase().includes(searchTerm)
                 );
 
-                displaySearchResults(results);
+                // Siempre mostrar resultados locales inmediatamente
+                displaySearchResults(localResults);
+
+                // Usar debounce para evitar múltiples llamadas al servidor mientras el usuario escribe
+                if (searchTerm.length >= 3) {
+                    debounceTimer = setTimeout(() => {
+                        fetch(`/api/productos/buscar-ventas?query=${encodeURIComponent(searchTerm)}`)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Error en la respuesta del servidor: ' + response.status);
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                if (data && data.length > 0) {
+                                    // Solo actualizar productsData si hay resultados
+                                    productsData = [...data];
+
+                                    // Verificar que el término de búsqueda aún coincide con el valor actual
+                                    // para evitar resultados incorrectos si el usuario cambió el texto
+                                    if (productSearchInput.value.trim().toLowerCase().includes(searchTerm)) {
+                                        displaySearchResults(data);
+                                    }
+                                }
+                            })
+                            .catch(error => console.error('Error al buscar productos:', error));
+                    }, 300); // Esperar 300ms después de que el usuario deje de escribir
+                }
             } else {
                 searchResults.classList.add('hidden');
             }
@@ -154,12 +155,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 const resultItem = document.createElement('div');
                 resultItem.className = 'search-result-item';
                 resultItem.innerHTML = `
-                    <div class="result-code">${product.code}</div>
+                    <div class="result-code">${product.codigo}</div>
                     <div class="result-details">
-                        <div class="result-name">${product.name}</div>
-                        <div class="result-info">${product.color} - ${product.sizes.join(', ')}</div>
+                        <div class="result-name">${product.nombre}</div>
+                        <div class="result-info">${product.color} - ${product.tallasDisponibles.join(', ')}</div>
                     </div>
-                    <div class="result-price">S/. ${product.price.toFixed(2)}</div>
+                    <div class="result-price">S/. ${product.precio.toFixed(2)}</div>
                 `;
 
                 resultItem.addEventListener('click', () => {
@@ -169,10 +170,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 searchResults.appendChild(resultItem);
             });
 
+            // Asegurarse de que los resultados siempre sean visibles cuando hay coincidencias
             searchResults.classList.remove('hidden');
         } else {
-            searchResults.classList.add('hidden');
-            resetProductSelection();
+            // Solo ocultar resultados si no hay coincidencias y el campo está vacío
+            if (!productSearchInput.value.trim()) {
+                searchResults.classList.add('hidden');
+                resetProductSelection();
+            } else {
+                // Si hay texto escrito pero sin resultados, mostrar mensaje
+                searchResults.innerHTML = '<div class="no-results">No se encontraron productos</div>';
+                searchResults.classList.remove('hidden');
+            }
         }
     }
 
@@ -182,16 +191,30 @@ document.addEventListener('DOMContentLoaded', function() {
             const searchTerm = productSearchInput.value.trim();
 
             if (searchTerm) {
-                const foundProduct = productsData.find(product =>
-                    product.code.toLowerCase() === searchTerm.toLowerCase() ||
-                    product.name.toLowerCase().includes(searchTerm.toLowerCase())
-                );
-
-                if (foundProduct) {
-                    selectProduct(foundProduct);
-                } else {
-                    showToast('Producto no encontrado', 'No se encontró ningún producto con ese código o nombre', 'error');
-                }
+                // Buscar en el servidor
+                fetch(`/api/productos/buscar-ventas?query=${encodeURIComponent(searchTerm)}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error en la respuesta del servidor: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Solo actualizar si hay resultados para no perder el contexto actual
+                        if (data && data.length > 0) {
+                            productsData = [...data];
+                            displaySearchResults(data);
+                        } else {
+                            // Mostrar mensaje de "no encontrado" en el área de resultados
+                            searchResults.innerHTML = '<div class="no-results">No se encontraron productos</div>';
+                            searchResults.classList.remove('hidden');
+                            showToast('Producto no encontrado', 'No se encontró ningún producto con ese código o nombre', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showToast('Error', 'Error al buscar productos: ' + error.message, 'error');
+                    });
             } else {
                 showToast('Campo vacío', 'Por favor ingrese un código o nombre de producto', 'error');
             }
@@ -201,14 +224,26 @@ document.addEventListener('DOMContentLoaded', function() {
     // Seleccionar producto
     function selectProduct(product) {
         selectedProduct = product;
-        productSearchInput.value = `${product.code} - ${product.name} - ${product.color}`;
+        productSearchInput.value = `${product.codigo} - ${product.nombre} - ${product.color}`;
+
+        console.log('Producto seleccionado:', product);
 
         // Actualizar el select de tallas
         sizeSelect.innerHTML = '<option value="">Talla</option>';
-        product.sizes.forEach(size => {
+
+        // Preseleccionar la talla específica de esta variante si está disponible
+        let tallaActual = product.talla;
+
+        product.tallasDisponibles.forEach(size => {
             const option = document.createElement('option');
             option.value = size;
             option.textContent = size;
+
+            // Si es la talla actual de la variante, seleccionarla
+            if (size === tallaActual) {
+                option.selected = true;
+            }
+
             sizeSelect.appendChild(option);
         });
 
@@ -278,6 +313,17 @@ document.addEventListener('DOMContentLoaded', function() {
         addToCartButton.disabled = !selectedProduct || !sizeSelected;
     }
 
+    // Función para buscar una variante específica por talla
+    function buscarVariantePorTalla(productoId, color, talla) {
+        // Esta función intenta encontrar en productsData la variante que corresponde a la talla seleccionada
+        for (const producto of productsData) {
+            if (producto.id === productoId && producto.color === color && producto.talla === talla) {
+                return producto.varianteId;
+            }
+        }
+        return null;
+    }
+
     // Agregar producto al carrito
     if (addToCartButton) {
         addToCartButton.addEventListener('click', function() {
@@ -298,6 +344,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
+            // Encontrar la variante correcta por talla
+            let varianteId = selectedProduct.varianteId;
+
+            // Si la talla seleccionada es diferente a la talla de la variante actual,
+            // intentar buscar la variante correcta
+            if (selectedSize !== selectedProduct.talla) {
+                const varianteEncontradaId = buscarVariantePorTalla(selectedProduct.id, selectedProduct.color, selectedSize);
+                if (varianteEncontradaId) {
+                    varianteId = varianteEncontradaId;
+                    console.log('Se encontró una variante específica para la talla seleccionada:', varianteId);
+                } else {
+                    console.warn('No se encontró una variante específica para la talla seleccionada, usando la variante principal');
+                }
+            }
+
             // Verificar si el producto ya está en el carrito con la misma talla
             const existingItemIndex = cartItems.findIndex(item =>
                 item.id === selectedProduct.id && item.size === selectedSize
@@ -310,14 +371,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Agregar nuevo item
                 cartItems.push({
                     id: selectedProduct.id,
-                    code: selectedProduct.code,
-                    name: selectedProduct.name,
+                    varianteId: varianteId, // Guardar explícitamente el ID de la variante
+                    code: selectedProduct.codigo,
+                    name: selectedProduct.nombre,
                     color: selectedProduct.color,
                     size: selectedSize,
-                    price: selectedProduct.price,
+                    price: selectedProduct.precio,
                     quantity: quantity
                 });
             }
+
+            console.log('Producto agregado al carrito:',
+                'ID:', selectedProduct.id,
+                'Nombre:', selectedProduct.nombre,
+                'Talla:', selectedSize,
+                'Variante ID:', varianteId);
 
             // Actualizar UI
             updateCartUI();
@@ -384,7 +452,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Actualizar totales
     function updateTotals() {
         const subtotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-        const igv = subtotal * 0.08;
+        const igv = subtotal * 0.18;
         const total = subtotal + igv;
 
         subtotalElement.textContent = `S/. ${subtotal.toFixed(2)}`;
@@ -419,6 +487,58 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Verificar si el cliente ya existe por DNI
+    function verificarClienteExistente(dni) {
+        if (!dni) return;
+
+        fetch(`/api/clientes/buscar?dni=${encodeURIComponent(dni)}`)
+            .then(response => response.json())
+            .then(cliente => {
+                if (cliente && cliente.id) {
+                    // Cliente encontrado, mostrar sus datos
+                    customerNameInput.value = cliente.nombre;
+                    console.log('Cliente encontrado:', cliente.nombre);
+                }
+            })
+            .catch(error => {
+                console.error('Error al verificar cliente:', error);
+            });
+    }
+
+    // Agregar evento para verificar cliente al ingresar DNI
+    if (customerDNIInput) {
+        // Validar que solo se ingresen números y limitar a 8 caracteres
+        customerDNIInput.addEventListener('input', function(e) {
+            // Reemplazar cualquier carácter que no sea un número
+            this.value = this.value.replace(/[^0-9]/g, '');
+
+            // Limitar a 8 caracteres
+            if (this.value.length > 8) {
+                this.value = this.value.slice(0, 8);
+            }
+
+            // Aplicar estilo visual para indicar validez
+            if (this.value.length === 8) {
+                this.classList.remove('invalid-input');
+                this.classList.add('valid-input');
+            } else if (this.value.length > 0) {
+                this.classList.remove('valid-input');
+                this.classList.add('invalid-input');
+            } else {
+                this.classList.remove('valid-input', 'invalid-input');
+            }
+        });
+
+        customerDNIInput.addEventListener('blur', function() {
+            // Validar al perder el foco
+            if (this.value.trim().length > 0 && this.value.trim().length !== 8) {
+                showToast('DNI inválido', 'El DNI debe contener exactamente 8 números', 'error');
+            } else if (this.value.trim().length === 8) {
+                verificarClienteExistente(this.value.trim());
+            }
+        });
+    }
+
     // Procesar pago
     if (processPaymentButton) {
         processPaymentButton.addEventListener('click', function() {
@@ -427,25 +547,98 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            if (!customerNameInput.value || !customerDNIInput.value) {
+            const nombreCliente = customerNameInput.value.trim();
+            const dniCliente = customerDNIInput.value.trim();
+
+            if (!nombreCliente || !dniCliente) {
                 showToast('Datos incompletos', 'Por favor ingrese el nombre y DNI del cliente', 'error');
                 return;
             }
 
-            // Simular procesamiento de pago
-            showToast('Procesando', 'Procesando pago...', 'success');
+            // Validar que el DNI tiene exactamente 8 números
+            const dniRegex = /^\d{8}$/;
+            if (!dniRegex.test(dniCliente)) {
+                showToast('DNI inválido', 'El DNI debe contener exactamente 8 números', 'error');
+                customerDNIInput.focus();
+                return;
+            }
 
-            setTimeout(() => {
-                // Aquí se enviaría la información al servidor
-                showToast('Éxito', 'Venta registrada correctamente', 'success');
+            // Preparar los datos de la venta
+            const subtotal = parseFloat(subtotalElement.textContent.replace('S/. ', ''));
+            const igv = parseFloat(igvElement.textContent.replace('S/. ', ''));
+            const total = parseFloat(totalElement.textContent.replace('S/. ', ''));
 
-                // Limpiar formulario
-                cartItems = [];
-                updateCartUI();
-                updateTotals();
-                customerNameInput.value = '';
-                customerDNIInput.value = '';
-            }, 1500);
+            // Convertir items del carrito al formato esperado por el backend
+            const items = cartItems.map(item => {
+                console.log('Item para venta:', item);
+                // Asegurarse de que varianteId sea el correcto
+                let varianteId = item.varianteId || item.id;
+
+                return {
+                    varianteId: varianteId,
+                    codigo: item.code,
+                    nombre: item.name,
+                    color: item.color,
+                    talla: item.size,
+                    cantidad: item.quantity,
+                    precioUnitario: item.price,
+                    subtotal: item.price * item.quantity
+                };
+            });
+
+            const ventaData = {
+                nombreCliente: nombreCliente,
+                dniCliente: dniCliente,
+                subtotal: subtotal,
+                igv: igv,
+                total: total,
+                items: items
+            };
+
+            console.log('Datos de venta a enviar:', ventaData);
+
+            // Mostrar toast de procesamiento
+            showToast('Procesando', 'Registrando venta en el sistema...', 'success');
+
+            // Deshabilitar el botón para evitar clics múltiples
+            processPaymentButton.disabled = true;
+
+            // Enviar los datos al servidor
+            fetch('/api/ventas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(ventaData)
+                })
+                .then(response => {
+                    processPaymentButton.disabled = false;
+
+                    if (!response.ok) {
+                        return response.text().then(errorMsg => {
+                            throw new Error(errorMsg || 'Error al procesar la venta');
+                        });
+                    }
+                    return response.text();
+                })
+                .then(codigoVenta => {
+                    showToast('Éxito', `Venta registrada correctamente con código: ${codigoVenta}`, 'success');
+
+                    // Imprimir ticket (simulado)
+                    console.log('Imprimiendo ticket para venta:', codigoVenta);
+
+                    // Limpiar formulario
+                    cartItems = [];
+                    updateCartUI();
+                    updateTotals();
+                    customerNameInput.value = '';
+                    customerDNIInput.value = '';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    processPaymentButton.disabled = false;
+                    showToast('Error', error.message || 'No se pudo procesar la venta. Inténtelo nuevamente.', 'error');
+                });
         });
     }
 

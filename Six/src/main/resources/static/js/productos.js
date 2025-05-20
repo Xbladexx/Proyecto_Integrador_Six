@@ -25,8 +25,73 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveProductButton = document.getElementById('saveProductButton');
     const modalClose = document.querySelector('.modal-close');
 
-    // Datos de ejemplo de productos
-    const productsData = [{
+    // Datos de productos 
+    let productsData = [];
+    let categoriesData = [];
+
+    // Variables de estado
+    let selectedProduct = null;
+    let editMode = false;
+
+    // Mostrar inicial del usuario
+    if (userInitial) {
+        const usuario = userInitial.getAttribute('data-usuario') || 'A';
+        userInitial.textContent = usuario.charAt(0).toUpperCase();
+    }
+
+    // Función para realizar una solicitud fetch con timeout y manejo mejorado de errores
+    function fetchWithTimeout(url, options = {}, timeout = 10000) {
+        console.log(`Realizando fetch a: ${url}`);
+        
+        return Promise.race([
+            fetch(url, options),
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error(`Timeout al intentar conectar con ${url}`)), timeout)
+            )
+        ]);
+    }
+
+    // Verificar estado de la API antes de intentar cargar datos
+    function checkApiHealth() {
+        console.log('Verificando estado de la API...');
+        
+        fetchWithTimeout('/api/health')
+            .then(response => {
+                console.log('Respuesta de health check:', response.status, response.statusText);
+                if (!response.ok) {
+                    throw new Error(`API no disponible: ${response.status} ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Estado de la API:', data);
+                
+                if (data.status === 'UP') {
+                    console.log(`API funcionando correctamente. Categorías: ${data.categorias}, Productos: ${data.productos}`);
+                    
+                    // La API está funcionando, cargar datos
+                    fetchCategories();
+                } else {
+                    throw new Error(`API no disponible: ${data.message}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error al verificar estado de la API:', error);
+                showToast('Error', `No se pudo conectar con el servidor: ${error.message}. Usando datos locales.`, 'error');
+                
+                // Usar datos locales en caso de error
+                categoriesData = [
+                    { id: 1, nombre: 'Camisetas' },
+                    { id: 2, nombre: 'Pantalones' },
+                    { id: 3, nombre: 'Vestidos' },
+                    { id: 4, nombre: 'Chaquetas' },
+                    { id: 5, nombre: 'Blusas' },
+                    { id: 6, nombre: 'Accesorios' }
+                ];
+                
+                populateCategorySelect();
+                
+                productsData = [{
             id: 1,
             code: "CAM-001",
             name: "Camiseta Slim Fit",
@@ -47,83 +112,240 @@ document.addEventListener('DOMContentLoaded', function() {
             cost: 64.95,
             variants: 3,
             status: "active"
-        },
-        {
-            id: 3,
-            code: "PAN-001",
-            name: "Pantalón Chino",
-            category: "Pantalones",
-            description: "Pantalón chino de algodón",
-            price: 99.9,
-            cost: 49.95,
-            variants: 6,
-            status: "active"
-        },
-        {
-            id: 4,
-            code: "BLU-001",
-            name: "Blusa Estampada",
-            category: "Blusas",
-            description: "Blusa con estampado floral",
-            price: 89.9,
-            cost: 44.95,
-            variants: 4,
-            status: "active"
-        },
-        {
-            id: 5,
-            code: "CHA-001",
-            name: "Chaqueta Denim",
-            category: "Chaquetas",
-            description: "Chaqueta de mezclilla clásica",
-            price: 159.9,
-            cost: 79.95,
-            variants: 3,
-            status: "active"
-        },
-        {
-            id: 6,
-            code: "CAM-002",
-            name: "Camiseta Estampada",
-            category: "Camisetas",
-            description: "Camiseta con estampado gráfico",
-            price: 69.9,
-            cost: 34.95,
-            variants: 5,
-            status: "active"
-        },
-        {
-            id: 7,
-            code: "PAN-002",
-            name: "Pantalón Skinny",
-            category: "Pantalones",
-            description: "Pantalón skinny de algodón elástico",
-            price: 109.9,
-            cost: 54.95,
-            variants: 8,
-            status: "active"
-        },
-        {
-            id: 8,
-            code: "SUD-001",
-            name: "Sudadera con Capucha",
-            category: "Sudaderas",
-            description: "Sudadera con capucha y bolsillo canguro",
-            price: 119.9,
-            cost: 59.95,
-            variants: 6,
-            status: "inactive"
-        }
-    ];
+                }];
+                
+                loadProductsData(productsData);
+            });
+    }
 
-    // Variables de estado
-    let selectedProduct = null;
-    let editMode = false;
+    // Cargar categorías desde la API
+    function fetchCategories() {
+        console.log('Intentando cargar categorías...');
+        
+        fetchWithTimeout('/api/categorias')
+            .then(response => {
+                console.log('Respuesta de categorías:', response.status, response.statusText);
+                if (!response.ok) {
+                    throw new Error(`Error al cargar categorías: ${response.status} ${response.statusText}`);
+                }
+                return response.text(); // Primero obtener como texto para verificar
+            })
+            .then(text => {
+                console.log('Texto recibido de la API:', text.substring(0, 100) + '...');
+                
+                // Intentar parsear el texto como JSON
+                try {
+                    // Limpiar el texto en caso de tener caracteres no válidos
+                    let cleanText = text;
+                    
+                    // Si el texto contiene caracteres de control, los eliminamos
+                    const jsonStartPos = text.indexOf('[');
+                    const jsonEndPos = text.lastIndexOf(']') + 1;
+                    
+                    if (jsonStartPos >= 0 && jsonEndPos > jsonStartPos) {
+                        cleanText = text.substring(jsonStartPos, jsonEndPos);
+                        console.log('Extrayendo JSON:', cleanText.substring(0, 50) + '...');
+                    }
+                    
+                    // Intentar parsear el JSON limpio
+                    const data = JSON.parse(cleanText);
+                    console.log('Categorías cargadas:', data);
+                    
+                    if (!data || data.length === 0) {
+                        console.warn('No se encontraron categorías en la base de datos');
+                        showToast('Advertencia', 'No hay categorías definidas en la base de datos', 'error');
+                        
+                        // Crear categorías predeterminadas para poder continuar
+                        categoriesData = [
+                            { id: 1, nombre: 'Camisetas' },
+                            { id: 2, nombre: 'Pantalones' },
+                            { id: 3, nombre: 'Vestidos' },
+                            { id: 4, nombre: 'Chaquetas' },
+                            { id: 5, nombre: 'Blusas' },
+                            { id: 6, nombre: 'Accesorios' }
+                        ];
+                    } else {
+                        categoriesData = data;
+                    }
+                    
+                    // Actualizar el select de categorías
+                    populateCategorySelect();
+                    
+                    // Una vez cargadas las categorías, cargar los productos
+                    fetchProducts();
+                } catch (err) {
+                    console.error('Error al parsear JSON de categorías:', err);
+                    console.error('Texto que causó el error:', text);
+                    showToast('Error', `Error al procesar las categorías: ${err.message}. Usando categorías por defecto.`, 'error');
+                    
+                    // Crear categorías predeterminadas si hay error
+                    categoriesData = [
+                        { id: 1, nombre: 'Camisetas' },
+                        { id: 2, nombre: 'Pantalones' },
+                        { id: 3, nombre: 'Vestidos' },
+                        { id: 4, nombre: 'Chaquetas' },
+                        { id: 5, nombre: 'Blusas' },
+                        { id: 6, nombre: 'Accesorios' }
+                    ];
+                    
+                    populateCategorySelect();
+                    fetchProducts();
+                }
+            })
+            .catch(error => {
+                console.error('Error al cargar categorías:', error);
+                showToast('Error', `No se pudieron cargar las categorías: ${error.message}. Usando categorías por defecto.`, 'error');
+                
+                // Crear categorías predeterminadas si hay error
+                categoriesData = [
+                    { id: 1, nombre: 'Camisetas' },
+                    { id: 2, nombre: 'Pantalones' },
+                    { id: 3, nombre: 'Vestidos' },
+                    { id: 4, nombre: 'Chaquetas' },
+                    { id: 5, nombre: 'Blusas' },
+                    { id: 6, nombre: 'Accesorios' }
+                ];
+                
+                populateCategorySelect();
+                fetchProducts();
+            });
+    }
 
-    // Mostrar inicial del usuario
-    if (userInitial) {
-        const usuario = userInitial.getAttribute('data-usuario') || 'A';
-        userInitial.textContent = usuario.charAt(0).toUpperCase();
+    // Poblar el select de categorías
+    function populateCategorySelect() {
+        // Mantener la opción por defecto
+        productCategory.innerHTML = '<option value="">Seleccionar categoría</option>';
+        
+        // Añadir las categorías
+        categoriesData.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.nombre;
+            option.textContent = category.nombre;
+            productCategory.appendChild(option);
+        });
+    }
+
+    // Cargar productos desde la API
+    function fetchProducts() {
+        console.log('Intentando cargar productos...');
+        
+        // Mostrar un indicador de carga en la tabla
+        productsTableBody.innerHTML = `
+            <tr>
+                <td colspan="9" class="text-center">
+                    <i class="fas fa-spinner fa-spin"></i> Cargando productos...
+                </td>
+            </tr>
+        `;
+        
+        fetchWithTimeout('/api/productos')
+            .then(response => {
+                console.log('Respuesta de productos:', response.status, response.statusText);
+                if (!response.ok) {
+                    throw new Error(`Error al cargar productos: ${response.status} ${response.statusText}`);
+                }
+                return response.text(); // Primero obtener como texto para verificar
+            })
+            .then(text => {
+                console.log('Texto recibido de la API de productos:', text.substring(0, 100) + '...');
+                
+                try {
+                    // Limpiar el texto en caso de tener caracteres no válidos
+                    let cleanText = text;
+                    
+                    // Si el texto contiene caracteres de control, los eliminamos
+                    const jsonStartPos = text.indexOf('[');
+                    const jsonEndPos = text.lastIndexOf(']') + 1;
+                    
+                    if (jsonStartPos >= 0 && jsonEndPos > jsonStartPos) {
+                        cleanText = text.substring(jsonStartPos, jsonEndPos);
+                        console.log('Extrayendo JSON de productos:', cleanText.substring(0, 50) + '...');
+                    }
+                    
+                    // Intentar parsear el JSON limpio
+                    const data = JSON.parse(cleanText);
+                    console.log('Productos cargados:', data);
+                    
+                    // Si no hay datos, mostrar mensaje específico
+                    if (!data || data.length === 0) {
+                        console.log('No se encontraron productos en la base de datos');
+                        showToast('Información', 'No se encontraron productos en la base de datos', 'error');
+                        loadProductsData([]);
+                        return;
+                    }
+                    
+                    productsData = data.map(item => {
+                        console.log('Procesando producto:', item.nombre);
+                        console.log('Variantes en este producto:', item.variantes ? item.variantes.length : 0);
+                        if (item.variantes) {
+                            item.variantes.forEach((v, i) => console.log(`  Variante ${i+1}:`, v.color, v.talla, v.id));
+                        }
+                        
+                        return {
+                            id: item.id,
+                            code: item.codigo || '',
+                            name: item.nombre || '',
+                            category: item.categoria ? item.categoria.nombre : '',
+                            categoryId: item.categoria ? item.categoria.id : null,
+                            description: item.descripcion || '',
+                            price: item.precio || 0,
+                            cost: item.costo || 0,
+                            variants: item.variantes ? item.variantes.length : 0,
+                            status: item.estado === 'ACTIVO' ? 'active' : 'inactive'
+                        };
+                    });
+                    loadProductsData(productsData);
+                } catch (err) {
+                    console.error('Error al parsear JSON de productos:', err);
+                    console.error('Texto que causó el error:', text);
+                    showToast('Error', `Error al procesar los productos: ${err.message}. Usando datos de ejemplo.`, 'error');
+                    
+                    // Crear datos de ejemplo si hay error
+                    productsData = [{
+                        id: 1,
+                        code: "CAM-001",
+                        name: "Camiseta Slim Fit",
+                        category: "Camisetas",
+                        description: "Camiseta de algodón con corte slim fit",
+                        price: 79.9,
+                        cost: 39.95,
+                        variants: 4,
+                        status: "active"
+                    },
+                    {
+                        id: 2,
+                        code: "VES-001",
+                        name: "Vestido Casual",
+                        category: "Vestidos",
+                        description: "Vestido casual para uso diario",
+                        price: 129.9,
+                        cost: 64.95,
+                        variants: 3,
+                        status: "active"
+                    }];
+                    
+                    loadProductsData(productsData);
+                }
+            })
+            .catch(error => {
+                console.error('Error al cargar productos:', error);
+                showToast('Error', `No se pudieron cargar los productos: ${error.message}. Por favor intente de nuevo o contacte al administrador.`, 'error');
+                
+                // Crear datos de ejemplo temporal para poder seguir trabajando
+                productsData = [{
+                    id: -1,  // ID negativo para indicar que es un dato temporal
+                    code: "TEMP-001",
+                    name: "Producto Temporal",
+                    category: "Categoría Temporal",
+                    description: "Este es un producto de muestra debido a un error de conexión con la API",
+                    price: 0,
+                    cost: 0,
+                    variants: 0,
+                    status: "active"
+                }];
+                
+                loadProductsData(productsData);
+            });
     }
 
     // Función para mostrar toast
@@ -187,15 +409,20 @@ document.addEventListener('DOMContentLoaded', function() {
             const statusBadgeClass = item.status === 'active' ? 'status-active' : 'status-inactive';
             const statusText = item.status === 'active' ? 'Activo' : 'Inactivo';
 
+            // Asegurar que price y cost sean números válidos
+            const price = parseFloat(item.price) || 0;
+            const cost = parseFloat(item.cost) || 0;
+            const variants = parseInt(item.variants) || 0;
+
             // Crear el contenido de la fila
-            row.innerHTML = `
-                <td>${item.code}</td>
-                <td>${item.name}</td>
-                <td>${item.category}</td>
-                <td class="description-cell">${item.description}</td>
-                <td>S/. ${item.price.toFixed(2)}</td>
-                <td>S/. ${item.cost.toFixed(2)}</td>
-                <td>${item.variants}</td>
+            const rowHTML = `
+                <td>${item.code || ''}</td>
+                <td>${item.name || ''}</td>
+                <td>${item.category || ''}</td>
+                <td class="description-cell">${item.description || ''}</td>
+                <td>S/. ${price.toFixed(2)}</td>
+                <td>S/. ${cost.toFixed(2)}</td>
+                <td>${variants}</td>
                 <td><span class="status-badge ${statusBadgeClass}">${statusText}</span></td>
                 <td class="text-right">
                     <div class="dropdown">
@@ -216,7 +443,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </td>
             `;
-
+            
+            // Imprimir en la consola para depuración
+            console.log(`HTML para fila del producto ${item.id}:`, rowHTML);
+            
+            row.innerHTML = rowHTML;
             productsTableBody.appendChild(row);
 
             // Agregar event listeners para las acciones
@@ -245,11 +476,36 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             const deleteButton = dropdown.querySelector('.delete-product');
-            deleteButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                const productId = parseInt(this.dataset.id);
-                deleteProduct(productId);
-            });
+            if (deleteButton) {
+                deleteButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Obtener el ID desde el data attribute
+                    const productId = parseInt(this.getAttribute('data-id'));
+                    console.log(`Click en botón eliminar para producto ID: ${productId}`);
+                    
+                    // Validar que el ID sea un número válido
+                    if (isNaN(productId)) {
+                        console.error("ID de producto inválido:", this.getAttribute('data-id'));
+                        // Mostrar mensaje de error
+                        const errorToast = document.getElementById('errorToast');
+                        if (errorToast) {
+                            errorToast.querySelector('.toast-message').textContent = 'ID de producto inválido';
+                            errorToast.classList.remove('hidden');
+                            setTimeout(() => errorToast.classList.add('hidden'), 5000);
+                        } else {
+                            showToast('Error', 'ID de producto inválido', 'error');
+                        }
+                        return;
+                    }
+                    
+                    // Llamar a la función para eliminar el producto
+                    deleteProduct(productId);
+                });
+            } else {
+                console.error('No se encontró el botón de eliminar para el producto:', item.id);
+            }
         });
     }
 
@@ -303,33 +559,118 @@ document.addEventListener('DOMContentLoaded', function() {
         variantsContainer.innerHTML = '';
 
         if (isEdit && productId) {
-            // Modo edición
-            selectedProduct = productsData.find(item => item.id === productId);
-
-            if (!selectedProduct) {
-                showToast('Error', 'Producto no encontrado', 'error');
-                return;
-            }
+            // Modo edición - Obtener el producto del servidor
+            fetch(`/api/productos/${productId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error al obtener el producto');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Asegurarnos de tener valores por defecto para campos obligatorios
+                    selectedProduct = {
+                        id: data.id,
+                        code: data.codigo || '',
+                        name: data.nombre || 'Producto sin nombre',
+                        category: data.categoria ? data.categoria.nombre : '',
+                        categoryId: data.categoria ? data.categoria.id : null,
+                        description: data.descripcion || '',
+                        price: data.precio || 0,
+                        cost: data.costo || 0,
+                        variants: data.variantes ? data.variantes.length : 0,
+                        status: data.estado === 'ACTIVO' ? 'active' : 'inactive'
+                    };
 
             productModalTitle.textContent = 'Editar Producto';
 
             // Llenar el formulario con los datos del producto
             productCode.value = selectedProduct.code;
             productName.value = selectedProduct.name;
+                    
+                    // Asegurarnos de que la categoría exista en el select
+                    const categoryExists = Array.from(productCategory.options).some(option => option.value === selectedProduct.category);
+                    if (selectedProduct.category && categoryExists) {
+                        productCategory.value = selectedProduct.category;
+                    } else if (selectedProduct.category) {
+                        // Si la categoría no existe en el select, añadirla
+                        const option = document.createElement('option');
+                        option.value = selectedProduct.category;
+                        option.textContent = selectedProduct.category;
+                        productCategory.appendChild(option);
             productCategory.value = selectedProduct.category;
+                    }
+                    
             productStatus.value = selectedProduct.status;
             productDescription.value = selectedProduct.description;
             productPrice.value = selectedProduct.price;
             productCost.value = selectedProduct.cost;
 
-            // Simular variantes para el ejemplo
-            for (let i = 0; i < selectedProduct.variants; i++) {
-                addVariant({
-                    color: i % 2 === 0 ? 'Negro' : 'Blanco',
-                    size: ['S', 'M', 'L', 'XL'][i % 4],
-                    stock: Math.floor(Math.random() * 20) + 1
+                    // Cargar variantes si existen
+                    if (data.variantes && data.variantes.length > 0) {
+                        console.log('Variantes encontradas:', data.variantes.length);
+                        variantsContainer.innerHTML = ''; // Limpiar contenedor de variantes
+                        data.variantes.forEach(variante => {
+                            console.log('Cargando variante:', variante);
+                            
+                            // Buscar el stock en el inventario si existe
+                            let stockActual = 0;
+                            
+                            // Por defecto, intentamos obtener el stock de alguna manera
+                            try {
+                                // Buscar en los movimientos si existen
+                                if (variante.movimientos && variante.movimientos.length > 0) {
+                                    console.log('Movimientos encontrados:', variante.movimientos.length);
+                                    // Suponemos que el primer movimiento contiene el stock actual
+                                    stockActual = variante.movimientos[0].cantidad || 0;
+                                }
+                            } catch (err) {
+                                console.warn('No se pudo determinar el stock para la variante:', err);
+                            }
+                            
+                            console.log(`Variante ID ${variante.id}: Stock actual = ${stockActual}`);
+                            
+                            addVariant({
+                                id: variante.id, // Guardar el ID para actualizar la variante
+                                color: variante.color || '',
+                                size: variante.talla || '',
+                                stock: stockActual
+                            });
+                        });
+                    } else {
+                        console.log('No se encontraron variantes para el producto');
+                        variantsContainer.innerHTML = ''; // Limpiar contenedor de variantes
+                        addVariant(); // Añadir variante vacía como predeterminado
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Error', 'No se pudo cargar el producto. Usando un producto por defecto.', 'error');
+                    
+                    // Crear un producto por defecto para editar
+                    selectedProduct = {
+                        id: productId,
+                        code: 'ERROR-' + productId,
+                        name: 'Producto con error',
+                        category: '',
+                        description: 'Este producto no pudo ser cargado correctamente',
+                        price: 0,
+                        cost: 0,
+                        variants: 1,
+                        status: 'inactive'
+                    };
+                    
+                    productModalTitle.textContent = 'Editar Producto (Datos por defecto)';
+                    productCode.value = selectedProduct.code;
+                    productName.value = selectedProduct.name;
+                    productDescription.value = selectedProduct.description;
+                    productPrice.value = selectedProduct.price;
+                    productCost.value = selectedProduct.cost;
+                    productStatus.value = selectedProduct.status;
+                    
+                    // Añadir variante vacía
+                    addVariant();
                 });
-            }
         } else {
             // Modo creación
             selectedProduct = null;
@@ -344,33 +685,79 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Añadir variante al formulario
-    function addVariant(data = { color: '', size: '', stock: 1 }) {
+    function addVariant(data = { color: '', size: '', stock: 0 }) {
         const variantItem = document.createElement('div');
         variantItem.className = 'variant-item';
+        
+        // Si hay un ID de variante existente, agregarlo como un campo oculto
+        const varianteIdHtml = data.id ? `<input type="hidden" class="variant-id" value="${data.id}">` : '';
+        // Añadir un campo oculto para el stock
+        const stockHtml = `<input type="hidden" class="variant-stock-value" value="${data.stock || 0}">`;
+        
+        // Añadir una clase para identificar si es una variante existente o nueva
+        const variantTypeClass = data.id ? 'existing-variant' : 'new-variant';
+        variantItem.classList.add(variantTypeClass);
 
         variantItem.innerHTML = `
+            ${varianteIdHtml}
+            ${stockHtml}
             <div class="variant-color">
-                <input type="text" class="form-control" placeholder="Color" value="${data.color}">
+                <input type="text" class="form-control" placeholder="Color" value="${data.color || ''}">
             </div>
             <div class="variant-size">
-                <input type="text" class="form-control" placeholder="Talla" value="${data.size}">
-            </div>
-            <div class="variant-stock">
-                <input type="number" class="form-control" placeholder="Stock" min="0" value="${data.stock}">
+                <input type="text" class="form-control" placeholder="Talla" value="${data.size || ''}">
             </div>
             <div class="variant-actions">
-                <button type="button" class="remove-variant">
+                <button type="button" class="remove-variant" title="Quitar variante de la lista">
                     <i class="fas fa-times"></i>
                 </button>
+                ${data.id ? `<button type="button" class="delete-variant" title="Eliminar variante permanentemente">
+                    <i class="fas fa-trash"></i>
+                </button>` : ''}
             </div>
         `;
 
-        // Agregar event listener para eliminar variante
+        // Agregar event listener para eliminar variante de la lista
         variantItem.querySelector('.remove-variant').addEventListener('click', function() {
             variantItem.remove();
         });
+        
+        // Agregar event listener para eliminar variante permanentemente (solo si tiene ID)
+        if (data.id) {
+            variantItem.querySelector('.delete-variant').addEventListener('click', function() {
+                if (confirm(`¿Está seguro de que desea eliminar esta variante (${data.color} - ${data.size})?`)) {
+                    deleteVariant(data.id, variantItem);
+                }
+            });
+        }
 
         variantsContainer.appendChild(variantItem);
+    }
+    
+    // Eliminar una variante permanentemente
+    function deleteVariant(varianteId, variantElement) {
+        // Mostrar un mensaje de "eliminando..." en el toast
+        showToast('Procesando', 'Eliminando variante...', 'success');
+        
+        fetch(`/api/productos/variante/${varianteId}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            console.log(`Respuesta del servidor para eliminación de variante:`, response.status, response.statusText);
+            
+            if (!response.ok) {
+                throw new Error(`Error al eliminar la variante: ${response.status} ${response.statusText}`);
+            }
+            
+            // Eliminar la variante de la UI
+            variantElement.remove();
+            
+            showToast('Variante eliminada', 'La variante ha sido eliminada correctamente', 'success');
+        })
+        .catch(error => {
+            console.error('Error al eliminar variante:', error);
+            showToast('Error', `No se pudo eliminar la variante: ${error.message}`, 'error');
+        });
     }
 
     // Event listener para añadir variante
@@ -411,85 +798,206 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Crear objeto de producto
-        const productData = {
-            code: productCode.value,
-            name: productName.value,
-            category: productCategory.value,
-            description: productDescription.value,
-            price: parseFloat(productPrice.value),
-            cost: parseFloat(productCost.value),
-            variants: variantItems.length,
-            status: productStatus.value
+        // Recopilar datos de variantes
+        const variantesData = Array.from(variantItems).map(item => {
+            const color = item.querySelector('.variant-color input').value.trim();
+            const talla = item.querySelector('.variant-size input').value.trim();
+            const stock = parseInt(item.querySelector('.variant-stock-value').value) || 0;
+            // Buscar un ID de variante si existe
+            const varianteIdInput = item.querySelector('.variant-id');
+            const id = varianteIdInput ? parseInt(varianteIdInput.value) || null : null;
+            
+            if (!color || !talla) {
+                showToast('Error', 'Todas las variantes deben tener color y talla', 'error');
+                return null;
+            }
+            
+            const variante = {
+                color: color,
+                talla: talla
+            };
+            
+            // Agregar id solo si existe
+            if (id) {
+                variante.id = id;
+            }
+            
+            // Establecer un stock inicial fijo de 20 unidades para nuevas variantes,
+            // mantener el stock existente para variantes existentes
+            const initialStock = !id ? 20 : stock;
+            
+            // Agregar los datos de movimiento para manejar el stock
+            variante.movimientos = [{
+                cantidad: initialStock,
+                tipo: "ENTRADA",
+                motivo: "REPOSICION",
+                motivoDetalle: "Stock inicial"
+            }];
+            
+            return variante;
+        }).filter(item => item !== null);
+        
+        // Verificar si hay alguna variante inválida
+        if (variantesData.length === 0) {
+            showToast('Error', 'Debe proporcionar información válida para al menos una variante', 'error');
+            return;
+        }
+
+        console.log('Variantes a enviar:', variantesData);
+
+        // Buscar la categoría por nombre
+        const selectedCategoryName = productCategory.value;
+        let selectedCategory = categoriesData.find(cat => cat.nombre === selectedCategoryName);
+        
+        // Si no se encuentra la categoría, crear una por defecto
+        if (!selectedCategory) {
+            selectedCategory = {
+                id: null,  // El servidor asignará un ID
+                nombre: selectedCategoryName
+            };
+        }
+
+        // Crear objeto de producto para enviar al servidor
+        const productApiData = {
+            codigo: productCode.value.trim(),
+            nombre: productName.value.trim(),
+            categoria: selectedCategory,
+            descripcion: productDescription.value.trim(),
+            precio: parseFloat(productPrice.value),
+            costo: parseFloat(productCost.value),
+            estado: productStatus.value === 'active' ? 'ACTIVO' : 'INACTIVO',
+            variantes: variantesData
         };
+
+        console.log('Datos del producto a enviar:', productApiData);
+
+        let url = '/api/productos';
+        let method = 'POST';
 
         if (editMode && selectedProduct) {
             // Actualizar producto existente
-            const productIndex = productsData.findIndex(item => item.id === selectedProduct.id);
-
-            if (productIndex !== -1) {
-                productsData[productIndex] = {
-                    ...productsData[productIndex],
-                    ...productData
-                };
-
-                showToast('Producto actualizado', `El producto ${productData.name} ha sido actualizado correctamente`);
-            }
-        } else {
-            // Crear nuevo producto
-            const newProduct = {
-                id: productsData.length + 1,
-                ...productData
-            };
-
-            productsData.push(newProduct);
-            showToast('Producto creado', `El producto ${productData.name} ha sido creado correctamente`);
+            url = `/api/productos/${selectedProduct.id}`;
+            method = 'PUT';
+            productApiData.id = selectedProduct.id;
         }
 
-        // Recargar la tabla y cerrar el modal
-        loadProductsData(productsData);
-        closeProductModal();
+        // Mostrar indicador de carga
+        saveProductButton.disabled = true;
+        saveProductButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+        // Enviar datos al servidor
+        fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(productApiData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(editMode ? 'Error al actualizar producto' : 'Error al crear producto');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Respuesta del servidor:', data);
+                
+                // Mostrar confirmación
+                showToast(
+                    editMode ? 'Producto actualizado' : 'Producto creado',
+                    `El producto ${productName.value} ha sido ${editMode ? 'actualizado' : 'creado'} correctamente`
+                );
+
+                // Recargar la lista de productos
+                fetchProducts();
+                
+                // Cerrar el modal
+                closeProductModal();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error', error.message, 'error');
+            })
+            .finally(() => {
+                // Restaurar el botón
+                saveProductButton.disabled = false;
+                saveProductButton.innerHTML = 'Guardar';
+            });
     });
 
     // Cambiar estado del producto
     function toggleProductStatus(productId, currentStatus) {
-        const productIndex = productsData.findIndex(item => item.id === productId);
-
-        if (productIndex === -1) {
-            showToast('Error', 'Producto no encontrado', 'error');
-            return;
-        }
-
-        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-        productsData[productIndex].status = newStatus;
-
-        const statusText = newStatus === 'active' ? 'activado' : 'desactivado';
+        const newStatus = currentStatus === 'active' ? 'INACTIVO' : 'ACTIVO';
+        
+        fetch(`/api/productos/${productId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                estado: newStatus
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error al cambiar el estado del producto');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const statusText = newStatus === 'ACTIVO' ? 'activado' : 'desactivado';
         showToast('Estado actualizado', `El producto ha sido ${statusText} correctamente`);
 
-        // Recargar la tabla
-        loadProductsData(productsData);
+            // Recargar la lista de productos
+            fetchProducts();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Error', error.message, 'error');
+        });
     }
 
     // Eliminar producto
     function deleteProduct(productId) {
-        if (confirm('¿Está seguro de que desea eliminar este producto?')) {
-            const productIndex = productsData.findIndex(item => item.id === productId);
-
-            if (productIndex === -1) {
-                showToast('Error', 'Producto no encontrado', 'error');
-                return;
-            }
-
-            const productName = productsData[productIndex].name;
-            productsData.splice(productIndex, 1);
-
-            showToast('Producto eliminado', `El producto ${productName} ha sido eliminado correctamente`);
-
-            // Recargar la tabla
-            loadProductsData(productsData);
+        console.log(`Intentando eliminar producto con ID: ${productId}`);
+        
+        // Validar que el ID sea válido
+        if (!productId || isNaN(productId)) {
+            console.error('ID de producto inválido:', productId);
+            showToast('Error', 'ID de producto inválido', 'error');
+            return;
+        }
+        
+        if (confirm(`¿Está seguro de que desea eliminar el producto con ID ${productId}?`)) {
+            console.log(`Confirmación recibida para eliminar producto con ID: ${productId}`);
+            
+            // Mostrar un mensaje de "eliminando..." en el toast
+            showToast('Procesando', 'Eliminando producto...', 'success');
+            
+            fetch(`/api/productos/${productId}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                console.log(`Respuesta del servidor para eliminación:`, response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error(`Error al eliminar el producto: ${response.status} ${response.statusText}`);
+                }
+                
+                showToast('Producto eliminado', 'El producto ha sido eliminado correctamente', 'success');
+                
+                // Recargar la lista de productos
+                fetchProducts();
+            })
+            .catch(error => {
+                console.error('Error al eliminar producto:', error);
+                showToast('Error', `No se pudo eliminar el producto: ${error.message}`, 'error');
+            });
+        } else {
+            console.log('Eliminación cancelada por el usuario');
         }
     }
 
     // Inicializar la interfaz
-    loadProductsData(productsData);
+    checkApiHealth();
 });

@@ -331,27 +331,62 @@
 
 /* Recent Sales */
 
+.recent-sales-container {
+    height: 350px;
+    overflow: hidden;
+    position: relative;
+}
+
 .recent-sales {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1rem;
+    height: 100%;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.recent-sales::-webkit-scrollbar {
+    width: 6px;
+}
+
+.recent-sales::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.recent-sales::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+
+.recent-sales::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
 }
 
 .sale-item {
     display: flex;
     align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.sale-item:last-child {
+    border-bottom: none;
 }
 
 .sale-avatar {
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: 9999px;
-    background-color: var(--muted);
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background-color: var(--primary);
+    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 500;
+    font-weight: 600;
     margin-right: 1rem;
+    flex-shrink: 0;
 }
 
 .sale-details {
@@ -360,22 +395,103 @@
 }
 
 .sale-name {
-    font-size: 0.875rem;
     font-weight: 500;
-    margin-bottom: 0.25rem;
+    margin: 0;
 }
 
 .sale-product {
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     color: var(--muted-foreground);
+    margin: 0.25rem 0 0 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .sale-amount {
-    font-weight: 500;
-    margin-left: auto;
+    font-weight: 600;
+    color: var(--primary);
+    margin-left: 1rem;
+    flex-shrink: 0;
+}
+
+
+/* Estilos para el mensaje "Ver más ventas" */
+
+.more-sales {
+    display: flex;
+    justify-content: center;
+    padding: 0.75rem 0;
+    background-color: var(--muted);
+    border-radius: var(--radius);
+    margin-top: 0.5rem;
+}
+
+.more-sales-text {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+}
+
+.more-sales-text i {
+    font-size: 1rem;
+}
+
+
+/* Estilos para el botón de actualización y última actualización */
+
+.refresh-button {
+    background: none;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--muted-foreground);
+    transition: all 0.3s ease;
+}
+
+.refresh-button:hover {
+    background-color: var(--muted);
+    color: var(--foreground);
+}
+
+.refresh-button.refreshing i {
+    animation: spin 1s linear infinite;
+}
+
+.last-update-info {
+    text-align: center;
+    padding: 0.5rem 0;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    border-top: 1px dashed var(--border);
+}
+
+.last-update-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.last-update-text i {
+    font-size: 0.75rem;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 
@@ -512,4 +628,69 @@
     font-size: 0.9rem;
     font-weight: 500;
     color: #333;
+}
+
+
+/* Mensaje para cuando no hay datos */
+
+.no-data-message {
+    padding: 20px;
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+}
+
+
+/* Estilos para el indicador de carga */
+
+.loading-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: var(--muted-foreground);
+    gap: 0.5rem;
+}
+
+.loading-indicator i {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+
+/* Estilos para mensajes de error */
+
+.error-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem;
+    color: var(--destructive);
+    text-align: center;
+    gap: 0.5rem;
+}
+
+.error-message i {
+    font-size: 1.5rem;
+}
+
+
+/* Estilos para cuando no hay datos */
+
+.no-data {
+    padding: 2rem;
+    text-align: center;
+    color: var(--muted-foreground);
+    font-style: italic;
+}
+
+
+/* Estilos para productos adicionales en ventas */
+
+.sale-additional {
+    font-size: 0.7rem;
+    color: var(--muted-foreground);
+    margin-top: 0.25rem;
+    font-style: italic;
 }

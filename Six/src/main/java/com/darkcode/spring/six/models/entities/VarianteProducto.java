@@ -17,6 +17,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "variantes_producto")
@@ -31,6 +33,7 @@ public class VarianteProducto {
     
     @ManyToOne
     @JoinColumn(name = "producto_id", nullable = false)
+    @JsonBackReference
     private Producto producto;
     
     @Column(nullable = false)
@@ -46,6 +49,7 @@ public class VarianteProducto {
     private String imagenUrl;
     
     @OneToMany(mappedBy = "variante")
+    @JsonIgnore
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     private Set<MovimientoStock> movimientos = new HashSet<>();

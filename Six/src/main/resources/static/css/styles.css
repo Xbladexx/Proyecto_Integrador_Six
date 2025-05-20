@@ -134,12 +134,12 @@ input:focus {
 }
 
 .btn-primary {
-    background-color: var(--primary);
-    color: var(--primary-foreground);
+    background-color: #111827;
+    color: white;
 }
 
 .btn-primary:hover {
-    background-color: rgba(0, 0, 0, 0.8);
+    background-color: #1f2937;
 }
 
 .btn-block {
@@ -347,4 +347,27 @@ input:focus {
     .mobile-logo {
         display: none;
     }
+}
+
+/* Button group for multiple buttons in a row */
+.button-group {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+}
+
+.form-info {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+}
+
+.btn-secondary {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.btn-secondary:hover {
+    background-color: #e5e7eb;
 }

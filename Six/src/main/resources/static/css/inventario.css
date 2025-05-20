@@ -408,26 +408,26 @@ select.form-control:disabled {
 
 .btn-primary {
     color: #fff;
-    background-color: #007bff;
-    border-color: #007bff;
+    background-color: #111827;
+    border-color: #111827;
 }
 
 .btn-primary:hover {
     color: #fff;
-    background-color: #0069d9;
-    border-color: #0062cc;
+    background-color: #1f2937;
+    border-color: #1f2937;
 }
 
 .btn-secondary {
-    color: #fff;
-    background-color: #6c757d;
-    border-color: #6c757d;
+    color: #374151;
+    background-color: #f3f4f6;
+    border-color: #d1d5db;
 }
 
 .btn-secondary:hover {
-    color: #fff;
-    background-color: #5a6268;
-    border-color: #545b62;
+    color: #374151;
+    background-color: #e5e7eb;
+    border-color: #d1d5db;
 }
 
 .toast {

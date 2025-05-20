@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.darkcode.spring.six.dtos.InventarioDTO;
@@ -94,5 +95,111 @@ public class InventarioController {
         inventario.setStock(cantidad);
         Inventario inventarioActualizado = inventarioRepository.save(inventario);
         return ResponseEntity.ok(inventarioActualizado);
+    }
+    
+    // Endpoints para gestionar el stock desde la interfaz
+    @PostMapping("/variante/{varianteId}/aumentar")
+    public ResponseEntity<?> aumentarStock(
+            @PathVariable Long varianteId,
+            @RequestParam Integer cantidad,
+            @RequestParam(required = false) String motivo,
+            @RequestParam(required = false, defaultValue = "1") Long usuarioId) {
+        
+        log.info("Solicitud para aumentar stock de variante ID: {} en {} unidades", varianteId, cantidad);
+        
+        try {
+            Inventario inventarioActualizado = inventarioService.aumentarStock(
+                    varianteId, cantidad, usuarioId, motivo, "Ajuste desde interfaz de usuario");
+            
+            return ResponseEntity.ok(inventarioActualizado);
+        } catch (Exception e) {
+            log.error("Error al aumentar stock", e);
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    
+    @PostMapping("/variante/{varianteId}/disminuir")
+    public ResponseEntity<?> disminuirStock(
+            @PathVariable Long varianteId,
+            @RequestParam Integer cantidad,
+            @RequestParam(required = false) String motivo,
+            @RequestParam(required = false, defaultValue = "1") Long usuarioId) {
+        
+        log.info("Solicitud para disminuir stock de variante ID: {} en {} unidades", varianteId, cantidad);
+        
+        try {
+            Inventario inventarioActualizado = inventarioService.disminuirStock(
+                    varianteId, cantidad, usuarioId, motivo, "Ajuste desde interfaz de usuario");
+            
+            return ResponseEntity.ok(inventarioActualizado);
+        } catch (Exception e) {
+            log.error("Error al disminuir stock", e);
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    
+    // Endpoints para gestionar el stock desde el inventario
+    @PostMapping("/{inventarioId}/aumentar")
+    public ResponseEntity<?> aumentarStockPorInventario(
+            @PathVariable Long inventarioId,
+            @RequestParam Integer cantidad,
+            @RequestParam(required = false) String motivo,
+            @RequestParam(required = false, defaultValue = "1") Long usuarioId) {
+        
+        log.info("Solicitud para aumentar stock de inventario ID: {} en {} unidades", inventarioId, cantidad);
+        
+        try {
+            Optional<Inventario> inventarioOpt = inventarioRepository.findById(inventarioId);
+            if (inventarioOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(com.darkcode.spring.six.dtos.RespuestaDTO.error("Inventario no encontrado"));
+            }
+            
+            Inventario inventario = inventarioOpt.get();
+            Long varianteId = inventario.getVariante().getId();
+            
+            Inventario inventarioActualizado = inventarioService.aumentarStock(
+                    varianteId, cantidad, usuarioId, motivo, "Ajuste desde interfaz de usuario");
+            
+            return ResponseEntity.ok(com.darkcode.spring.six.dtos.RespuestaDTO.exito(
+                    "Stock aumentado correctamente", 
+                    inventarioActualizado));
+        } catch (Exception e) {
+            log.error("Error al aumentar stock", e);
+            return ResponseEntity.badRequest()
+                    .body(com.darkcode.spring.six.dtos.RespuestaDTO.error(e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/{inventarioId}/disminuir")
+    public ResponseEntity<?> disminuirStockPorInventario(
+            @PathVariable Long inventarioId,
+            @RequestParam Integer cantidad,
+            @RequestParam(required = false) String motivo,
+            @RequestParam(required = false, defaultValue = "1") Long usuarioId) {
+        
+        log.info("Solicitud para disminuir stock de inventario ID: {} en {} unidades", inventarioId, cantidad);
+        
+        try {
+            Optional<Inventario> inventarioOpt = inventarioRepository.findById(inventarioId);
+            if (inventarioOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(com.darkcode.spring.six.dtos.RespuestaDTO.error("Inventario no encontrado"));
+            }
+            
+            Inventario inventario = inventarioOpt.get();
+            Long varianteId = inventario.getVariante().getId();
+            
+            Inventario inventarioActualizado = inventarioService.disminuirStock(
+                    varianteId, cantidad, usuarioId, motivo, "Ajuste desde interfaz de usuario");
+            
+            return ResponseEntity.ok(com.darkcode.spring.six.dtos.RespuestaDTO.exito(
+                    "Stock reducido correctamente", 
+                    inventarioActualizado));
+        } catch (Exception e) {
+            log.error("Error al disminuir stock", e);
+            return ResponseEntity.badRequest()
+                    .body(com.darkcode.spring.six.dtos.RespuestaDTO.error(e.getMessage()));
+        }
     }
 } 

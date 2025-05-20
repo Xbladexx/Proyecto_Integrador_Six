@@ -60,6 +60,7 @@ public class InventarioService {
         
         InventarioDTO dto = new InventarioDTO();
         dto.setId(inventario.getId());
+        dto.setVarianteId(variante.getId());
         dto.setSku(variante.getSku());
         dto.setNombreProducto(variante.getProducto().getNombre());
         dto.setNombreCategoria(variante.getProducto().getCategoria().getNombre());

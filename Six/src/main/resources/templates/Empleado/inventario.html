@@ -58,29 +58,16 @@
             margin-top: 0.25rem;
         }
         .card-content {
-            padding: 1rem 1rem 0 1rem;
+            padding: 0;
         }
-        .table-container {
-            overflow-x: auto;
-            margin-top: 8px;
-        }
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .data-table th, .data-table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #dee2e6;
-        }
-        .data-table th {
-            background-color: #f8f9fa;
-            font-weight: 500;
-            text-align: left;
+        .inventory-controls {
+            margin: 0;
+            padding: 16px 16px 0 16px;
         }
         /* Nuevos estilos para ajustar la búsqueda y la tabla */
         .search-container {
             position: relative;
-            margin-bottom: 8px;
+            margin: 0;
         }
         .search-icon {
             position: absolute;
@@ -109,6 +96,23 @@
         /* Estilos para los encabezados de la tabla */
         th.stock-column {
             text-align: center;
+        }
+        .table-container {
+            overflow-x: auto;
+            margin: 0;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: 500;
+            text-align: left;
         }
     </style>
 </head>
@@ -171,9 +175,9 @@
 
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title" style="font-size: 1.5rem; font-weight: 600; color: #333;">Inventario Actual</div>
-                        <div class="card-description" id="inventoryDescription">
-                            Consulta el stock de productos, tallas y colores
+                        <div class="card-title">Inventario Actual</div>
+                        <div class="card-description">
+                            Administra el stock de productos, tallas y colores
                         </div>
                     </div>
                     <div class="card-content">

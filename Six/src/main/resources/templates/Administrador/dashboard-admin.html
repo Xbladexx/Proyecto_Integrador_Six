@@ -64,195 +64,119 @@
         <!-- Main content -->
         <main class="main-content">
             <header class="header">
-                <button class="mobile-menu-button">
-                    <i class="fas fa-bars"></i>
-                </button>
+                <div class="header-left">
+                    <button class="mobile-menu-button">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="dashboard-title">Dashboard Administrador</h1>
+                </div>
                 <div class="header-actions">
                     <!-- Aquí puedes agregar acciones adicionales del header -->
                 </div>
             </header>
 
             <div class="content">
-                <div class="page-header">
-                    <h1>Dashboard Administrador</h1>
+                <!-- Card grid de resumen -->
+                <div class="card-grid">
+                    <div class="card dashboard-card">
+                        <div class="card-header">
+                            <div class="card-title">Productos Registrados</div>
+                            <i class="fas fa-box text-muted"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-value" th:text="${totalProductos}">8</div>
+                            <p class="card-description">Total de productos en el sistema</p>
+                        </div>
+                    </div>
+                    <div class="card dashboard-card">
+                        <div class="card-header">
+                            <div class="card-title">Productos Activos</div>
+                            <i class="fas fa-check-circle text-muted"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-value" th:text="${productosActivos}">7</div>
+                            <p class="card-description">Productos con estado ACTIVO</p>
+                        </div>
+                    </div>
+                    <div class="card dashboard-card">
+                        <div class="card-header">
+                            <div class="card-title">Productos con Bajo Stock</div>
+                            <i class="fas fa-exclamation-triangle text-muted"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-value" th:text="${productosBajoStock}">7</div>
+                            <p class="card-description">Requieren reposición inmediata</p>
+                        </div>
+                    </div>
+                    <div class="card dashboard-card">
+                        <div class="card-header">
+                            <div class="card-title">Rotación de Inventario</div>
+                            <i class="fas fa-chart-line text-muted"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-value" th:text="${tasaRotacion}">4.2</div>
+                            <p class="card-description">Índice de rotación trimestral</p>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="tabs">
-                    <button class="tab-button active" data-tab="overview">Resumen</button>
-                </div>
-
-                <div class="tab-content active" id="overview">
-                    <!-- Cards de resumen -->
-                    <div class="card-grid">
-                        <div class="card dashboard-card">
-                            <div class="card-header">
-                                <div class="card-title">Productos Registrados</div>
-                                <i class="fas fa-box text-muted"></i>
-                            </div>
-                            <div class="card-content">
-                                <div class="card-value" th:text="${totalProductos}">0</div>
-                                <p class="card-description">Total de productos en el sistema</p>
-                            </div>
+                <!-- Gráficos y tablas -->
+                <div class="chart-grid">
+                    <div class="card chart-card">
+                        <div class="card-header">
+                            <div class="card-title">Resumen de Ventas</div>
                         </div>
-                        <div class="card dashboard-card">
-                            <div class="card-header">
-                                <div class="card-title">Productos Activos</div>
-                                <i class="fas fa-check-circle text-muted"></i>
+                        <div class="card-content">
+                            <div class="chart-actions">
+                                <button class="chart-period-button active" data-period="daily">Diario</button>
+                                <button class="chart-period-button" data-period="monthly">Mensual</button>
+                                <button class="chart-period-button" data-period="yearly">Anual</button>
                             </div>
-                            <div class="card-content">
-                                <div class="card-value" th:text="${productosActivos}">0</div>
-                                <p class="card-description">Productos con estado ACTIVO</p>
-                            </div>
-                        </div>
-                        <div class="card dashboard-card">
-                            <div class="card-header">
-                                <div class="card-title">Productos con Bajo Stock</div>
-                                <i class="fas fa-exclamation-triangle text-muted"></i>
-                            </div>
-                            <div class="card-content">
-                                <div class="card-value" th:text="${productosBajoStock}">0</div>
-                                <p class="card-description">Requieren reposición inmediata</p>
-                            </div>
-                        </div>
-                        <div class="card dashboard-card">
-                            <div class="card-header">
-                                <div class="card-title">Rotación de Inventario</div>
-                                <i class="fas fa-chart-line text-muted"></i>
-                            </div>
-                            <div class="card-content">
-                                <div class="card-value" th:text="${tasaRotacion}">0</div>
-                                <p class="card-description">Índice de rotación trimestral</p>
+                            <div class="chart-container">
+                                <canvas id="salesChart"></canvas>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Gráficos y tablas -->
-                    <div class="chart-grid">
-                        <div class="card chart-card">
-                            <div class="card-header">
-                                <div class="card-title">Resumen de Ventas</div>
-                            </div>
-                            <div class="card-content">
-                                <div class="chart-actions">
-                                    <button class="chart-period-button active" data-period="daily">Diario</button>
-                                    <button class="chart-period-button" data-period="monthly">Mensual</button>
-                                    <button class="chart-period-button" data-period="yearly">Anual</button>
-                                </div>
-                                <div class="chart-container">
-                                    <canvas id="salesChart"></canvas>
-                                </div>
-                            </div>
+                    <div class="card chart-card">
+                        <div class="card-header">
+                            <div class="card-title">Ventas Recientes</div>
                         </div>
-                        <div class="card chart-card">
-                            <div class="card-header">
-                                <div class="card-title">Ventas Recientes</div>
-                            </div>
-                            <div class="card-content">
-                                <div class="recent-sales-container">
-                                    <div class="recent-sales" id="ventasRecientes">
-                                        <!-- Las ventas recientes se cargarán dinámicamente aquí -->
-                                        <div class="loading-indicator">
-                                            <i class="fas fa-spinner fa-spin"></i>
-                                            <span>Cargando ventas recientes...</span>
-                                        </div>
+                        <div class="card-content">
+                            <div class="recent-sales-container">
+                                <div class="recent-sales" id="ventasRecientes">
+                                    <!-- Las ventas recientes se cargarán dinámicamente aquí -->
+                                    <div class="loading-indicator">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        <span>Cargando ventas recientes...</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="chart-grid">
-                        <div class="card chart-card">
-                            <div class="card-header">
-                                <div class="card-title">Estado del Inventario</div>
-                                <div class="card-description">Distribución de productos por categoría</div>
-                            </div>
-                            <div class="card-content">
-                                <div class="chart-container">
-                                    <canvas id="inventoryChart"></canvas>
-                                </div>
+                <div class="chart-grid">
+                    <div class="card chart-card">
+                        <div class="card-header">
+                            <div class="card-title">Estado del Inventario</div>
+                            <div class="card-description">Distribución de productos por categoría</div>
+                        </div>
+                        <div class="card-content">
+                            <div class="chart-container">
+                                <canvas id="inventoryChart"></canvas>
                             </div>
                         </div>
-                        <div class="card chart-card">
-                            <div class="card-header">
-                                <div class="card-title">Alertas de Stock</div>
-                                <div class="card-description">Productos que requieren atención</div>
-                            </div>
-                            <div class="card-content">
+                    </div>
+                    <div class="card chart-card">
+                        <div class="card-header">
+                            <div class="card-title">Alertas de Stock</div>
+                            <div class="card-description">Productos que requieren atención</div>
+                        </div>
+                        <div class="card-content">
+                            <div class="stock-alerts-container">
                                 <div class="stock-alerts">
-                                    <div class="alert-item">
-                                        <div class="alert-icon">
-                                            <i class="fas fa-exclamation-triangle text-warning"></i>
-                                        </div>
-                                        <div class="alert-details">
-                                            <p class="alert-title">Camiseta Slim Fit - Talla M, Negro</p>
-                                            <div class="alert-badge critical">
-                                                <i class="fas fa-arrow-down"></i> Stock crítico: 3 unidades
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="alert-item">
-                                        <div class="alert-icon">
-                                            <i class="fas fa-exclamation-triangle text-warning"></i>
-                                        </div>
-                                        <div class="alert-details">
-                                            <p class="alert-title">Vestido Casual - Talla S, Azul</p>
-                                            <div class="alert-badge critical">
-                                                <i class="fas fa-arrow-down"></i> Stock crítico: 2 unidades
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="alert-item">
-                                        <div class="alert-icon">
-                                            <i class="fas fa-exclamation-triangle text-warning"></i>
-                                        </div>
-                                        <div class="alert-details">
-                                            <p class="alert-title">Pantalón Chino - Talla 32, Beige</p>
-                                            <div class="alert-badge warning">
-                                                <i class="fas fa-arrow-down"></i> Stock bajo: 5 unidades
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="alert-item">
-                                        <div class="alert-icon">
-                                            <i class="fas fa-exclamation-triangle text-warning"></i>
-                                        </div>
-                                        <div class="alert-details">
-                                            <p class="alert-title">Chaqueta Denim - Talla XL, Azul</p>
-                                            <div class="alert-badge warning">
-                                                <i class="fas fa-arrow-down"></i> Stock bajo: 4 unidades
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <!-- Las alertas se cargarán dinámicamente aquí -->
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tab-content" id="analytics">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">Análisis Avanzado</div>
-                            <div class="card-description">Visualización detallada de métricas y tendencias</div>
-                        </div>
-                        <div class="card-content">
-                            <div class="empty-state">
-                                <p>Contenido de análisis avanzado</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tab-content" id="reports">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">Reportes Personalizados</div>
-                            <div class="card-description">Genera y descarga reportes específicos</div>
-                        </div>
-                        <div class="card-content">
-                            <div class="empty-state">
-                                <p>Contenido de reportes personalizados</p>
                             </div>
                         </div>
                     </div>
@@ -404,6 +328,7 @@
             ventasHeader.appendChild(refreshButton);
         });
     </script>
+    <script th:src="@{/js/dashboard-admin.js}"></script>
 </body>
 
 </html>

@@ -13,22 +13,26 @@
 }
 
 .new-product-button {
-    display: inline-flex;
+    background-color: #000;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background-color: var(--primary, #0078dc);
-    color: white;
-    border: none;
-    border-radius: 0.375rem;
+    font-size: 0.875rem;
     font-weight: 500;
-    cursor: pointer;
     transition: background-color 0.2s;
-    white-space: nowrap;
 }
 
 .new-product-button:hover {
-    background-color: var(--primary-dark, #0064bd);
+    background-color: #333;
+}
+
+.new-product-button i {
+    font-size: 0.875rem;
 }
 
 .products-controls {
@@ -295,7 +299,8 @@
     justify-content: flex-end;
 }
 
-.remove-variant, .delete-variant {
+.remove-variant,
+.delete-variant {
     background: none;
     border: none;
     cursor: pointer;
@@ -362,7 +367,8 @@
     background-color: #e5e7eb;
 }
 
-.delete-variant i, .remove-variant i {
+.delete-variant i,
+.remove-variant i {
     font-size: 0.9rem;
     line-height: 1;
 }
@@ -420,10 +426,42 @@
 .card-header-content {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    width: 100%;
+    align-items: flex-start;
 }
 
 .card-header-content>div {
     flex: 1;
+}
+
+.card-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.card-description {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+
+/* Estilos para los badges de estado */
+
+.badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.badge-success {
+    background-color: #d1ffd8;
+    color: #007814;
+}
+
+.badge-inactive {
+    background-color: #f3f4f6;
+    color: #6b7280;
 }

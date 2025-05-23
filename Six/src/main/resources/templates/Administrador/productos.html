@@ -63,32 +63,31 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <header class="dashboard-header">
-                <button class="mobile-menu-button">
-                    <i class="fas fa-bars"></i>
-                </button>
+            <header class="header">
+                <div class="header-left">
+                    <button class="mobile-menu-button">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="dashboard-title">Gestión de Productos</h1>
+                </div>
+                <div class="header-actions">
+                    <!-- Aquí puedes agregar acciones adicionales del header -->
+                </div>
             </header>
 
-            <div class="content-wrapper">
-                <div class="content-container">
-                <div class="page-header">
-                    <h1>Gestión de Productos</h1>
-                </div>
-
+            <div class="content">
                 <div class="card">
                     <div class="card-header">
-                            <div class="card-header-content">
-                                <div>
-                        <h2 class="card-title">Catálogo de Productos</h2>
-                        <p class="card-description">
-                            Administra los productos disponibles en tu tienda
-                        </p>
-                                </div>
-                                <button id="newProductButton" class="new-product-button">
-                                    <i class="fas fa-plus"></i>
-                                    Nuevo Producto
-                                </button>
+                        <div class="card-header-content">
+                            <div>
+                                <div class="card-title">Catálogo de Productos</div>
+                                <div class="card-description">Administra los productos disponibles en tu tienda</div>
                             </div>
+                            <button id="newProductButton" class="new-product-button">
+                                <i class="fas fa-plus"></i>
+                                Nuevo Producto
+                            </button>
+                        </div>
                     </div>
                     <div class="card-content">
                         <div class="products-controls">
@@ -114,10 +113,34 @@
                                     </tr>
                                 </thead>
                                 <tbody id="productsTableBody">
-                                    <!-- Los datos se cargarán dinámicamente -->
+                                    <tr th:each="producto : ${productos}">
+                                        <td th:text="${producto.codigo}">CAM-001</td>
+                                        <td th:text="${producto.nombre}">Camiseta Slim Fit</td>
+                                        <td th:text="${producto.categoria}">Camisetas</td>
+                                        <td th:text="${producto.descripcion}">Camiseta de algodón con corte slim</td>
+                                        <td th:text="${'S/. ' + producto.precio}">S/. 85.00</td>
+                                        <td th:text="${'S/. ' + producto.costo}">S/. 40.00</td>
+                                        <td th:text="${producto.variantes}">2</td>
+                                        <td>
+                                            <span th:class="${producto.estado == 'Activo' ? 'badge badge-success' : 'badge badge-inactive'}"
+                                                  th:text="${producto.estado}">Activo</span>
+                                        </td>
+                                        <td class="actions-cell">
+                                            <div class="actions-dropdown">
+                                                <button class="actions-toggle">...</button>
+                                                <div class="actions-menu">
+                                                    <a href="#" class="edit-product" th:data-id="${producto.id}">
+                                                        <i class="fas fa-edit"></i> Editar
+                                                    </a>
+                                                    <a href="#" class="delete-product" th:data-id="${producto.id}">
+                                                        <i class="fas fa-trash"></i> Eliminar
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
-                            </div>
                         </div>
                     </div>
                 </div>

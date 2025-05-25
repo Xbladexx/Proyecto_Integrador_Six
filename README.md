@@ -107,8 +107,3 @@ El archivo de la base de datos debe abrirse utilizando **MySQL Workbench**. La c
 
 El sistema está configurado para crear automáticamente la base de datos si no existe (`createDatabaseIfNotExist=true`).
 
-## Autores
-
-Desarrollado por Grupo 2
-- Jeremy Alexander Martinez Muñoz 
-- Claudio Stevenson Tafur Cortez

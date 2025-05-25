@@ -1,5 +1,13 @@
 /* Estilos para la página de reportes */
 
+body {
+    min-height: 100vh;
+    padding-bottom: 2rem;
+    padding-right: 1.5rem;
+    margin: 0;
+    overflow-x: hidden;
+}
+
 .page-header {
     display: flex;
     justify-content: space-between;
@@ -7,6 +15,21 @@
     margin-bottom: 1.5rem;
     flex-wrap: wrap;
     gap: 1rem;
+    padding-right: 1rem;
+    position: relative;
+}
+
+.page-header::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 100vw;
+    bottom: -1rem;
+    height: 1px;
+    background-color: #e5e7eb;
+    z-index: -1;
+    pointer-events: none;
+    right: 0;
 }
 
 .date-range-picker {
@@ -62,37 +85,50 @@
     background-color: #1f2937;
 }
 
+
 /* Tabs */
+
 .report-tabs {
-    margin-top: 1.5rem;
+    margin-top: 1rem;
+    padding-left: 1.5rem;
 }
 
 .tab-list {
     display: flex;
-    border-bottom: 1px solid #e5e7eb;
-    margin-bottom: 1rem;
-    overflow-x: auto;
+    gap: 0.5rem;
+    align-items: center;
+    margin: 0;
 }
 
 .tab-button {
     padding: 0.75rem 1rem;
-    background: none;
+    background: white;
     border: none;
-    border-bottom: 2px solid transparent;
+    border-radius: 0.5rem;
     font-size: 0.875rem;
     font-weight: 500;
     color: #6b7280;
     cursor: pointer;
     white-space: nowrap;
+    margin-right: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.tab-button:first-child {
+    margin-left: 1.5rem;
+    /* Alineación con la R de Reportes */
 }
 
 .tab-button:hover {
     color: #111827;
+    background-color: #f9fafb;
 }
 
 .tab-button.active {
     color: #111827;
-    border-bottom-color: #111827;
+    background-color: white;
+    font-weight: 600;
+    border-bottom: 2px solid #111827;
 }
 
 .tab-content {
@@ -103,21 +139,39 @@
     display: block;
 }
 
+
 /* Grid de reportes */
+
 .report-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
+    margin-bottom: 2rem;
+    /* Espacio adicional al final del grid */
 }
 
+.report-grid>div {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+
 /* Contenedor de gráficos */
+
 .chart-container {
     width: 100%;
     height: 300px;
     position: relative;
+    background: white;
+    border-radius: 0.5rem;
 }
 
+
 /* Tabla de datos */
+
 .table-container {
     overflow-x: auto;
     margin-top: 1rem;
@@ -147,7 +201,9 @@
     background-color: #f9fafb;
 }
 
+
 /* Badges para estados */
+
 .status-badge {
     display: inline-block;
     padding: 0.25rem 0.5rem;
@@ -174,11 +230,18 @@
     border: 1px solid #a7f3d0;
 }
 
+
 /* Tarjetas de estadísticas */
+
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
 .stat-card {
@@ -237,7 +300,9 @@
     color: #6b7280;
 }
 
+
 /* Acciones de reportes */
+
 .report-actions {
     display: flex;
     justify-content: flex-end;
@@ -245,12 +310,13 @@
     margin-top: 1.5rem;
 }
 
+
 /* Responsive */
+
 @media (max-width: 1024px) {
     .report-grid {
         grid-template-columns: 1fr;
     }
-    
     .stats-grid {
         grid-template-columns: 1fr;
     }
@@ -261,19 +327,28 @@
         flex-direction: column;
         align-items: flex-start;
     }
-    
     .date-range-picker {
         width: 100%;
         justify-content: space-between;
     }
-    
     .report-actions {
         flex-direction: column;
         width: 100%;
     }
-    
     .report-actions .button {
         width: 100%;
         justify-content: center;
     }
+}
+
+
+/* Nueva línea separadora */
+
+.divider {
+    position: relative;
+    top: -0.5rem;
+    width: 100vw;
+    height: 1px;
+    background-color: #e5e7eb;
+    margin-left: -1rem;
 }

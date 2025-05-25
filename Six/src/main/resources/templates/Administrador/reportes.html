@@ -64,15 +64,24 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <header class="dashboard-header">
+            <header class="header">
+                <div class="header-left">
                 <button class="mobile-menu-button">
                     <i class="fas fa-bars"></i>
                 </button>
+                    <h1 class="dashboard-title">Reportes</h1>
+                </div>
+                <div class="header-actions">
+                </div>
             </header>
 
             <div class="content-wrapper">
-                <div class="page-header">
-                    <h1>Reportes</h1>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0;">
+                    <div class="tab-list">
+                        <button class="tab-button active" data-tab="sales">Ventas</button>
+                        <button class="tab-button" data-tab="inventory">Inventario</button>
+                        <button class="tab-button" data-tab="products">Productos</button>
+                    </div>
                     <div class="date-range-picker">
                         <div class="date-input-group">
                             <label for="startDate">Desde:</label>
@@ -87,12 +96,6 @@
                 </div>
 
                 <div class="report-tabs">
-                    <div class="tab-list">
-                        <button class="tab-button active" data-tab="sales">Ventas</button>
-                        <button class="tab-button" data-tab="inventory">Inventario</button>
-                        <button class="tab-button" data-tab="products">Productos</button>
-                    </div>
-
                     <div class="tab-content active" id="sales-tab">
                         <div class="report-grid">
                             <div class="card">

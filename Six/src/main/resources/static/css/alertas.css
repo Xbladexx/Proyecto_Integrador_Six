@@ -1,5 +1,19 @@
 /* Estilos para la página de alertas */
 
+.header-line {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    margin: 0.95rem 0 0.3rem -1.5rem;
+    width: calc(100% + 1.5rem);
+    position: relative;
+    display: block;
+    transform: translateY(-1px);
+}
+
+.card {
+    margin-top: 2rem;
+}
+
 
 /* Tabs */
 
@@ -108,21 +122,25 @@
     border-collapse: collapse;
 }
 
-.data-table th,
-.data-table td {
+.data-table th {
+    background-color: #F9FAFB;
+    color: #374151;
+    font-weight: 500;
+    font-size: 0.875rem;
     padding: 0.75rem 1rem;
     text-align: left;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid #E5E7EB;
 }
 
-.data-table th {
-    background-color: #f9fafb;
-    font-weight: 600;
+.data-table td {
+    padding: 0.75rem 1rem;
+    color: #111827;
     font-size: 0.875rem;
+    border-bottom: 1px solid #E5E7EB;
 }
 
 .data-table tbody tr:hover {
-    background-color: #f9fafb;
+    background-color: #F9FAFB;
 }
 
 
@@ -391,4 +409,13 @@
         flex-direction: column;
         gap: 0;
     }
+}
+
+.alerts-header {
+    display: none;
+}
+
+.alerts-container {
+    margin-top: 0;
+    padding-top: 0;
 }

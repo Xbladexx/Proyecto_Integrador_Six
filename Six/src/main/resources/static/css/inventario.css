@@ -522,3 +522,24 @@ select.form-control:disabled {
     text-align: center;
     font-size: 1.1rem;
 }
+
+.card-title {
+    font-size: 0.95rem;
+    font-weight: 300;
+    color: #4B5563;
+    margin: 0;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    letter-spacing: -0.015em;
+}
+
+.card-description {
+    margin-top: 0.25rem;
+    color: #6B7280;
+    font-size: 0.875rem;
+    font-weight: 400;
+}
+
+.card-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e5e7eb;
+}

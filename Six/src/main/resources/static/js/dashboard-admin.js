@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     contenedorAlertas.innerHTML = `
                         <div class="alert-item">
                             <div class="alert-details">
-                                <p class="alert-title">No hay alertas de stock crítico</p>
+                                <p class="alert-title">No hay productos con stock crítico</p>
                             </div>
                         </div>
                     `;
@@ -26,10 +26,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                             <div class="alert-details">
                                 <p class="alert-title">${alerta.producto} - ${alerta.variante}</p>
-                                <div class="alert-badge ${alerta.estado}">
+                                <div class="alert-badge critical">
                                     <i class="fas fa-arrow-down"></i> 
-                                    Stock ${alerta.estado === 'critical' ? 'crítico' : 'bajo'}: 
-                                    ${alerta.stockActual} unidades
+                                    Stock crítico: ${alerta.stockActual} unidades
                                 </div>
                             </div>
                         </div>
@@ -39,6 +38,14 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error al cargar alertas de stock:', error);
+                const contenedorAlertas = document.querySelector('.stock-alerts');
+                contenedorAlertas.innerHTML = `
+                    <div class="alert-item">
+                        <div class="alert-details">
+                            <p class="alert-title">Error al cargar las alertas</p>
+                        </div>
+                    </div>
+                `;
             });
     }
 

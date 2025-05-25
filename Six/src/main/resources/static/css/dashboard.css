@@ -32,12 +32,10 @@
 }
 
 .sidebar-logo {
-
-display: flex;
-align-items: center;
-gap: 0.5rem;
-font-weight: 600;
-
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
 }
 
 .sidebar-logo i {
@@ -548,20 +546,24 @@ font-weight: 600;
     background-color: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
-    padding: 1rem;
+    padding: 0.75rem 1rem;
     display: flex;
     align-items: center;
-    gap: 1rem;
-    transition: all 0.3s ease;
+    gap: 0.75rem;
+    transition: all 0.2s ease;
 }
 
 .alert-item:hover {
     transform: translateX(5px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .alert-icon {
-    margin-right: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
 }
 
 .text-warning {
@@ -575,7 +577,8 @@ font-weight: 600;
 .alert-title {
     font-size: 0.875rem;
     font-weight: 500;
-    margin-bottom: 0.5rem;
+    color: #111827;
+    margin-bottom: 0.25rem;
 }
 
 .alert-badge {

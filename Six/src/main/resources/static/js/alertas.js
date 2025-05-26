@@ -178,53 +178,69 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Cargar datos de alertas
-    function loadAlertsData(data) {
-        alertsTableBody.innerHTML = '';
+    function loadAlertsData() {
+        fetch('/api/alertas-inventario')
+            .then(response => response.json())
+            .then(alertas => {
+                const alertsTableBody = document.getElementById('alertsTableBody');
+                alertsTableBody.innerHTML = '';
 
-        if (data.length === 0) {
-            const emptyRow = document.createElement('tr');
-            emptyRow.innerHTML = `
-                <td colspan="7" class="text-center">No se encontraron alertas.</td>
-            `;
-            alertsTableBody.appendChild(emptyRow);
-            return;
-        }
+                if (alertas.length === 0) {
+                    const emptyRow = document.createElement('tr');
+                    emptyRow.innerHTML = `
+                        <td colspan="9" class="text-center">No se encontraron alertas.</td>
+                    `;
+                    alertsTableBody.appendChild(emptyRow);
+                    return;
+                }
 
-        data.forEach(alert => {
-            const row = document.createElement('tr');
+                alertas.forEach(alerta => {
+                    const row = document.createElement('tr');
 
-            // Determinar la clase y el icono según el estado
-            let statusClass = '';
-            let statusIcon = '';
-            let statusText = '';
+                    // Determinar la clase y el icono según el estado
+                    let statusClass = '';
+                    let statusIcon = '';
 
-            if (alert.status === 'critical') {
-                statusClass = 'status-critical';
-                statusIcon = '<i class="fas fa-exclamation-triangle"></i>';
-                statusText = 'Crítico';
-            } else if (alert.status === 'low') {
-                statusClass = 'status-low';
-                statusIcon = '<i class="fas fa-arrow-down"></i>';
-                statusText = 'Bajo';
-            } else {
-                statusClass = 'status-resolved';
-                statusIcon = '<i class="fas fa-check-circle"></i>';
-                statusText = 'Resuelto';
-            }
+                    if (alerta.estado === 'Crítico') {
+                        statusClass = 'status-critical';
+                        statusIcon = '<i class="fas fa-exclamation-triangle"></i>';
+                    } else if (alerta.estado === 'Bajo') {
+                        statusClass = 'status-low';
+                        statusIcon = '<i class="fas fa-arrow-down"></i>';
+                    } else {
+                        statusClass = 'status-resolved';
+                        statusIcon = '<i class="fas fa-check-circle"></i>';
+                    }
 
-            // Crear el contenido de la fila
-            row.innerHTML = `
-                <td><span class="status-badge ${statusClass}">${statusIcon} ${statusText}</span></td>
-                <td>${alert.productCode}</td>
-                <td>${alert.productName}</td>
-                <td>${alert.variant}</td>
-                <td class="${alert.status === 'critical' ? 'text-red-500 font-medium' : alert.status === 'low' ? 'text-amber-500 font-medium' : 'text-green-500 font-medium'}">${alert.currentStock}</td>
-                <td>${alert.minStock}</td>
-                <td>${alert.category}</td>
-            `;
+                    // Crear el contenido de la fila
+                    row.innerHTML = `
+                        <td><span class="status-badge ${statusClass}">${statusIcon} ${alerta.estado}</span></td>
+                        <td>${alerta.codigo}</td>
+                        <td>${alerta.producto}</td>
+                        <td>${alerta.talla}</td>
+                        <td>${alerta.color}</td>
+                        <td class="${alerta.estado === 'Crítico' ? 'text-red-500 font-medium' : 
+                                   alerta.estado === 'Bajo' ? 'text-amber-500 font-medium' : 
+                                   'text-green-500 font-medium'}">${alerta.stockActual}</td>
+                        <td>${alerta.stockMinimo}</td>
+                        <td>${alerta.stockMaximo}</td>
+                        <td>${alerta.categoria}</td>
+                    `;
 
-            alertsTableBody.appendChild(row);
-        });
+                    alertsTableBody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error al cargar alertas:', error);
+                const alertsTableBody = document.getElementById('alertsTableBody');
+                alertsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="text-center text-red-500">
+                            Error al cargar las alertas. Por favor, intente nuevamente.
+                        </td>
+                    </tr>
+                `;
+            });
     }
 
     // Buscar alertas
@@ -296,5 +312,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Inicializar la interfaz
-    loadAlertsData(alertsData);
+    loadAlertsData();
 });

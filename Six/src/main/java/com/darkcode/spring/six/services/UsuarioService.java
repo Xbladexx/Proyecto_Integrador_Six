@@ -164,7 +164,20 @@ public class UsuarioService {
         } catch (IllegalArgumentException e) {
             log.error("Error de validación al crear usuario: {}", e.getMessage());
             throw e;
+        } catch (IllegalStateException e) {
+            // Manejo específico para errores de estado
+            log.error("Error de estado al crear usuario: {}", e.getMessage(), e);
+            throw new RuntimeException("Error en el estado de la aplicación: " + e.getMessage(), e);
+        } catch (DataAccessException e) {
+            // Manejo para errores de acceso a datos que no se capturaron en el bloque try interno
+            log.error("Error de acceso a datos al crear usuario: {}", e.getMessage(), e);
+            throw new RuntimeException("Error al acceder a la base de datos: " + e.getMessage(), e);
+        } catch (RuntimeException e) {
+            // Capturar otras excepciones de runtime
+            log.error("Error de runtime al crear usuario: {}", e.getMessage(), e);
+            throw new RuntimeException("Error de runtime al crear el usuario: " + e.getMessage(), e);
         } catch (Exception e) {
+            // Capturar cualquier otra excepción no anticipada
             log.error("Error inesperado al crear usuario: {}", e.getMessage(), e);
             throw new RuntimeException("Error inesperado al crear el usuario", e);
         }

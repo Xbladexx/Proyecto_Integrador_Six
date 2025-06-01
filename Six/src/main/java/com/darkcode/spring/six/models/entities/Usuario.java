@@ -13,12 +13,14 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Entity
 @Table(name = "usuarios")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Slf4j
 public class Usuario {
     
     @Id
@@ -32,7 +34,7 @@ public class Usuario {
     private String usuario;
     
     @Column(nullable = false)
-    private String password = "password123"; // Valor por defecto para evitar nulos
+    private String password; // La contraseña será generada por el servicio
     
     @Column(nullable = false)
     private String rol = "EMPLEADO"; // Valor por defecto para evitar nulos
@@ -74,23 +76,20 @@ public class Usuario {
             rol = "EMPLEADO";
         }
         
-        // Última línea de defensa para evitar nulos en el campo usuario
+        // IMPORTANTE: Verificamos si el campo usuario es nulo o vacío
+        // Si es nulo, generamos un valor temporal que será reemplazado por el servicio
         if (usuario == null || usuario.isEmpty()) {
-            // Generamos un valor temporal único que será reemplazado por el servicio
-            // Asegurando que nunca exceda 10 caracteres
-            String valorTemporal = "TEMP" + (System.currentTimeMillis() % 9999);
-            if (valorTemporal.length() > 10) {
-                valorTemporal = valorTemporal.substring(0, 10);
-            }
-            usuario = valorTemporal;
-            // Este valor es solo una protección contra nulos, no sustituye la lógica del servicio
+            // Generamos un valor temporal basado en el rol para evitar el error not-null
+            // Este formato es compatible con la lógica del servicio y será reemplazado
+            String prefijo = rol.toUpperCase().contains("ADMIN") ? "ADM" : "EMP";
+            usuario = prefijo + String.format("%05d", (int)(System.currentTimeMillis() % 100000));
         } else if (usuario.length() > 10) {
             // Si ya tiene un valor pero es demasiado largo, lo truncamos
             usuario = usuario.substring(0, 10);
         }
         
-        // Ya no generamos usuario aquí para evitar conflictos con el servicio
-        // El servicio UsuarioService se encargará de generar el usuario según el formato requerido
+        // El servicio UsuarioService se encargará de validar y posiblemente reemplazar
+        // el nombre de usuario para garantizar unicidad
     }
     
     /**

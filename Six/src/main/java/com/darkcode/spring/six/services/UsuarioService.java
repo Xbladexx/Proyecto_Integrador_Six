@@ -6,6 +6,8 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import org.springframework.dao.DataAccessException;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,11 +56,10 @@ public class UsuarioService {
     
     /**
      * Crea un nuevo usuario con generación automática de contraseña
+     * @return Usuario con ID generado y contraseña visible (solo en esta respuesta)
      */
     @Transactional
     public Usuario crearUsuarioConContraseña(Usuario usuario) {
-        log.info("Creando nuevo usuario con contraseña autogenerada: {}", usuario.getNombre());
-        
         try {
             // Validar datos mínimos
             if (usuario.getNombre() == null || usuario.getNombre().isEmpty()) {
@@ -84,6 +85,7 @@ public class UsuarioService {
                 log.info("Teléfono generado automáticamente: {}", telefono);
             }
             
+            // IMPORTANTE: Forzar la generación del nombre de usuario con el prefijo correcto
             // Siempre generamos un nuevo nombre de usuario según el rol (ADM/EMP + 5 números)
             // Ignoramos cualquier valor existente que se haya proporcionado
             String nombreUsuarioGenerado = generarNombreUsuarioSegunRol(usuario.getRol());
@@ -91,46 +93,80 @@ public class UsuarioService {
                 log.error("Error crítico: no se pudo generar un nombre de usuario válido");
                 throw new IllegalStateException("No se pudo generar un nombre de usuario válido");
             }
+            
+            // Verificar que el nombre de usuario generado tenga el formato correcto
+            if (!nombreUsuarioGenerado.matches("^(ADM|EMP)\\d{5}$")) {
+                log.error("El nombre de usuario generado no cumple con el formato requerido: {}", nombreUsuarioGenerado);
+                // Generar uno de emergencia con el formato correcto
+                String prefijo = usuario.getRol().toUpperCase().contains("ADMIN") ? "ADM" : "EMP";
+                String emergencyUsuario = prefijo + String.format("%05d", (int)(System.currentTimeMillis() % 100000));
+                log.info("Generado nombre de usuario de emergencia con formato correcto: {}", emergencyUsuario);
+                nombreUsuarioGenerado = emergencyUsuario;
+            }
+            
+            // Establecer el nombre de usuario generado
             usuario.setUsuario(nombreUsuarioGenerado);
             log.info("Nombre de usuario establecido a: {}", nombreUsuarioGenerado);
             
-            // SIEMPRE generamos una contraseña, incluso si se proporcionó una
-            // Esto garantiza que nunca sea nula
-            String contraseñaGenerada = generarContraseñaAleatoria();
+            // SIEMPRE generamos una contraseña única basada en el nombre de usuario
+            // Esto garantiza que nunca sea nula y que sea única para cada usuario
+            String contraseñaGenerada = generarContraseñaAleatoria(nombreUsuarioGenerado);
             if (contraseñaGenerada == null || contraseñaGenerada.isEmpty()) {
                 log.error("Error crítico: no se pudo generar una contraseña válida");
                 throw new IllegalStateException("No se pudo generar una contraseña válida");
             }
-            log.info("Contraseña generada automáticamente para {}: {}", usuario.getUsuario(), contraseñaGenerada);
+            
+            // Guardar la contraseña generada en el objeto usuario
             usuario.setPassword(contraseñaGenerada);
+            log.info("Contraseña única generada para el usuario: {}", nombreUsuarioGenerado);
             
-            // Aseguramos que el usuario esté activo al crearse
-            usuario.setActivo(true);
+            // Guardar la contraseña en una variable temporal para devolverla al frontend
+            final String passwordParaFrontend = contraseñaGenerada;
             
-            // Establecemos la fecha de creación
-            usuario.setFechaCreacion(LocalDateTime.now());
-            
-            // Validación final antes de guardar
-            if (usuario.getUsuario() == null || usuario.getUsuario().isEmpty()) {
-                log.error("Error crítico: el campo usuario sigue siendo nulo después de todas las validaciones");
-                throw new IllegalStateException("El campo usuario no puede ser nulo al guardar");
+            // Establecer fecha de creación si no existe
+            if (usuario.getFechaCreacion() == null) {
+                usuario.setFechaCreacion(LocalDateTime.now());
             }
             
-            // Guardar el usuario
-            Usuario usuarioGuardado = usuarioRepository.save(usuario);
-            log.info("Usuario guardado en la base de datos con ID: {}, usuario: {}", 
-                    usuarioGuardado.getId(), usuarioGuardado.getUsuario());
+            // Activar usuario por defecto
+            usuario.setActivo(true);
             
-            return usuarioGuardado;
+            // Verificar una última vez que el usuario tenga el formato correcto antes de guardar
+            if (!usuario.getUsuario().matches("^(ADM|EMP)\\d{5}$")) {
+                log.warn("Formato incorrecto detectado antes de guardar: {}, corrigiendo...", usuario.getUsuario());
+                String prefijo = usuario.getRol().toUpperCase().contains("ADMIN") ? "ADM" : "EMP";
+                usuario.setUsuario(prefijo + String.format("%05d", (int)(System.currentTimeMillis() % 100000)));
+                log.info("Usuario corregido a: {}", usuario.getUsuario());
+            }
+            
+            // Guardar el usuario en la base de datos
+            try {
+                log.info("Guardando usuario con nombre de usuario: {}", usuario.getUsuario());
+                Usuario usuarioGuardado = usuarioRepository.save(usuario);
+                log.info("Usuario guardado exitosamente con ID: {}, nombre de usuario: {}", 
+                        usuarioGuardado.getId(), usuarioGuardado.getUsuario());
+                
+                // Importante: Asegurar que la contraseña se devuelve al frontend
+                // pero solo en esta respuesta inicial, para que pueda ser mostrada al usuario
+                usuarioGuardado.setPassword(passwordParaFrontend);
+                
+                log.info("Usuario creado exitosamente: ID={}, Usuario={}, Contraseña generada correctamente", 
+                        usuarioGuardado.getId(), usuarioGuardado.getUsuario());
+                
+                return usuarioGuardado;
+            } catch (DataIntegrityViolationException e) {
+                log.error("Error de integridad al guardar usuario: {}", e.getMessage());
+                throw new IllegalArgumentException("Ya existe un usuario con ese nombre de usuario o email");
+            } catch (DataAccessException e) {
+                log.error("Error de acceso a datos al guardar usuario: {}", e.getMessage(), e);
+                throw new RuntimeException("Error al guardar el usuario en la base de datos");
+            }
         } catch (IllegalArgumentException e) {
-            log.error("Error de validación al crear usuario: {}", e.getMessage(), e);
+            log.error("Error de validación al crear usuario: {}", e.getMessage());
             throw e;
-        } catch (DataIntegrityViolationException e) {
-            log.error("Error de integridad de datos al crear usuario: {}", e.getMessage(), e);
-            throw new IllegalArgumentException("Error al crear el usuario: posible duplicación de datos");
-        } catch (RuntimeException e) {
-            log.error("Error de ejecución al crear usuario: {}", e.getMessage(), e);
-            throw e;
+        } catch (Exception e) {
+            log.error("Error inesperado al crear usuario: {}", e.getMessage(), e);
+            throw new RuntimeException("Error inesperado al crear el usuario", e);
         }
     }
     
@@ -185,7 +221,7 @@ public class UsuarioService {
      */
     private String generarNombreUsuarioSegunRol(String rol) {
         try {
-            // Determinar prefijo según rol
+            // Determinar prefijo según rol - siempre exactamente 3 caracteres
             String prefijo;
             if (rol != null && rol.toUpperCase().contains("ADMIN")) {
                 prefijo = "ADM";
@@ -195,18 +231,15 @@ public class UsuarioService {
                 log.info("Generando usuario con prefijo EMP para rol: {}", rol);
             }
             
-            // Generar números aleatorios para completar
-            // Como el prefijo ocupa 3 caracteres, podemos generar 7 números (pero usamos 5 para el formato solicitado)
+            // Generar exactamente 5 dígitos (entre 10000 y 99999)
             Random random = new Random();
             int numeroAleatorio = 10000 + random.nextInt(90000); // Número entre 10000 y 99999
             
-            // Construir nombre de usuario (garantizando máximo 10 caracteres)
-            String nombreUsuarioBase = prefijo + numeroAleatorio;
-            if (nombreUsuarioBase.length() > 10) {
-                nombreUsuarioBase = nombreUsuarioBase.substring(0, 10);
-                log.info("Nombre de usuario truncado a 10 caracteres: {}", nombreUsuarioBase);
-            }
+            // Asegurar que el número tenga exactamente 5 dígitos
+            String numeroFormateado = String.format("%05d", numeroAleatorio % 100000);
             
+            // Construir nombre de usuario con prefijo + 5 dígitos exactos
+            String nombreUsuarioBase = prefijo + numeroFormateado;
             log.info("Nombre de usuario base generado: {}", nombreUsuarioBase);
             
             // Verificar si ya existe y generar alternativas si es necesario
@@ -217,71 +250,110 @@ public class UsuarioService {
                 log.info("El usuario {} ya existe, generando alternativa", nombreUsuario);
                 // Si ya existe, intentamos con otro número
                 numeroAleatorio = 10000 + random.nextInt(90000);
-                nombreUsuario = prefijo + numeroAleatorio;
-                if (nombreUsuario.length() > 10) {
-                    nombreUsuario = nombreUsuario.substring(0, 10);
-                }
+                numeroFormateado = String.format("%05d", numeroAleatorio % 100000);
+                nombreUsuario = prefijo + numeroFormateado;
                 contador++;
             }
             
             if (contador >= 100) {
                 log.error("No se pudo generar un nombre de usuario único después de múltiples intentos");
                 // En lugar de lanzar excepción, generamos un nombre con timestamp que será único
-                String fallbackUsuario = (rol != null && rol.toUpperCase().contains("ADMIN") ? "ADM" : "EMP") + 
-                       (System.currentTimeMillis() % 9999999); // Usar módulo para limitar a 7 dígitos máximo
-                if (fallbackUsuario.length() > 10) {
-                    fallbackUsuario = fallbackUsuario.substring(0, 10);
-                }
+                // Pero manteniendo el formato ADM/EMP + 5 dígitos exactamente
+                long timestamp = System.currentTimeMillis() % 100000;
+                String fallbackUsuario = prefijo + String.format("%05d", timestamp);
+                log.info("Generado nombre de usuario alternativo con timestamp: {}", fallbackUsuario);
                 return fallbackUsuario;
+            }
+            
+            // Verificación final para asegurar que el formato sea correcto: 3 letras + 5 dígitos
+            if (nombreUsuario.length() != 8 || !nombreUsuario.substring(0, 3).matches("[A-Z]{3}") || 
+                !nombreUsuario.substring(3).matches("\\d{5}")) {
+                log.error("El nombre de usuario generado no cumple con el formato requerido: {}", nombreUsuario);
+                // Generar uno de emergencia con el formato correcto
+                String emergencyUsuario = prefijo + String.format("%05d", System.currentTimeMillis() % 100000);
+                log.info("Generado nombre de usuario de formato correcto: {}", emergencyUsuario);
+                return emergencyUsuario;
             }
             
             log.info("Usuario final generado: {}", nombreUsuario);
             return nombreUsuario;
-        } catch (IllegalArgumentException | NullPointerException e) {
-            log.error("Error específico generando nombre de usuario: {}", e.getMessage(), e);
-            // Backup: generar un nombre de usuario simple pero único
-            String fallbackUsuario = (rol != null && rol.toUpperCase().contains("ADMIN") ? "ADM" : "EMP") + 
-                    (System.currentTimeMillis() % 9999999); // Limitar a 7 dígitos máximo
-            if (fallbackUsuario.length() > 10) {
-                fallbackUsuario = fallbackUsuario.substring(0, 10);
-            }
-            log.info("Generado nombre de usuario alternativo: {}", fallbackUsuario);
-            return fallbackUsuario;
-        } catch (RuntimeException e) {
-            log.error("Error inesperado generando nombre de usuario: {}", e.getMessage(), e);
-            // Backup simple en caso de cualquier otro error
-            String fallbackUsuario = "EMP" + (System.currentTimeMillis() % 9999999);
-            if (fallbackUsuario.length() > 10) {
-                fallbackUsuario = fallbackUsuario.substring(0, 10);
-            }
-            log.info("Generado nombre de usuario alternativo de emergencia: {}", fallbackUsuario);
-            return fallbackUsuario;
         } catch (Exception e) {
-            log.error("Error fatal generando nombre de usuario: {}", e.getMessage(), e);
-            // Última línea de defensa, siempre debe devolver un valor
-            String fallbackUsuario = "TMP" + (System.currentTimeMillis() % 9999999);
-            if (fallbackUsuario.length() > 10) {
-                fallbackUsuario = fallbackUsuario.substring(0, 10);
-            }
+            log.error("Error generando nombre de usuario: {}", e.getMessage(), e);
+            // En cualquier caso de error, asegurar que devolvemos ADM/EMP + 5 dígitos
+            String fallbackPrefijo = (rol != null && rol.toUpperCase().contains("ADMIN")) ? "ADM" : "EMP";
+            long timestamp = System.currentTimeMillis() % 100000;
+            String fallbackUsuario = fallbackPrefijo + String.format("%05d", timestamp);
+            log.info("Generado nombre de usuario de emergencia: {}", fallbackUsuario);
             return fallbackUsuario;
         }
     }
     
     /**
-     * Genera una contraseña aleatoria
+     * Genera una contraseña aleatoria segura y única para el usuario
+     * @param usuario El nombre de usuario para el que se genera la contraseña
+     * @return Una contraseña única para el usuario
      */
-    private String generarContraseñaAleatoria() {
-        String caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
-        StringBuilder contraseña = new StringBuilder();
+    private String generarContraseñaAleatoria(String usuario) {
+        // Caracteres para la contraseña
+        final String mayusculas = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        final String minusculas = "abcdefghijklmnopqrstuvwxyz";
+        final String numeros = "0123456789";
+        final String especiales = "!@#$%^&*()_-+=<>?/[]{}|";
+        final int longitud = 12; // Longitud de la contraseña
         
-        // Generamos una contraseña de 8 caracteres
+        StringBuilder contraseña = new StringBuilder();
         Random random = new Random();
-        for (int i = 0; i < 8; i++) {
-            int index = random.nextInt(caracteres.length());
-            contraseña.append(caracteres.charAt(index));
+        
+        // PARTE 1: Componente único basado en el usuario
+        if (usuario != null && !usuario.isEmpty()) {
+            // Extraer prefijo (ADM/EMP) y convertirlo en caracteres especiales
+            String prefijo = usuario.substring(0, 3);
+            contraseña.append(mayusculas.charAt(prefijo.charAt(0) % mayusculas.length()));
+            contraseña.append(especiales.charAt(prefijo.charAt(1) % especiales.length()));
+            
+            // Extraer dígitos del usuario y usarlos para seleccionar caracteres
+            String digitos = usuario.substring(3);
+            for (int i = 0; i < Math.min(3, digitos.length()); i++) {
+                int valor = Character.getNumericValue(digitos.charAt(i));
+                contraseña.append(minusculas.charAt((valor * 2) % minusculas.length()));
+            }
         }
         
-        return contraseña.toString();
+        // PARTE 2: Componente único basado en tiempo
+        // Usar milisegundos actuales para garantizar unicidad incluso para usuarios creados al mismo tiempo
+        long timestamp = System.currentTimeMillis();
+        String timeComponent = String.format("%04d", timestamp % 10000);
+        contraseña.append(timeComponent);
+        
+        // PARTE 3: Garantizar requisitos de seguridad (al menos un caracter de cada tipo)
+        contraseña.append(mayusculas.charAt(random.nextInt(mayusculas.length())));
+        contraseña.append(minusculas.charAt(random.nextInt(minusculas.length())));
+        contraseña.append(numeros.charAt(random.nextInt(numeros.length())));
+        contraseña.append(especiales.charAt(random.nextInt(especiales.length())));
+        
+        // PARTE 4: Completar hasta la longitud deseada con caracteres aleatorios
+        String todosCaracteres = mayusculas + minusculas + numeros + especiales;
+        while (contraseña.length() < longitud) {
+            contraseña.append(todosCaracteres.charAt(random.nextInt(todosCaracteres.length())));
+        }
+        
+        // PARTE 5: Mezclar todos los caracteres para mayor seguridad
+        char[] caracteres = contraseña.toString().toCharArray();
+        for (int i = 0; i < caracteres.length; i++) {
+            int j = random.nextInt(caracteres.length);
+            char temp = caracteres[i];
+            caracteres[i] = caracteres[j];
+            caracteres[j] = temp;
+        }
+        
+        // Generar la contraseña final
+        String passwordFinal = new String(caracteres);
+        if (passwordFinal.length() > longitud) {
+            passwordFinal = passwordFinal.substring(0, longitud);
+        }
+        
+        log.info("Contraseña única generada para usuario {}", usuario);
+        return passwordFinal;
     }
     
     /**

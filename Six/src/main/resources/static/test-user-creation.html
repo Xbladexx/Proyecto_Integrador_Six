@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Creación de Usuarios</title>
+    <link rel="stylesheet" href="/css/usuarios.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-container {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .result-container {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .error-message {
+            color: #b91c1c;
+            font-weight: bold;
+        }
+        .success-message {
+            color: #065f46;
+            font-weight: bold;
+        }
+        .user-info {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f0f9ff;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #111827;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #1f2937;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test de Creación de Usuarios</h1>
+    <p>Esta página permite probar la funcionalidad de creación de usuarios con generación automática de ID y contraseña.</p>
+    
+    <div class="test-container">
+        <h2>Crear Nuevo Usuario</h2>
+        <form id="userForm">
+            <div class="form-group">
+                <label for="userName">Nombre:</label>
+                <input type="text" id="userName" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="userEmail">Email:</label>
+                <input type="email" id="userEmail" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="userRole">Rol:</label>
+                <select id="userRole" class="form-control">
+                    <option value="ADMIN">Administrador</option>
+                    <option value="EMPLEADO">Empleado</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="userStatus">Estado:</label>
+                <select id="userStatus" class="form-control">
+                    <option value="active">Activo</option>
+                    <option value="inactive">Inactivo</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="userNotes">Notas:</label>
+                <textarea id="userNotes" class="form-control" rows="3"></textarea>
+            </div>
+            <button type="submit">Crear Usuario</button>
+        </form>
+    </div>
+    
+    <div class="result-container" id="resultContainer" style="display: none;">
+        <h2>Resultado</h2>
+        <div id="resultMessage"></div>
+        <div id="userInfo" class="user-info" style="display: none;"></div>
+    </div>
+
+    <div class="toast hidden" id="toast">
+        <div class="toast-content">
+            <div class="toast-header">
+                <h3 class="toast-title" id="toastTitle">Título</h3>
+                <button class="toast-close" id="toastClose">&times;</button>
+            </div>
+            <div class="toast-message" id="toastMessage">Mensaje</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const userForm = document.getElementById('userForm');
+            const resultContainer = document.getElementById('resultContainer');
+            const resultMessage = document.getElementById('resultMessage');
+            const userInfo = document.getElementById('userInfo');
+            const toast = document.getElementById('toast');
+            const toastTitle = document.getElementById('toastTitle');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastClose = document.getElementById('toastClose');
+
+            // Cerrar toast al hacer clic en el botón de cierre
+            toastClose.addEventListener('click', function() {
+                toast.classList.add('hidden');
+            });
+
+            userForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Obtener valores del formulario
+                const userName = document.getElementById('userName').value.trim();
+                const userEmail = document.getElementById('userEmail').value.trim();
+                const userRole = document.getElementById('userRole').value;
+                const userStatus = document.getElementById('userStatus').value === 'active';
+                const userNotes = document.getElementById('userNotes').value.trim();
+                
+                // Validar nombre
+                if (!userName) {
+                    showError('El nombre es obligatorio');
+                    return;
+                }
+                
+                // Preparar datos del usuario
+                const nuevoUsuario = {
+                    nombre: userName,
+                    email: userEmail,
+                    rol: userRole,
+                    activo: userStatus,
+                    notas: userNotes
+                    // No enviamos usuario ni password, el backend los generará automáticamente
+                };
+                
+                // Enviar a la API
+                fetch('/api/usuarios', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(nuevoUsuario)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().catch(() => {
+                            // Si no podemos parsear como JSON, manejamos como texto
+                            return response.text().then(text => {
+                                throw new Error('Error al crear el usuario: ' + text);
+                            });
+                        }).then(errorData => {
+                            // Si tenemos un mensaje de error en el campo notas
+                            if (errorData && errorData.notas) {
+                                throw new Error(errorData.notas);
+                            }
+                            throw new Error('Error al crear el usuario: ' + response.status);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(usuario => {
+                    // Mostrar resultado exitoso
+                    resultContainer.style.display = 'block';
+                    resultMessage.innerHTML = '<p class="success-message">Usuario creado exitosamente</p>';
+                    
+                    // Mostrar información del usuario
+                    userInfo.style.display = 'block';
+                    userInfo.innerHTML = `
+                        <p><strong>ID:</strong> ${usuario.id || 'N/A'}</p>
+                        <p><strong>Nombre:</strong> ${usuario.nombre || 'N/A'}</p>
+                        <p><strong>Usuario:</strong> ${usuario.usuario || 'N/A'}</p>
+                        <p><strong>Contraseña:</strong> ${usuario.password || 'N/A'}</p>
+                        <p><strong>Email:</strong> ${usuario.email || 'N/A'}</p>
+                        <p><strong>Rol:</strong> ${usuario.rol || 'N/A'}</p>
+                        <p><strong>Estado:</strong> ${usuario.activo ? 'Activo' : 'Inactivo'}</p>
+                    `;
+                    
+                    // Mostrar toast
+                    const mensaje = `
+                        <div class="user-created-info">
+                            <p><strong>Usuario creado exitosamente</strong></p>
+                            <p><strong>Nombre de usuario:</strong> ${usuario.usuario}</p>
+                            <p><strong>Contraseña:</strong> ${usuario.password || 'No disponible'}</p>
+                            <p class="warning-text">¡IMPORTANTE! Guarde esta información. La contraseña no se mostrará nuevamente.</p>
+                        </div>
+                    `;
+                    
+                    mostrarToast('Usuario Creado', mensaje, 'success', true);
+                    
+                    // Limpiar formulario
+                    userForm.reset();
+                })
+                .catch(error => {
+                    // Mostrar error
+                    resultContainer.style.display = 'block';
+                    resultMessage.innerHTML = `<p class="error-message">${error.message}</p>`;
+                    userInfo.style.display = 'none';
+                    
+                    // Mostrar toast de error
+                    mostrarToast('Error', error.message, 'error');
+                });
+            });
+            
+            // Función para mostrar errores
+            function showError(message) {
+                resultContainer.style.display = 'block';
+                resultMessage.innerHTML = `<p class="error-message">${message}</p>`;
+                userInfo.style.display = 'none';
+                
+                // Mostrar toast de error
+                mostrarToast('Error', message, 'error');
+            }
+            
+            // Función para mostrar el toast
+            function mostrarToast(titulo, mensaje, tipo, isHtml = false) {
+                toastTitle.textContent = titulo;
+                
+                // Manejar contenido HTML si es necesario
+                if (isHtml) {
+                    toastMessage.innerHTML = mensaje;
+                } else {
+                    toastMessage.textContent = mensaje;
+                }
+                
+                toast.className = 'toast';
+                toast.classList.add(`toast-${tipo}`);
+                toast.classList.remove('hidden');
+                
+                // Auto-ocultar después de 8 segundos para mensajes de éxito
+                if (tipo === 'success') {
+                    setTimeout(() => {
+                        toast.classList.add('hidden');
+                    }, 8000);
+                }
+                
+                // Para mensajes de error, dejamos que el usuario los cierre manualmente
+                // Pero aún así los ocultamos después de 10 segundos
+                if (tipo === 'error') {
+                    setTimeout(() => {
+                        toast.classList.add('hidden');
+                    }, 10000);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -92,74 +92,32 @@ public class UsuarioController {
                 }
             }
             
-            // Asegurarse de que no se proporcione un nombre de usuario (el servicio lo generará)
-            if (usuario.getUsuario() != null && !usuario.getUsuario().isEmpty()) {
-                log.warn("Se proporcionó un nombre de usuario, pero será generado por el sistema");
-                // No lo establecemos a null, permitiendo que la entidad mantenga un valor temporal
-                // El servicio se encargará de reemplazarlo con el valor correcto
+            // Preparar el campo usuario para que el servicio lo genere correctamente
+            // En lugar de anularlo, generamos un valor temporal con el formato correcto
+            // que el servicio podrá reemplazar si es necesario
+            String prefijo = usuario.getRol().toUpperCase().contains("ADMIN") ? "ADM" : "EMP";
+            String usuarioTemporal = prefijo + String.format("%05d", (int)(System.currentTimeMillis() % 100000));
+            log.info("Generando nombre de usuario temporal con formato correcto: {}", usuarioTemporal);
+            usuario.setUsuario(usuarioTemporal);
+            
+            // Asegurarse de que no se proporcione una contraseña (el servicio la generará)
+            if (usuario.getPassword() != null && !usuario.getPassword().isEmpty()) {
+                log.warn("Se proporcionó una contraseña, pero será ignorada y generada por el sistema");
+                usuario.setPassword(null); // La anulamos para que el servicio la genere
             }
             
-            // Si el ID no es nulo, rechazamos la solicitud
-        if (usuario.getId() != null) {
-                log.error("Intento de crear usuario con ID predefinido: {}", usuario.getId());
-            return ResponseEntity.badRequest().build();
-        }
-        
-            log.info("Datos del usuario a crear: nombre={}, email={}, rol={}", 
-                    usuario.getNombre(), usuario.getEmail(), usuario.getRol());
+            // Establecer como activo por defecto
+            usuario.setActivo(true);
             
-            // Usamos el método del servicio para crear usuarios con comprobación adicional
-            Usuario nuevoUsuario = null;
-            try {
-                // El servicio generará automáticamente: usuario, teléfono y contraseña
-                nuevoUsuario = usuarioService.crearUsuarioConContraseña(usuario);
-                log.info("Usuario creado en el servicio: id={}, usuario={}", 
-                        nuevoUsuario.getId(), nuevoUsuario.getUsuario());
-            } catch (Exception e) {
-                log.error("Error al crear usuario en el servicio: {}", e.getMessage(), e);
-                throw e;
-            }
+            // Llamar al servicio para crear el usuario con contraseña autogenerada
+            Usuario nuevoUsuario = usuarioService.crearUsuarioConContraseña(usuario);
             
-            // Verificar que el usuario se haya generado correctamente
-            if (nuevoUsuario.getUsuario() == null || nuevoUsuario.getUsuario().isEmpty()) {
-                log.error("Error: el servicio no generó un nombre de usuario válido");
-                throw new IllegalStateException("No se pudo generar un nombre de usuario válido");
-            }
+            // IMPORTANTE: Devolver el usuario completo con la contraseña generada
+            // Esta es la única vez que se devuelve la contraseña al frontend
+            log.info("Usuario creado exitosamente: id={}, usuario={}, contraseña generada", 
+                    nuevoUsuario.getId(), nuevoUsuario.getUsuario());
             
-            // Por seguridad, no devolvemos la contraseña en la respuesta
-            Usuario respuesta = new Usuario();
-            respuesta.setId(nuevoUsuario.getId());
-            respuesta.setNombre(nuevoUsuario.getNombre());
-            
-            // Asegurarnos de que el usuario nunca sea nulo en la respuesta
-            String nombreUsuario = nuevoUsuario.getUsuario();
-            if (nombreUsuario == null || nombreUsuario.isEmpty()) {
-                // Esto no debería ocurrir con las validaciones implementadas
-                // Pero como última línea de defensa, generamos un valor
-                nombreUsuario = (nuevoUsuario.getRol() != null && nuevoUsuario.getRol().toUpperCase().contains("ADMIN") 
-                    ? "ADM" : "EMP") + (System.currentTimeMillis() % 9999);
-                // Asegurar que no exceda 10 caracteres
-                if (nombreUsuario.length() > 10) {
-                    nombreUsuario = nombreUsuario.substring(0, 10);
-                }
-                log.warn("Se generó un usuario de emergencia en el controlador: {}", nombreUsuario);
-            } else if (nombreUsuario.length() > 10) {
-                // Si ya tiene un valor pero es demasiado largo, lo truncamos
-                nombreUsuario = nombreUsuario.substring(0, 10);
-                log.warn("Se truncó el usuario a 10 caracteres: {}", nombreUsuario);
-            }
-            respuesta.setUsuario(nombreUsuario);
-            
-            respuesta.setEmail(nuevoUsuario.getEmail());
-            respuesta.setTelefono(nuevoUsuario.getTelefono());
-            respuesta.setRol(nuevoUsuario.getRol());
-            respuesta.setActivo(nuevoUsuario.isActivo());
-            respuesta.setFechaCreacion(nuevoUsuario.getFechaCreacion());
-            respuesta.setNotas(nuevoUsuario.getNotas());
-            
-            log.info("Usuario creado exitosamente: id={}, usuario={}, telefono={}", 
-                    respuesta.getId(), respuesta.getUsuario(), respuesta.getTelefono());
-            return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
+            return ResponseEntity.status(HttpStatus.CREATED).body(nuevoUsuario);
         } catch (IllegalArgumentException e) {
             log.error("Error al crear usuario: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
@@ -229,5 +187,19 @@ public class UsuarioController {
         Usuario usuarioActualizado = usuarioRepository.save(usuario);
         usuarioActualizado.setPassword(null); // No devolvemos la contraseña
         return ResponseEntity.ok(usuarioActualizado);
+    }
+    
+    @GetMapping("/verificar/{usuario}")
+    public ResponseEntity<Void> verificarUsuarioExiste(@PathVariable String usuario) {
+        log.info("Verificando si existe el usuario: {}", usuario);
+        boolean existe = usuarioRepository.existsByUsuario(usuario);
+        
+        if (existe) {
+            log.info("El usuario {} ya existe", usuario);
+            return ResponseEntity.status(HttpStatus.CONFLICT).build(); // 409 Conflict
+        } else {
+            log.info("El usuario {} no existe, está disponible", usuario);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // 404 Not Found
+        }
     }
 } 

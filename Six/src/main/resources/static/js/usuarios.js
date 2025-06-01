@@ -139,34 +139,36 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Función para generar una contraseña aleatoria
-    function generarContraseña(longitud = 8) {
-        const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
-        let contraseña = '';
-        for (let i = 0; i < longitud; i++) {
-            contraseña += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
-        }
-        return contraseña;
-    }
-
     // Función para mostrar el toast
-    function mostrarToast(titulo, mensaje, tipo) {
+    function mostrarToast(titulo, mensaje, tipo, isHtml = false) {
         toastTitle.textContent = titulo;
-        toastMessage.textContent = mensaje;
-
-        // Asignar clase según tipo de mensaje
-        toast.className = 'toast';
-        if (tipo) {
-            toast.classList.add(`toast-${tipo}`);
+        
+        // Manejar contenido HTML si es necesario
+        if (isHtml) {
+            toastMessage.innerHTML = mensaje;
+        } else {
+            toastMessage.textContent = mensaje;
         }
-
-        // Mostrar toast
+        
+        toast.className = 'toast';
+        toast.classList.add(`toast-${tipo}`);
         toast.classList.remove('hidden');
-
-        // Ocultar automáticamente después de 5 segundos
-        setTimeout(() => {
-            toast.classList.add('hidden');
-        }, 5000);
+        
+        // Auto-ocultar después de 8 segundos para mensajes de éxito
+        // Aumentamos el tiempo para que el usuario pueda leer la información de credenciales
+        if (tipo === 'success') {
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 8000);
+        }
+        
+        // Para mensajes de error, dejamos que el usuario los cierre manualmente
+        // Pero aún así los ocultamos después de 10 segundos
+        if (tipo === 'error') {
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 10000);
+        }
     }
 
     // Función para abrir el modal de nuevo usuario
@@ -197,28 +199,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Validar formulario
         if (!userName.value.trim()) {
-            mostrarErrorEnFormulario('El nombre del usuario es obligatorio');
+            mostrarErrorEnFormulario('El nombre es obligatorio');
             return;
         }
 
         if (!userEmail.value.trim() || !userEmail.value.includes('@')) {
-            mostrarErrorEnFormulario('El email del usuario es inválido');
+            mostrarErrorEnFormulario('El email es inválido');
             return;
         }
 
-        if (!userRole.value) {
-            mostrarErrorEnFormulario('El rol del usuario es obligatorio');
-            return;
-        }
+        // Ocultar mensaje de error si existe
+        ocultarErrorEnFormulario();
 
-        // Crear objeto de usuario
+        // Preparar datos del usuario
         const nuevoUsuario = {
             nombre: userName.value.trim(),
             email: userEmail.value.trim(),
             rol: userRole.value === 'admin' ? 'ADMIN' : 'EMPLEADO',
             activo: userStatus.value === 'active',
             notas: userNotes.value.trim()
-                // El backend generará automáticamente: usuario, teléfono y contraseña
+            // No enviamos usuario ni password, el backend los generará automáticamente
+            // con el formato requerido (ADM/EMP + 5 dígitos para usuario)
         };
 
         console.log('Enviando datos para crear usuario:', nuevoUsuario);
@@ -234,14 +235,21 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => {
                 console.log('Respuesta del servidor:', response.status);
 
-                // Si hay error, intentar obtener detalles del error
                 if (!response.ok) {
                     if (response.status === 409) {
                         throw new Error('Ya existe un usuario con este nombre de usuario');
                     }
-                    // Intentar obtener el mensaje de error del servidor
-                    return response.text().then(text => {
-                        console.error('Error del servidor:', text);
+                    return response.json().catch(() => {
+                        // Si no podemos parsear como JSON, manejamos como texto
+                        return response.text().then(text => {
+                            console.error('Error del servidor:', text);
+                            throw new Error('Error al crear el usuario: ' + response.status);
+                        });
+                    }).then(errorData => {
+                        // Si tenemos un mensaje de error en el campo notas
+                        if (errorData && errorData.notas) {
+                            throw new Error(errorData.notas);
+                        }
                         throw new Error('Error al crear el usuario: ' + response.status);
                     });
                 }
@@ -250,13 +258,27 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(usuario => {
                 console.log('Usuario creado correctamente:', usuario);
 
-                // Mostrar mensaje de éxito con la información generada automáticamente
+                // Verificar que tenemos la información necesaria
+                if (!usuario.usuario) {
+                    throw new Error('No se recibió el nombre de usuario generado');
+                }
+
+                // Crear un mensaje más detallado y formateado
+                const mensaje = `
+                    <div class="user-created-info">
+                        <p><strong>Usuario creado exitosamente</strong></p>
+                        <p><strong>Nombre de usuario:</strong> ${usuario.usuario}</p>
+                        <p><strong>Contraseña:</strong> ${usuario.password || 'No disponible'}</p>
+                        <p class="warning-text">¡IMPORTANTE! Guarde esta información. La contraseña no se mostrará nuevamente.</p>
+                    </div>
+                `;
+
+                // Mostrar mensaje de éxito con la información del usuario recibida del backend
                 mostrarToast(
-                    'Éxito',
-                    `Usuario ${usuario.nombre} creado con éxito:\n` +
-                    `- Usuario: ${usuario.usuario}\n` +
-                    `- Teléfono: ${usuario.telefono}`,
-                    'success'
+                    'Usuario Creado',
+                    mensaje,
+                    'success',
+                    true // Indicar que contiene HTML
                 );
 
                 // Cerrar modal
@@ -297,4 +319,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Cargar usuarios al iniciar
     cargarUsuarios();
+
+    // Asegurar que los menús desplegables se muestren correctamente
+    document.querySelectorAll('.action-button').forEach(button => {
+        button.addEventListener('click', function(e) {
+            // Obtener el dropdown
+            const dropdown = this.closest('.dropdown');
+            const dropdownContent = dropdown.querySelector('.dropdown-content');
+
+            // Calcular si el menú saldría de la pantalla
+            setTimeout(() => {
+                const rect = dropdownContent.getBoundingClientRect();
+                const isOffScreen = rect.bottom > window.innerHeight;
+
+                // Si el menú sale de la pantalla, ajustar posición
+                if (isOffScreen) {
+                    dropdownContent.style.bottom = '100%';
+                    dropdownContent.style.top = 'auto';
+                    dropdownContent.style.marginBottom = '5px';
+                } else {
+                    dropdownContent.style.bottom = 'auto';
+                    dropdownContent.style.top = '100%';
+                    dropdownContent.style.marginBottom = '0';
+                }
+            }, 0);
+        });
+    });
 });

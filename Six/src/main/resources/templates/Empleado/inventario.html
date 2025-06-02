@@ -9,112 +9,6 @@
     <link rel="stylesheet" th:href="@{/css/dashboard.css}">
     <link rel="stylesheet" th:href="@{/css/inventario.css}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Estilos adicionales para la página de inventario del empleado */
-        .stock-badge {
-            display: inline-block;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            margin: 0 auto;
-        }
-        .stock-normal {
-            background-color: #d1ffd8;
-            color: #007814;
-        }
-        .stock-warning {
-            background-color: #fff2c3;
-            color: #dd8f00;
-        }
-        .stock-critical {
-            background-color: #ffd1d1;
-            color: #d00000;
-        }
-        .card {
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-            border-radius: 0.25rem;
-            border: 1px solid #dee2e6;
-            background-color: white;
-            margin-bottom: 1rem;
-            width: 100%;
-        }
-        .card-header {
-            padding: 1rem;
-            border-bottom: 1px solid #dee2e6;
-        }
-        .card-title {
-            font-size: 1.1rem;
-            font-weight: 500;
-            margin: 0;
-            color: #495057;
-        }
-        .card-description {
-            color: #6c757d;
-            font-size: 0.9rem;
-            margin-top: 0.25rem;
-        }
-        .card-content {
-            padding: 0;
-        }
-        .inventory-controls {
-            margin: 0;
-            padding: 16px 16px 0 16px;
-        }
-        /* Nuevos estilos para ajustar la búsqueda y la tabla */
-        .search-container {
-            position: relative;
-            margin: 0;
-        }
-        .search-icon {
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #aaa;
-            z-index: 1;
-        }
-        .search-input {
-            width: 100%;
-            padding: 10px 10px 10px 35px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-            box-shadow: none;
-            outline: none;
-            position: relative;
-        }
-        /* Clase para alinear el contenido de la columna de stock */
-        .stock-column {
-            text-align: center;
-            vertical-align: middle;
-            width: 80px;
-        }
-        /* Estilos para los encabezados de la tabla */
-        th.stock-column {
-            text-align: center;
-        }
-        .table-container {
-            overflow-x: auto;
-            margin: 0;
-        }
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .data-table th, .data-table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #dee2e6;
-        }
-        .data-table th {
-            background-color: #f8f9fa;
-            font-weight: 500;
-            text-align: left;
-        }
-    </style>
 </head>
 
 <body>
@@ -160,25 +54,22 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <header class="dashboard-header">
+            <header class="header">
+                <div class="header-left">
                 <button class="mobile-menu-button">
                     <i class="fas fa-bars"></i>
                 </button>
+                    <h1 class="dashboard-title">Inventario</h1>
+                </div>
                 <div class="header-actions">
                 </div>
             </header>
 
-            <div class="content-wrapper">
-                <div class="page-header">
-                    <h1>Inventario</h1>
-                </div>
-
+            <div class="content">
                 <div class="card">
                     <div class="card-header">
                         <div class="card-title">Inventario Actual</div>
-                        <div class="card-description">
-                            Administra el stock de productos, tallas y colores
-                        </div>
+                        <div class="card-description">Administra el stock de productos, tallas y colores</div>
                     </div>
                     <div class="card-content">
                         <div class="inventory-controls">

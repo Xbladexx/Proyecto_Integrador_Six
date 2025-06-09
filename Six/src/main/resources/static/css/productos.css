@@ -12,11 +12,17 @@
     padding-left: 0.5rem;
 }
 
-.new-product-button {
-    background-color: #000;
-    color: #fff;
-    border: none;
-    padding: 0.5rem 1rem;
+/* Grupo de botones */
+.button-group {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.new-category-button, .new-product-button {
+    height: 38px;
+    padding: 0 1rem;
     border-radius: 4px;
     cursor: pointer;
     display: flex;
@@ -25,6 +31,27 @@
     font-size: 0.875rem;
     font-weight: 500;
     transition: background-color 0.2s;
+    box-sizing: border-box;
+}
+
+.new-category-button {
+    background-color: #000;
+    color: #fff;
+    border: none;
+}
+
+.new-category-button:hover {
+    background-color: #333;
+}
+
+.new-category-button i {
+    font-size: 0.875rem;
+}
+
+.new-product-button {
+    background-color: #000;
+    color: #fff;
+    border: none;
 }
 
 .new-product-button:hover {
@@ -433,7 +460,7 @@
 .card-header-content {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
 }
 
 .card-header-content>div {

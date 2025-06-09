@@ -23,16 +23,17 @@ import lombok.extern.slf4j.Slf4j;
 public class AlertaStockController {
 
     private final InventarioService inventarioService;
+    // Definir el umbral de stock crítico (mismo valor en todos los controladores)
     private static final int STOCK_CRITICO = 3;
 
     @GetMapping("/critico")
     public ResponseEntity<List<AlertaStockDTO>> obtenerAlertasCriticas() {
         try {
-            log.info("Obteniendo alertas de stock crítico (3 unidades o menos)");
+            log.info("Obteniendo alertas de stock crítico ({} unidades o menos)", STOCK_CRITICO);
             
             // Obtener inventario con stock crítico usando el servicio
             List<Inventario> inventarioCritico = StreamSupport
-                .stream(inventarioService.obtenerStockBajo().spliterator(), false)
+                .stream(inventarioService.obtenerTodoInventario().spliterator(), false)
                 .filter(inv -> inv.getStock() <= STOCK_CRITICO)
                 .collect(Collectors.toList());
 
@@ -54,7 +55,7 @@ public class AlertaStockController {
                             .producto(nombreProducto)
                             .variante(String.format("%s, %s", color, talla))
                             .stockActual(inv.getStock())
-                            .stockMinimo(STOCK_CRITICO)
+                            .stockMinimo(inv.getStockMinimo())
                             .estado("critical")
                             .build();
                     } catch (Exception e) {

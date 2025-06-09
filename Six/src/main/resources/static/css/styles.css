@@ -319,6 +319,11 @@ input:focus {
     color: var(--destructive);
 }
 
+.toast.error .toast-message {
+    color: #721c24;
+    font-weight: 500;
+}
+
 @keyframes slideIn {
     from {
         transform: translateX(100%);

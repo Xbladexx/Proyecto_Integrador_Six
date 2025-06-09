@@ -9,6 +9,7 @@
     <link rel="stylesheet" th:href="@{/css/styles.css}">
     <link rel="stylesheet" th:href="@{/css/dashboard.css}">
     <link rel="stylesheet" th:href="@{/css/reportes.css}">
+    <link rel="stylesheet" th:href="@{/css/print.css}" media="print">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
@@ -35,6 +36,10 @@
                 <a th:href="@{/inventario}" class="nav-link">
                     <i class="fas fa-box-open"></i>
                     <span>Inventario</span>
+                </a>
+                <a th:href="@{/ventas}" class="nav-link">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Ventas</span>
                 </a>
                 <a th:href="@{/productos}" class="nav-link">
                     <i class="fas fa-tshirt"></i>

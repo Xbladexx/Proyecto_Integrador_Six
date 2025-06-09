@@ -90,7 +90,33 @@ public class InventarioService {
      * Obtiene el inventario con stock por debajo del mínimo
      */
     public Iterable<Inventario> obtenerStockBajo() {
-        return inventarioRepository.findLowStock();
+        return inventarioRepository.findByStockLessThanEqualStockMinimo();
+    }
+    
+    /**
+     * Obtiene la distribución de productos por categoría
+     * @return Lista de arrays [nombre_categoria, cantidad]
+     */
+    public List<Object[]> obtenerDistribucionPorCategoria() {
+        log.info("Obteniendo distribución de productos por categoría desde el servicio");
+        
+        List<Object[]> resultados = inventarioRepository.obtenerDistribucionPorCategoria();
+        
+        log.info("Se encontraron {} categorías con productos", resultados.size());
+        return resultados;
+    }
+    
+    /**
+     * Obtiene la distribución de unidades en stock por categoría
+     * @return Lista de arrays [nombre_categoria, total_unidades]
+     */
+    public List<Object[]> obtenerDistribucionUnidadesPorCategoria() {
+        log.info("Obteniendo distribución de unidades en stock por categoría desde el servicio");
+        
+        List<Object[]> resultados = inventarioRepository.obtenerDistribucionUnidadesPorCategoria();
+        
+        log.info("Se encontraron {} categorías con unidades en stock", resultados.size());
+        return resultados;
     }
     
     /**

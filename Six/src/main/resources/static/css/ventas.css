@@ -160,6 +160,35 @@
 .result-info {
     font-size: 0.75rem;
     color: var(--muted-foreground);
+    display: flex;
+    align-items: center;
+}
+
+.stock-info {
+    font-weight: 600;
+    margin-left: 8px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+/* Estilos para los diferentes niveles de stock */
+.stock-normal {
+    color: #155724;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+}
+
+.stock-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+}
+
+.stock-critical {
+    color: #721c24;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
 }
 
 .result-price {
@@ -330,16 +359,27 @@ input,
 }
 
 .btn-outline {
-    background-color: transparent;
-    border: 1px solid #d1d5db;
-    color: #374151;
+    background-color: #000;
+    border: 1px solid #000;
+    color: #fff;
     transition: all 0.2s;
     flex: 1;
 }
 
 .btn-outline:hover {
-    background-color: #f3f4f6;
-    border-color: #9ca3af;
+    background-color: #333;
+    border-color: #333;
+}
+
+.btn-primary {
+    background-color: #000;
+    color: #fff;
+    border: none;
+    transition: all 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: #333;
 }
 
 

@@ -266,11 +266,19 @@ public class HomeController {
     
     @GetMapping("/ventas")
     public String ventas(@NonNull Model model, HttpSession session) {
-        // Solo empleados tienen acceso a ventas
-        if (!authService.esEmpleado(session)) {
+        // Verificar si el usuario está autenticado
+        if (!authService.estaAutenticado(session)) {
             return "redirect:/";
         }
-        return "Empleado/ventas";
+        
+        // Añadir el rol al modelo para que la vista pueda ajustarse según el rol
+        model.addAttribute("esAdmin", authService.esAdmin(session));
+        
+        if (authService.esAdmin(session)) {
+            return "Administrador/ventas";
+        } else {
+            return "Empleado/ventas";
+        }
     }
     
     // Endpoints para páginas accesibles solo por administrador

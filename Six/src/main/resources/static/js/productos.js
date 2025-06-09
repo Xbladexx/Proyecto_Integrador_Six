@@ -8,8 +8,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const productsSearch = document.getElementById('productsSearch');
     const productsTableBody = document.getElementById('productsTableBody');
     const newProductButton = document.getElementById('newProductButton');
+    const newCategoryButton = document.getElementById('newCategoryButton');
 
-    // Elementos del modal
+    // Elementos del modal de productos
     const productModal = document.getElementById('productModal');
     const productModalTitle = document.getElementById('productModalTitle');
     const productCode = document.getElementById('productCode');
@@ -23,7 +24,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const addVariantButton = document.getElementById('addVariantButton');
     const cancelProductButton = document.getElementById('cancelProductButton');
     const saveProductButton = document.getElementById('saveProductButton');
-    const modalClose = document.querySelector('.modal-close');
+    const productModalClose = productModal.querySelector('.modal-close');
+
+    // Elementos del modal de categorías
+    const categoryModal = document.getElementById('categoryModal');
+    const categoryModalTitle = document.getElementById('categoryModalTitle');
+    const categoryName = document.getElementById('categoryName');
+    const categoryDescription = document.getElementById('categoryDescription');
+    const categoryStatus = document.getElementById('categoryStatus');
+    const cancelCategoryButton = document.getElementById('cancelCategoryButton');
+    const saveCategoryButton = document.getElementById('saveCategoryButton');
+    const categoryModalClose = categoryModal.querySelector('.modal-close');
 
     // Datos de productos 
     let productsData = [];
@@ -32,6 +43,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Variables de estado
     let selectedProduct = null;
     let editMode = false;
+    let selectedCategory = null;
+    let categoryEditMode = false;
 
     // Mostrar inicial del usuario
     if (userInitial) {
@@ -774,7 +787,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Event listeners para el modal
     cancelProductButton.addEventListener('click', closeProductModal);
-    modalClose.addEventListener('click', closeProductModal);
+    productModalClose.addEventListener('click', closeProductModal);
 
     // Cerrar modal al hacer clic fuera de él
     productModal.addEventListener('click', function(event) {
@@ -998,6 +1011,267 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Event listeners para el modal de categorías
+    newCategoryButton.addEventListener('click', () => openCategoryModal());
+    cancelCategoryButton.addEventListener('click', closeCategoryModal);
+    categoryModalClose.addEventListener('click', closeCategoryModal);
+    saveCategoryButton.addEventListener('click', saveCategory);
+
+    // Añadir botón para gestionar las categorías (listar y editar)
+    newCategoryButton.addEventListener('contextmenu', function(e) {
+        e.preventDefault(); // Prevenir el menú contextual por defecto
+        showCategoriesManagement();
+    });
+
+    // Cerrar modal al hacer clic fuera de él
+    window.addEventListener('click', function(event) {
+        if (event.target === productModal) {
+            closeProductModal();
+        }
+        if (event.target === categoryModal) {
+            closeCategoryModal();
+        }
+    });
+
+    // Función para mostrar listado de categorías para administración
+    function showCategoriesManagement() {
+        // Crear un modal temporal para mostrar las categorías
+        const tempModal = document.createElement('div');
+        tempModal.className = 'modal';
+        tempModal.style.display = 'block';
+        
+        let categoriesListHTML = '';
+        if (categoriesData.length === 0) {
+            categoriesListHTML = '<p>No hay categorías disponibles</p>';
+        } else {
+            categoriesListHTML = '<table class="data-table" style="width:100%"><thead><tr>' +
+                '<th>Nombre</th><th>Descripción</th><th>Estado</th><th>Acciones</th>' +
+                '</tr></thead><tbody>';
+            
+            categoriesData.forEach(cat => {
+                const statusClass = cat.estado === 'ACTIVO' || cat.estado === 'Activa' ? 'badge-success' : 'badge-inactive';
+                const statusText = cat.estado === 'ACTIVO' || cat.estado === 'Activa' ? 'Activa' : 'Inactiva';
+                
+                categoriesListHTML += `<tr>
+                    <td>${cat.nombre}</td>
+                    <td>${cat.descripcion || '-'}</td>
+                    <td><span class="badge ${statusClass}">${statusText}</span></td>
+                    <td>
+                        <button class="edit-category-btn button button-secondary" data-id="${cat.id}">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            
+            categoriesListHTML += '</tbody></table>';
+        }
+        
+        tempModal.innerHTML = `
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h2>Gestión de Categorías</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    ${categoriesListHTML}
+                </div>
+                <div class="modal-footer">
+                    <button class="button button-primary" id="newCategoryFromList">
+                        <i class="fas fa-plus"></i> Nueva Categoría
+                    </button>
+                    <button class="button button-secondary" id="closeCategoryList">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(tempModal);
+        
+        // Event listeners para el modal temporal
+        const closeBtn = tempModal.querySelector('.modal-close');
+        const closeCategoryListBtn = tempModal.querySelector('#closeCategoryList');
+        const newCategoryBtn = tempModal.querySelector('#newCategoryFromList');
+        
+        closeBtn.addEventListener('click', () => {
+            document.body.removeChild(tempModal);
+        });
+        
+        closeCategoryListBtn.addEventListener('click', () => {
+            document.body.removeChild(tempModal);
+        });
+        
+        newCategoryBtn.addEventListener('click', () => {
+            document.body.removeChild(tempModal);
+            openCategoryModal();
+        });
+        
+        // Event listeners para los botones de editar
+        const editButtons = tempModal.querySelectorAll('.edit-category-btn');
+        editButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const categoryId = parseInt(button.getAttribute('data-id'));
+                document.body.removeChild(tempModal);
+                openCategoryModal(categoryId, true);
+            });
+        });
+    }
+
+    // Función para abrir el modal de categoría
+    function openCategoryModal(categoryId = null, isEdit = false) {
+        categoryEditMode = isEdit;
+        
+        // Resetear el formulario
+        categoryName.value = '';
+        categoryDescription.value = '';
+        categoryStatus.value = 'active';
+        
+        if (isEdit && categoryId) {
+            // Buscar la categoría en la API
+            fetch(`/api/categorias/${categoryId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error al obtener la categoría');
+                    }
+                    return response.json();
+                })
+                .then(category => {
+                    selectedCategory = category;
+                    categoryModalTitle.textContent = 'Editar Categoría';
+                    
+                    // Llenar el formulario con los datos de la categoría
+                    categoryName.value = category.nombre;
+                    categoryDescription.value = category.descripcion || '';
+                    categoryStatus.value = category.estado === 'ACTIVO' || category.estado === 'Activa' ? 'active' : 'inactive';
+                    
+                    // Mostrar el modal
+                    categoryModal.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Error', `No se pudo cargar la categoría: ${error.message}`, 'error');
+                    
+                    // Intentar cargar desde los datos locales
+                    const localCategory = categoriesData.find(cat => cat.id === categoryId);
+                    if (localCategory) {
+                        selectedCategory = localCategory;
+                        categoryModalTitle.textContent = 'Editar Categoría (Datos Locales)';
+                        
+                        // Llenar el formulario con los datos locales
+                        categoryName.value = localCategory.nombre;
+                        categoryDescription.value = localCategory.descripcion || '';
+                        categoryStatus.value = localCategory.estado === 'ACTIVO' || localCategory.estado === 'Activa' ? 'active' : 'inactive';
+                        
+                        // Mostrar el modal
+                        categoryModal.style.display = 'block';
+                    } else {
+                        showToast('Error', 'No se pudo encontrar la categoría', 'error');
+                    }
+                });
+        } else {
+            selectedCategory = null;
+            categoryModalTitle.textContent = 'Nueva Categoría';
+            
+            // Mostrar el modal
+            categoryModal.style.display = 'block';
+        }
+    }
+
+    // Función para cerrar el modal de categoría
+    function closeCategoryModal() {
+        categoryModal.style.display = 'none';
+        selectedCategory = null;
+        categoryEditMode = false;
+    }
+
+    // Función para guardar una categoría (nueva o editada)
+    function saveCategory() {
+        // Validar el formulario
+        if (!categoryName.value.trim()) {
+            showToast('Error', 'Debes ingresar el nombre de la categoría', 'error');
+            return;
+        }
+        
+        // Mostrar indicador de carga
+        saveCategoryButton.disabled = true;
+        saveCategoryButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+        
+        const categoryData = {
+            nombre: categoryName.value.trim(),
+            descripcion: categoryDescription.value.trim(),
+            estado: categoryStatus.value === 'active' ? 'ACTIVO' : 'INACTIVO'
+        };
+        
+        let url = '/api/categorias';
+        let method = 'POST';
+        
+        if (categoryEditMode && selectedCategory) {
+            // Actualizar categoría existente
+            url = `/api/categorias/${selectedCategory.id}`;
+            method = 'PUT';
+            categoryData.id = selectedCategory.id;
+        }
+        
+        // Enviar datos al servidor
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(categoryData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(categoryEditMode ? 'Error al actualizar categoría' : 'Error al crear categoría');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Respuesta del servidor:', data);
+            
+            // Actualizar la categoría en el array local
+            if (categoryEditMode && selectedCategory) {
+                const index = categoriesData.findIndex(cat => cat.id === selectedCategory.id);
+                if (index !== -1) {
+                    categoriesData[index] = data;
+                }
+                
+                showToast('Éxito', 'Categoría actualizada correctamente');
+            } else {
+                // Añadir la nueva categoría al array
+                categoriesData.push(data);
+                
+                showToast('Éxito', 'Categoría creada correctamente');
+            }
+            
+            // Actualizar el select de categorías
+            populateCategorySelect();
+            
+            // Cerrar el modal
+            closeCategoryModal();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Error', error.message, 'error');
+        })
+        .finally(() => {
+            // Restaurar el botón
+            saveCategoryButton.disabled = false;
+            saveCategoryButton.innerHTML = 'Guardar';
+        });
+    }
+
     // Inicializar la interfaz
     checkApiHealth();
+    
+    // Mostrar un mensaje informativo la primera vez
+    setTimeout(() => {
+        // Verificar si ya se ha mostrado el mensaje
+        const tipShown = localStorage.getItem('category_tip_shown');
+        if (!tipShown) {
+            showToast('Consejo', 'Haz clic derecho en el botón "Nueva Categoría" para gestionar todas las categorías existentes', 'success');
+            localStorage.setItem('category_tip_shown', 'true');
+        }
+    }, 2000);
 });

@@ -1,0 +1,162 @@
+/* Estilos para impresión de reportes */
+
+@media print {
+    /* Ocultar elementos innecesarios */
+    .sidebar,
+    .header,
+    .mobile-menu-button,
+    .tab-list,
+    .date-range-picker,
+    .report-actions,
+    #toast,
+    button,
+    .button {
+        display: none !important;
+    }
+    
+    /* Elementos visibles */
+    body,
+    .main-content,
+    .content-wrapper,
+    .tab-content.active,
+    .report-grid,
+    .card,
+    .chart-container,
+    .table-container,
+    .data-table,
+    .stats-grid,
+    .stat-card,
+    .print-title {
+        visibility: visible !important;
+        display: block !important;
+    }
+    
+    /* Título de impresión */
+    .print-title {
+        margin-bottom: 20px;
+        text-align: center;
+        page-break-after: avoid;
+    }
+    
+    .print-title h1 {
+        font-size: 24px;
+        margin-bottom: 5px;
+    }
+    
+    .print-date, 
+    .print-period {
+        font-size: 12px;
+        color: #666;
+        margin: 3px 0;
+    }
+    
+    /* Ajustes para el contenido */
+    body {
+        margin: 0;
+        padding: 0;
+        background-color: white;
+        font-size: 11pt;
+    }
+    
+    .main-content {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 15mm;
+    }
+    
+    /* Gráficos y tablas */
+    .report-grid {
+        display: block !important;
+    }
+    
+    .card {
+        page-break-inside: avoid;
+        margin-bottom: 20mm;
+        box-shadow: none;
+        border: 1px solid #ccc;
+        padding: 5mm;
+    }
+    
+    .chart-container {
+        height: 60mm !important;
+        page-break-inside: avoid;
+    }
+    
+    /* Tablas */
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 5mm;
+    }
+    
+    .data-table th {
+        background-color: #f0f0f0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        font-weight: bold;
+        text-align: left;
+        padding: 2mm;
+        border: 0.5pt solid #888;
+    }
+    
+    .data-table td {
+        padding: 2mm;
+        border: 0.5pt solid #ccc;
+        text-align: left;
+    }
+    
+    /* Tarjetas de estadísticas */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 5mm;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+    }
+    
+    .stat-card {
+        border: 0.5pt solid #ccc;
+        padding: 3mm;
+        margin-bottom: 3mm;
+    }
+    
+    .stat-icon {
+        width: 8mm;
+        height: 8mm;
+        font-size: 5mm;
+    }
+    
+    .stat-value {
+        font-weight: bold;
+        font-size: 14pt;
+    }
+    
+    /* Estados */
+    .estado-stock.critico {
+        background-color: #ffdddd !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    .estado-stock.bajo {
+        background-color: #fff6dd !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    /* Paginación */
+    .card, .tab-content {
+        page-break-inside: avoid;
+    }
+    
+    h1, h2, h3 {
+        page-break-after: avoid;
+    }
+    
+    .card-header {
+        page-break-after: avoid;
+    }
+} 

@@ -231,6 +231,26 @@ body {
 }
 
 
+/* Estilos para estados de stock */
+.estado-stock {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.estado-stock.critico {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.estado-stock.bajo {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+
+
 /* Tarjetas de estadísticas */
 
 .stats-grid {
@@ -351,4 +371,109 @@ body {
     height: 1px;
     background-color: #e5e7eb;
     margin-left: -1rem;
+}
+
+/* Estilos para el título de impresión */
+.print-title {
+    display: none;
+}
+
+.print-title h1 {
+    font-size: 24px;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.print-date, .print-period {
+    font-size: 14px;
+    margin: 4px 0;
+    text-align: center;
+    color: #666;
+}
+
+/* Estilos para impresión */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    .main-content, 
+    .main-content .content-wrapper, 
+    .tab-content.active, 
+    .tab-content.active *,
+    .card,
+    .card-content,
+    .card-header,
+    .stat-card,
+    .table-container,
+    .data-table,
+    .chart-container {
+        visibility: visible;
+    }
+
+    .sidebar, 
+    .header, 
+    .report-actions, 
+    .date-range-picker, 
+    .tab-list, 
+    .mobile-menu-button,
+    #toast {
+        display: none !important;
+    }
+
+    .print-title {
+        display: block !important;
+        visibility: visible !important;
+        margin-bottom: 20px;
+    }
+
+    .main-content {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 20px;
+    }
+
+    /* Asegurar que todas las tarjetas sean visibles */
+    .report-grid {
+        display: block !important;
+    }
+
+    .card {
+        page-break-inside: avoid;
+        margin-bottom: 20px;
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+
+    /* Ajustar tamaño de gráficos */
+    .chart-container {
+        height: 300px !important;
+    }
+
+    /* Estilos para tablas */
+    .data-table th,
+    .data-table td {
+        border: 1px solid #ddd;
+    }
+
+    .data-table th {
+        background-color: #f8f9fa !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Estadísticas */
+    .stats-grid {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .stat-card {
+        width: 50%;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        box-shadow: none;
+    }
 }

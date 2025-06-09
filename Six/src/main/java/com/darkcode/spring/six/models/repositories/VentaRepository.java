@@ -54,4 +54,37 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
      */
     @Query("SELECT COUNT(v) FROM Venta v WHERE YEAR(v.fecha) = YEAR(CURRENT_DATE) AND MONTH(v.fecha) = MONTH(CURRENT_DATE)")
     Long countVentasMesActual();
+    
+    /**
+     * Obtiene el total de ventas de los últimos 7 días agrupados por día de la semana
+     * Devuelve [día de la semana (1-7), total]
+     */
+    @Query(value = "SELECT DAYOFWEEK(v.fecha) as dia, SUM(v.total) as total " +
+           "FROM ventas v " +
+           "WHERE v.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) " +
+           "GROUP BY DAYOFWEEK(v.fecha) " +
+           "ORDER BY dia ASC", nativeQuery = true)
+    List<Object[]> findVentasUltimos7Dias();
+    
+    /**
+     * Obtiene el total de ventas de los últimos 12 meses agrupados por mes
+     * Devuelve [mes (1-12), total]
+     */
+    @Query(value = "SELECT MONTH(v.fecha) as mes, SUM(v.total) as total " +
+           "FROM ventas v " +
+           "WHERE v.fecha >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH) " +
+           "GROUP BY MONTH(v.fecha) " +
+           "ORDER BY mes ASC", nativeQuery = true)
+    List<Object[]> findVentasUltimos12Meses();
+    
+    /**
+     * Obtiene el total de ventas de los últimos 5 años agrupados por año
+     * Devuelve [año, total]
+     */
+    @Query(value = "SELECT YEAR(v.fecha) as ano, SUM(v.total) as total " +
+           "FROM ventas v " +
+           "WHERE v.fecha >= DATE_SUB(CURDATE(), INTERVAL 5 YEAR) " +
+           "GROUP BY YEAR(v.fecha) " +
+           "ORDER BY ano ASC", nativeQuery = true)
+    List<Object[]> findVentasUltimos5Anos();
 } 

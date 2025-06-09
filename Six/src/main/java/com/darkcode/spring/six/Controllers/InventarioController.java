@@ -2,6 +2,9 @@ package com.darkcode.spring.six.Controllers;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -200,6 +203,41 @@ public class InventarioController {
             log.error("Error al disminuir stock", e);
             return ResponseEntity.badRequest()
                     .body(com.darkcode.spring.six.dtos.RespuestaDTO.error(e.getMessage()));
+        }
+    }
+    
+    /**
+     * Obtiene la distribución de productos por categoría para el gráfico del dashboard
+     */
+    @GetMapping("/distribucion-por-categoria")
+    public ResponseEntity<?> obtenerDistribucionPorCategoria() {
+        log.info("Obteniendo distribución de productos por categoría");
+        
+        try {
+            // Obtener datos de distribución de productos por categoría
+            List<Object[]> distribucion = inventarioService.obtenerDistribucionUnidadesPorCategoria();
+            
+            // Preparar los datos en el formato esperado por el frontend
+            List<String> labels = new ArrayList<>();
+            List<Integer> values = new ArrayList<>();
+            
+            for (Object[] item : distribucion) {
+                String nombreCategoria = (String) item[0];
+                Long totalUnidades = ((Number) item[1]).longValue();
+                
+                labels.add(nombreCategoria);
+                values.add(totalUnidades.intValue());
+            }
+            
+            Map<String, Object> resultado = new HashMap<>();
+            resultado.put("labels", labels);
+            resultado.put("values", values);
+            
+            return ResponseEntity.ok(resultado);
+        } catch (Exception e) {
+            log.error("Error al obtener distribución por categoría", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al obtener distribución por categoría: " + e.getMessage());
         }
     }
 } 

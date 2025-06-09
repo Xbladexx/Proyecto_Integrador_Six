@@ -35,6 +35,10 @@
                     <i class="fas fa-box-open"></i>
                     <span>Inventario</span>
                 </a>
+                <a th:href="@{/ventas}" class="nav-link">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Ventas</span>
+                </a>
                 <a th:href="@{/productos}" class="nav-link active">
                     <i class="fas fa-tshirt"></i>
                     <span>Productos</span>
@@ -83,10 +87,16 @@
                                 <div class="card-title" style="font-size: 1.1rem; font-weight: 500; color: #495057; margin: 0;">Catálogo de Productos</div>
                                 <div class="card-description">Administra los productos disponibles en tu tienda</div>
                             </div>
+                            <div class="button-group">
+                                <button id="newCategoryButton" class="new-category-button">
+                                    <i class="fas fa-folder-plus"></i>
+                                    Nueva Categoría
+                                </button>
                             <button id="newProductButton" class="new-product-button">
                                 <i class="fas fa-plus"></i>
                                 Nuevo Producto
                             </button>
+                            </div>
                         </div>
                     </div>
                     <div class="card-content">
@@ -236,6 +246,37 @@
             <div class="modal-footer">
                 <button id="cancelProductButton" class="button button-secondary">Cancelar</button>
                 <button id="saveProductButton" class="button button-primary">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para nueva/editar categoría -->
+    <div id="categoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="categoryModalTitle">Nueva Categoría</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="categoryName">Nombre de la categoría:</label>
+                    <input type="text" id="categoryName" class="form-control" placeholder="Ej: Accesorios">
+                </div>
+                <div class="form-group">
+                    <label for="categoryDescription">Descripción:</label>
+                    <textarea id="categoryDescription" class="form-control" rows="3" placeholder="Descripción de la categoría"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="categoryStatus">Estado:</label>
+                    <select id="categoryStatus" class="form-control">
+                        <option value="active">Activa</option>
+                        <option value="inactive">Inactiva</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelCategoryButton" class="button button-secondary">Cancelar</button>
+                <button id="saveCategoryButton" class="button button-primary">Guardar</button>
             </div>
         </div>
     </div>

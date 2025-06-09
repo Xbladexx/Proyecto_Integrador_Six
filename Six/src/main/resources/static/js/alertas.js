@@ -257,95 +257,97 @@ document.addEventListener('DOMContentLoaded', function() {
     function filterAlerts() {
         const searchTerm = alertsSearch.value.trim().toLowerCase();
         const statusValue = statusFilter.value;
+        
+        // Cargar los datos desde la API
+        fetch('/api/alertas-inventario')
+            .then(response => response.json())
+            .then(alertas => {
+                // Filtrar según el término de búsqueda
+                if (searchTerm) {
+                    alertas = alertas.filter(alerta =>
+                        (alerta.codigo && alerta.codigo.toLowerCase().includes(searchTerm)) ||
+                        (alerta.producto && alerta.producto.toLowerCase().includes(searchTerm)) ||
+                        (alerta.color && alerta.color.toLowerCase().includes(searchTerm)) ||
+                        (alerta.talla && alerta.talla.toLowerCase().includes(searchTerm)) ||
+                        (alerta.categoria && alerta.categoria.toLowerCase().includes(searchTerm))
+                    );
+                }
 
-        // Usar una API simulada para los datos
-        let alertas = [
-            { estado: 'Crítico', codigo: 'CAM-001-Negro-M', producto: 'Camiseta Slim Fit', talla: 'M', color: 'Negro', stockActual: 3, stockMinimo: 7, stockMaximo: 100, categoria: 'Camisetas' },
-            { estado: 'Bajo', codigo: 'CAM-001-Blanco-L', producto: 'Camiseta Slim Fit', talla: 'L', color: 'Blanco', stockActual: 7, stockMinimo: 5, stockMaximo: 70, categoria: 'Camisetas' },
-            { estado: 'Resuelto', codigo: 'VES-001-S-AZU', producto: 'Vestido Casual', talla: 'S', color: 'Azul', stockActual: 46, stockMinimo: 8, stockMaximo: 100, categoria: 'Vestidos' },
-            { estado: 'Crítico', codigo: 'PAN-001-32-BEI', producto: 'Pantalón Chino', talla: '32', color: 'Beige', stockActual: 3, stockMinimo: 5, stockMaximo: 120, categoria: 'Pantalones' },
-            { estado: 'Bajo', codigo: 'BLU-001-L-MUL', producto: 'Blusa Estampada', talla: 'L', color: 'Multicolor', stockActual: 9, stockMinimo: 5, stockMaximo: 100, categoria: 'Blusas' },
-            { estado: 'Crítico', codigo: 'CHA-001-XL-AZU', producto: 'Chaqueta Denim', talla: 'XL', color: 'Azul', stockActual: 1, stockMinimo: 3, stockMaximo: 80, categoria: 'Chaquetas' },
-            { estado: 'Resuelto', codigo: 'CAM-002-S-ROJ', producto: 'Camiseta Estampada', talla: 'S', color: 'Rojo', stockActual: 11, stockMinimo: 4, stockMaximo: 100, categoria: 'Camisetas' },
-            { estado: 'Crítico', codigo: 'CAM-003-Azul-M', producto: 'Camisa de mezclilla', talla: 'M', color: 'Azul', stockActual: 3, stockMinimo: 8, stockMaximo: 70, categoria: 'Camisetas' },
-            { estado: 'Bajo', codigo: 'PAN-002-Negro-L', producto: 'Pantalón Skinny', talla: 'L', color: 'Negro', stockActual: 7, stockMinimo: 5, stockMaximo: 100, categoria: 'Pantalones' }
-        ];
+                // Filtrar según el estado seleccionado
+                if (statusValue !== 'all') {
+                    let estadoFiltro;
+                    if (statusValue === 'critical') {
+                        estadoFiltro = 'Crítico';
+                    } else if (statusValue === 'low') {
+                        estadoFiltro = 'Bajo';
+                    } else if (statusValue === 'resolved') {
+                        estadoFiltro = 'Resuelto';
+                    }
 
-        // Filtrar según el término de búsqueda
-        if (searchTerm) {
-            alertas = alertas.filter(alerta =>
-                alerta.codigo.toLowerCase().includes(searchTerm) ||
-                alerta.producto.toLowerCase().includes(searchTerm) ||
-                alerta.color.toLowerCase().includes(searchTerm) ||
-                alerta.talla.toLowerCase().includes(searchTerm) ||
-                alerta.categoria.toLowerCase().includes(searchTerm)
-            );
-        }
+                    if (estadoFiltro) {
+                        alertas = alertas.filter(alerta => alerta.estado === estadoFiltro);
+                    }
+                }
 
-        // Filtrar según el estado seleccionado
-        if (statusValue !== 'all') {
-            let estadoFiltro;
-            if (statusValue === 'critical') {
-                estadoFiltro = 'Crítico';
-            } else if (statusValue === 'low') {
-                estadoFiltro = 'Bajo';
-            } else if (statusValue === 'resolved') {
-                estadoFiltro = 'Resuelto';
-            }
+                // Mostrar los resultados en la tabla
+                const alertsTableBody = document.getElementById('alertsTableBody');
+                alertsTableBody.innerHTML = '';
 
-            if (estadoFiltro) {
-                alertas = alertas.filter(alerta => alerta.estado === estadoFiltro);
-            }
-        }
+                if (alertas.length === 0) {
+                    const emptyRow = document.createElement('tr');
+                    emptyRow.innerHTML = `
+                        <td colspan="9" class="text-center">No se encontraron alertas que coincidan con los criterios de búsqueda.</td>
+                    `;
+                    alertsTableBody.appendChild(emptyRow);
+                    return;
+                }
 
-        // Mostrar los resultados en la tabla
-        const alertsTableBody = document.getElementById('alertsTableBody');
-        alertsTableBody.innerHTML = '';
+                alertas.forEach(alerta => {
+                    const row = document.createElement('tr');
 
-        if (alertas.length === 0) {
-            const emptyRow = document.createElement('tr');
-            emptyRow.innerHTML = `
-                <td colspan="9" class="text-center">No se encontraron alertas que coincidan con los criterios de búsqueda.</td>
-            `;
-            alertsTableBody.appendChild(emptyRow);
-            return;
-        }
+                    // Determinar la clase y el icono según el estado
+                    let statusClass = '';
+                    let statusIcon = '';
 
-        alertas.forEach(alerta => {
-            const row = document.createElement('tr');
+                    if (alerta.estado === 'Crítico') {
+                        statusClass = 'status-critical';
+                        statusIcon = '<i class="fas fa-exclamation-triangle"></i>';
+                    } else if (alerta.estado === 'Bajo') {
+                        statusClass = 'status-low';
+                        statusIcon = '<i class="fas fa-arrow-down"></i>';
+                    } else {
+                        statusClass = 'status-resolved';
+                        statusIcon = '<i class="fas fa-check-circle"></i>';
+                    }
 
-            // Determinar la clase y el icono según el estado
-            let statusClass = '';
-            let statusIcon = '';
+                    // Crear el contenido de la fila
+                    row.innerHTML = `
+                        <td><span class="status-badge ${statusClass}">${statusIcon} ${alerta.estado}</span></td>
+                        <td>${alerta.codigo}</td>
+                        <td>${alerta.producto}</td>
+                        <td>${alerta.talla}</td>
+                        <td>${alerta.color}</td>
+                        <td class="${alerta.estado === 'Crítico' ? 'text-red-500 font-medium' : 
+                                alerta.estado === 'Bajo' ? 'text-amber-500 font-medium' : 
+                                'text-green-500 font-medium'}">${alerta.stockActual}</td>
+                        <td>${alerta.stockMinimo}</td>
+                        <td>${alerta.stockMaximo}</td>
+                        <td>${alerta.categoria}</td>
+                    `;
 
-            if (alerta.estado === 'Crítico') {
-                statusClass = 'status-critical';
-                statusIcon = '<i class="fas fa-exclamation-triangle"></i>';
-            } else if (alerta.estado === 'Bajo') {
-                statusClass = 'status-low';
-                statusIcon = '<i class="fas fa-arrow-down"></i>';
-            } else {
-                statusClass = 'status-resolved';
-                statusIcon = '<i class="fas fa-check-circle"></i>';
-            }
-
-            // Crear el contenido de la fila
-            row.innerHTML = `
-                <td><span class="status-badge ${statusClass}">${statusIcon} ${alerta.estado}</span></td>
-                <td>${alerta.codigo}</td>
-                <td>${alerta.producto}</td>
-                <td>${alerta.talla}</td>
-                <td>${alerta.color}</td>
-                <td class="${alerta.estado === 'Crítico' ? 'text-red-500 font-medium' : 
-                           alerta.estado === 'Bajo' ? 'text-amber-500 font-medium' : 
-                           'text-green-500 font-medium'}">${alerta.stockActual}</td>
-                <td>${alerta.stockMinimo}</td>
-                <td>${alerta.stockMaximo}</td>
-                <td>${alerta.categoria}</td>
-            `;
-
-            alertsTableBody.appendChild(row);
-        });
+                    alertsTableBody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error al obtener alertas:', error);
+                alertsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="text-center text-red-500">
+                            Error al cargar las alertas. Por favor, intente nuevamente.
+                        </td>
+                    </tr>
+                `;
+            });
     }
 
     // Habilitar/deshabilitar campos de pedido automático
@@ -384,10 +386,8 @@ document.addEventListener('DOMContentLoaded', function() {
         showToast('Configuración guardada', 'La configuración por categoría ha sido actualizada correctamente');
     });
 
-    // Inicializar la interfaz
-    // Comentamos esta función ya que ahora usamos filterAlerts para mostrar los datos
-    // loadAlertsData();
+    // Cargar datos al inicializar
+    loadAlertsData();
 
-    // Llamar a filterAlerts inicialmente para cargar los datos
-    filterAlerts();
+    // También usamos filterAlerts para el filtrado cuando se usen los controles de búsqueda
 });

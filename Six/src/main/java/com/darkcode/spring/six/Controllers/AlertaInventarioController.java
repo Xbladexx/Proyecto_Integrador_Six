@@ -22,6 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 public class AlertaInventarioController {
 
     private final InventarioService inventarioService;
+    
+    // Umbral de stock crítico: cuando es igual o menor a este valor
+    private static final int STOCK_CRITICO = 3;
 
     @GetMapping
     public ResponseEntity<List<AlertaInventarioDTO>> obtenerAlertasInventario() {
@@ -36,9 +39,9 @@ public class AlertaInventarioController {
                              inv.getVariante().getProducto().getCategoria() != null)
                 .map(inv -> {
                     String estado;
-                    if (inv.getStock() <= 3) {
+                    if (inv.getStock() <= STOCK_CRITICO) {
                         estado = "Crítico";
-                    } else if (inv.getStock() <= 10) {
+                    } else if (inv.getStock() <= inv.getStockMinimo()) {
                         estado = "Bajo";
                     } else {
                         estado = "Resuelto";

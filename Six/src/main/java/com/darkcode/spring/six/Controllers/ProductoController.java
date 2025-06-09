@@ -587,4 +587,66 @@ public class ProductoController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    /**
+     * Verifica si hay suficiente stock para una variante específica
+     * @param varianteId ID de la variante a verificar
+     * @param cantidad Cantidad solicitada
+     * @return Respuesta con información del stock
+     */
+    @GetMapping("/verificar-stock")
+    public ResponseEntity<?> verificarStock(
+            @RequestParam Long varianteId,
+            @RequestParam Integer cantidad) {
+        
+        log.info("Verificando stock para varianteId: {}, cantidad: {}", varianteId, cantidad);
+        
+        try {
+            // Verificar que la variante existe
+            Optional<VarianteProducto> varianteOpt = varianteRepository.findById(varianteId);
+            if (varianteOpt.isEmpty()) {
+                log.error("Variante no encontrada con ID: {}", varianteId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Variante no encontrada con ID: " + varianteId);
+            }
+            
+            VarianteProducto variante = varianteOpt.get();
+            
+            // Verificar stock disponible
+            Optional<Inventario> inventarioOpt = inventarioRepository.findByVarianteId(variante.getId());
+            if (inventarioOpt.isEmpty()) {
+                log.error("No se encontró inventario para la variante ID: {}", variante.getId());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("No hay inventario registrado para el producto: " + variante.getProducto().getNombre());
+            }
+            
+            Inventario inventario = inventarioOpt.get();
+            log.info("Stock actual: {}, cantidad solicitada: {}", inventario.getStock(), cantidad);
+            
+            if (inventario.getStock() < cantidad) {
+                log.error("Stock insuficiente. Disponible: {}, Solicitado: {}", inventario.getStock(), cantidad);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Stock insuficiente para el producto: " + variante.getProducto().getNombre() 
+                              + " - " + variante.getColor() 
+                              + " (Talla: " + variante.getTalla() 
+                              + "). Disponible: " + inventario.getStock());
+            }
+            
+            // Si hay suficiente stock, devolver información del stock
+            return ResponseEntity.ok(Map.of(
+                "varianteId", variante.getId(),
+                "producto", variante.getProducto().getNombre(),
+                "color", variante.getColor(),
+                "talla", variante.getTalla(),
+                "stockDisponible", inventario.getStock(),
+                "cantidadSolicitada", cantidad,
+                "stockSuficiente", true
+            ));
+            
+        } catch (Exception e) {
+            log.error("Error al verificar stock", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al verificar stock: " + e.getMessage());
+        }
+    }
 } 

@@ -152,13 +152,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (results.length > 0) {
             results.forEach(product => {
+                // Determinar la clase de stock basada en la cantidad disponible
+                let stockClass = 'stock-normal';
+                if (product.stock <= 3) {
+                    stockClass = 'stock-critical';
+                } else if (product.stock <= 10) {
+                    stockClass = 'stock-warning';
+                }
+                
+                // Obtener el stock para mostrar
+                const stockInfo = product.stock !== undefined ? `Stock: ${product.stock}` : '';
+                
                 const resultItem = document.createElement('div');
                 resultItem.className = 'search-result-item';
                 resultItem.innerHTML = `
                     <div class="result-code">${product.codigo}</div>
                     <div class="result-details">
                         <div class="result-name">${product.nombre}</div>
-                        <div class="result-info">${product.color} - ${product.tallasDisponibles.join(', ')}</div>
+                        <div class="result-info">
+                            ${product.color} - ${product.tallasDisponibles.join(', ')}
+                            <span class="stock-info ${stockClass}">${stockInfo}</span>
+                        </div>
                     </div>
                     <div class="result-price">S/. ${product.precio.toFixed(2)}</div>
                 `;
@@ -224,7 +238,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Seleccionar producto
     function selectProduct(product) {
         selectedProduct = product;
-        productSearchInput.value = `${product.codigo} - ${product.nombre} - ${product.color}`;
+        
+        // Determinar el nivel de stock para mostrar con un emoji adecuado
+        let stockEmoji = '🟢'; // Stock normal
+        if (product.stock <= 3) {
+            stockEmoji = '🔴'; // Stock crítico
+        } else if (product.stock <= 10) {
+            stockEmoji = '🟠'; // Stock de advertencia
+        }
+        
+        // Mostrar el código, nombre, color y stock del producto seleccionado
+        productSearchInput.value = `${product.codigo} - ${product.nombre} - ${product.color} - Stock: ${stockEmoji} ${product.stock || 0}`;
 
         console.log('Producto seleccionado:', product);
 
@@ -265,6 +289,44 @@ document.addEventListener('DOMContentLoaded', function() {
     // Manejar cambio de talla
     if (sizeSelect) {
         sizeSelect.addEventListener('change', function() {
+            if (selectedProduct && this.value) {
+                // Buscar la variante correcta para la talla seleccionada
+                const varianteEncontrada = productsData.find(p => 
+                    p.id === selectedProduct.id && 
+                    p.color === selectedProduct.color && 
+                    p.talla === this.value
+                );
+                
+                if (varianteEncontrada) {
+                    // Actualizar el stock del producto seleccionado con el de la variante encontrada
+                    selectedProduct.stock = varianteEncontrada.stock || 0;
+                    
+                    // Verificar si el producto ya está en el carrito con la misma talla
+                    const existingItem = cartItems.find(item =>
+                        item.id === selectedProduct.id && item.size === this.value
+                    );
+                    
+                    // Resetear la cantidad a 1 o al máximo disponible considerando lo que ya está en el carrito
+                    let cantidadEnCarrito = existingItem ? existingItem.quantity : 0;
+                    let stockDisponibleReal = selectedProduct.stock - cantidadEnCarrito;
+                    
+                    // Si no hay stock disponible, mostrar mensaje y deshabilitar el botón de agregar
+                    if (stockDisponibleReal <= 0) {
+                        showToast('Stock insuficiente', `No hay stock disponible para esta talla. Ya tienes ${cantidadEnCarrito} unidades en el carrito.`, 'error');
+                        quantityInput.value = 1;
+                        quantityInput.disabled = true;
+                        decreaseQuantityButton.disabled = true;
+                        increaseQuantityButton.disabled = true;
+                        addToCartButton.disabled = true;
+                    } else {
+                        quantityInput.value = 1;
+                        quantityInput.disabled = false;
+                        decreaseQuantityButton.disabled = false;
+                        increaseQuantityButton.disabled = false;
+                    }
+                }
+            }
+            
             updateAddButtonState();
         });
     }
@@ -273,10 +335,26 @@ document.addEventListener('DOMContentLoaded', function() {
     if (increaseQuantityButton) {
         increaseQuantityButton.addEventListener('click', function() {
             const currentValue = parseInt(quantityInput.value);
-            if (currentValue < selectedProduct.stock) {
+            
+            // Verificar si el producto ya está en el carrito con la misma talla
+            let cantidadEnCarrito = 0;
+            if (selectedProduct && sizeSelect.value) {
+                const existingItem = cartItems.find(item =>
+                    item.id === selectedProduct.id && item.size === sizeSelect.value
+                );
+                
+                if (existingItem) {
+                    cantidadEnCarrito = existingItem.quantity;
+                }
+            }
+            
+            // Calcular el stock disponible real (stock total - cantidad en carrito)
+            const stockDisponibleReal = selectedProduct ? (selectedProduct.stock - cantidadEnCarrito) : 0;
+            
+            if (currentValue < stockDisponibleReal) {
                 quantityInput.value = currentValue + 1;
             } else {
-                showToast('Stock insuficiente', 'No hay suficiente stock disponible', 'error');
+                showToast('Stock insuficiente', `No hay suficiente stock disponible. Stock actual: ${selectedProduct.stock}, En carrito: ${cantidadEnCarrito}`, 'error');
             }
         });
     }
@@ -298,9 +376,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (isNaN(value) || value < 1) {
                 value = 1;
-            } else if (selectedProduct && value > selectedProduct.stock) {
-                value = selectedProduct.stock;
-                showToast('Stock insuficiente', 'No hay suficiente stock disponible', 'error');
+            } else if (selectedProduct) {
+                // Verificar si el producto ya está en el carrito con la misma talla
+                let cantidadEnCarrito = 0;
+                if (sizeSelect.value) {
+                    const existingItem = cartItems.find(item =>
+                        item.id === selectedProduct.id && item.size === sizeSelect.value
+                    );
+                    
+                    if (existingItem) {
+                        cantidadEnCarrito = existingItem.quantity;
+                    }
+                }
+                
+                // Calcular el stock disponible real (stock total - cantidad en carrito)
+                const stockDisponibleReal = selectedProduct.stock - cantidadEnCarrito;
+                
+                if (value > stockDisponibleReal) {
+                    value = stockDisponibleReal > 0 ? stockDisponibleReal : 1;
+                    showToast('Stock insuficiente', `No hay suficiente stock disponible. Stock actual: ${selectedProduct.stock}, En carrito: ${cantidadEnCarrito}`, 'error');
+                }
             }
 
             this.value = value;
@@ -310,7 +405,34 @@ document.addEventListener('DOMContentLoaded', function() {
     // Actualizar estado del botón Agregar
     function updateAddButtonState() {
         const sizeSelected = sizeSelect.value !== '';
-        addToCartButton.disabled = !selectedProduct || !sizeSelected;
+        let buttonDisabled = !selectedProduct || !sizeSelected;
+        
+        // Si hay un producto y talla seleccionados, verificar stock disponible
+        if (selectedProduct && sizeSelected) {
+            // Buscar la variante correcta para la talla seleccionada
+            const varianteEncontrada = productsData.find(p => 
+                p.id === selectedProduct.id && 
+                p.color === selectedProduct.color && 
+                p.talla === sizeSelect.value
+            );
+            
+            // Verificar si el producto ya está en el carrito con la misma talla
+            const existingItem = cartItems.find(item =>
+                item.id === selectedProduct.id && item.size === sizeSelect.value
+            );
+            
+            // Calcular stock disponible real
+            let stockDisponible = varianteEncontrada ? varianteEncontrada.stock : selectedProduct.stock;
+            let cantidadEnCarrito = existingItem ? existingItem.quantity : 0;
+            let stockDisponibleReal = stockDisponible - cantidadEnCarrito;
+            
+            // Deshabilitar el botón si no hay stock disponible
+            if (stockDisponibleReal <= 0) {
+                buttonDisabled = true;
+            }
+        }
+        
+        addToCartButton.disabled = buttonDisabled;
     }
 
     // Función para buscar una variante específica por talla
@@ -346,14 +468,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Encontrar la variante correcta por talla
             let varianteId = selectedProduct.varianteId;
+            let stockDisponible = selectedProduct.stock || 0;
 
             // Si la talla seleccionada es diferente a la talla de la variante actual,
             // intentar buscar la variante correcta
             if (selectedSize !== selectedProduct.talla) {
-                const varianteEncontradaId = buscarVariantePorTalla(selectedProduct.id, selectedProduct.color, selectedSize);
-                if (varianteEncontradaId) {
-                    varianteId = varianteEncontradaId;
-                    console.log('Se encontró una variante específica para la talla seleccionada:', varianteId);
+                // Buscar la variante correcta para la talla seleccionada
+                const varianteEncontrada = productsData.find(p => 
+                    p.id === selectedProduct.id && 
+                    p.color === selectedProduct.color && 
+                    p.talla === selectedSize
+                );
+                
+                if (varianteEncontrada) {
+                    varianteId = varianteEncontrada.varianteId;
+                    stockDisponible = varianteEncontrada.stock || 0;
+                    console.log('Se encontró una variante específica para la talla seleccionada:', varianteId, 'Stock:', stockDisponible);
                 } else {
                     console.warn('No se encontró una variante específica para la talla seleccionada, usando la variante principal');
                 }
@@ -363,6 +493,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const existingItemIndex = cartItems.findIndex(item =>
                 item.id === selectedProduct.id && item.size === selectedSize
             );
+
+            // Calcular la cantidad total que tendría el producto en el carrito
+            let cantidadTotalEnCarrito = quantity;
+            if (existingItemIndex !== -1) {
+                cantidadTotalEnCarrito += cartItems[existingItemIndex].quantity;
+            }
+
+            // Verificar si hay suficiente stock disponible
+            if (cantidadTotalEnCarrito > stockDisponible) {
+                showToast('Stock insuficiente', `No hay suficiente stock disponible. Stock actual: ${stockDisponible}`, 'error');
+                return;
+            }
 
             if (existingItemIndex !== -1) {
                 // Actualizar cantidad
@@ -377,7 +519,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     color: selectedProduct.color,
                     size: selectedSize,
                     price: selectedProduct.precio,
-                    quantity: quantity
+                    quantity: quantity,
+                    stockDisponible: stockDisponible // Guardar el stock disponible para referencia
                 });
             }
 
@@ -385,7 +528,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 'ID:', selectedProduct.id,
                 'Nombre:', selectedProduct.nombre,
                 'Talla:', selectedSize,
-                'Variante ID:', varianteId);
+                'Variante ID:', varianteId,
+                'Cantidad en carrito:', cantidadTotalEnCarrito,
+                'Stock disponible:', stockDisponible);
 
             // Actualizar UI
             updateCartUI();
@@ -563,81 +708,124 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // Preparar los datos de la venta
-            const subtotal = parseFloat(subtotalElement.textContent.replace('S/. ', ''));
-            const igv = parseFloat(igvElement.textContent.replace('S/. ', ''));
-            const total = parseFloat(totalElement.textContent.replace('S/. ', ''));
-
-            // Convertir items del carrito al formato esperado por el backend
-            const items = cartItems.map(item => {
-                console.log('Item para venta:', item);
-                // Asegurarse de que varianteId sea el correcto
-                let varianteId = item.varianteId || item.id;
-
-                return {
-                    varianteId: varianteId,
-                    codigo: item.code,
-                    nombre: item.name,
-                    color: item.color,
-                    talla: item.size,
-                    cantidad: item.quantity,
-                    precioUnitario: item.price,
-                    subtotal: item.price * item.quantity
-                };
+            // Verificar stock actual de todos los productos antes de procesar el pago
+            let promesasVerificacionStock = cartItems.map(item => {
+                return fetch(`/api/productos/verificar-stock?varianteId=${item.varianteId}&cantidad=${item.quantity}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.text().then(errorMsg => {
+                                throw new Error(errorMsg || `Stock insuficiente para ${item.name} - ${item.size}`);
+                            });
+                        }
+                        return response.json();
+                    });
             });
 
-            const ventaData = {
-                nombreCliente: nombreCliente,
-                dniCliente: dniCliente,
-                subtotal: subtotal,
-                igv: igv,
-                total: total,
-                items: items
-            };
-
-            console.log('Datos de venta a enviar:', ventaData);
-
             // Mostrar toast de procesamiento
-            showToast('Procesando', 'Registrando venta en el sistema...', 'success');
+            showToast('Verificando', 'Verificando stock disponible...', 'success');
 
-            // Deshabilitar el botón para evitar clics múltiples
-            processPaymentButton.disabled = true;
+            // Verificar stock de todos los productos
+            Promise.all(promesasVerificacionStock)
+                .then(resultados => {
+                    // Si llegamos aquí, todos los productos tienen stock suficiente
+                    // Preparar los datos de la venta
+                    const subtotal = parseFloat(subtotalElement.textContent.replace('S/. ', ''));
+                    const igv = parseFloat(igvElement.textContent.replace('S/. ', ''));
+                    const total = parseFloat(totalElement.textContent.replace('S/. ', ''));
 
-            // Enviar los datos al servidor
-            fetch('/api/ventas', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(ventaData)
-                })
-                .then(response => {
-                    processPaymentButton.disabled = false;
+                    // Convertir items del carrito al formato esperado por el backend
+                    const items = cartItems.map(item => {
+                        console.log('Item para venta:', item);
+                        // Asegurarse de que varianteId sea el correcto
+                        let varianteId = item.varianteId || item.id;
 
-                    if (!response.ok) {
-                        return response.text().then(errorMsg => {
-                            throw new Error(errorMsg || 'Error al procesar la venta');
+                        return {
+                            varianteId: varianteId,
+                            codigo: item.code,
+                            nombre: item.name,
+                            color: item.color,
+                            talla: item.size,
+                            cantidad: item.quantity,
+                            precioUnitario: item.price,
+                            subtotal: item.price * item.quantity
+                        };
+                    });
+
+                    const ventaData = {
+                        nombreCliente: nombreCliente,
+                        dniCliente: dniCliente,
+                        subtotal: subtotal,
+                        igv: igv,
+                        total: total,
+                        items: items
+                    };
+
+                    console.log('Datos de venta a enviar:', ventaData);
+
+                    // Mostrar toast de procesamiento
+                    showToast('Procesando', 'Registrando venta en el sistema...', 'success');
+
+                    // Deshabilitar el botón para evitar clics múltiples
+                    processPaymentButton.disabled = true;
+
+                    // Enviar los datos al servidor
+                    fetch('/api/ventas', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(ventaData)
+                        })
+                        .then(response => {
+                            processPaymentButton.disabled = false;
+
+                            if (!response.ok) {
+                                return response.text().then(errorMsg => {
+                                    throw new Error(errorMsg || 'Error al procesar la venta');
+                                });
+                            }
+                            return response.text();
+                        })
+                        .then(codigoVenta => {
+                            showToast('Éxito', `Venta registrada correctamente con código: ${codigoVenta}`, 'success');
+
+                            // Imprimir ticket (simulado)
+                            console.log('Imprimiendo ticket para venta:', codigoVenta);
+
+                            // Limpiar formulario
+                            cartItems = [];
+                            updateCartUI();
+                            updateTotals();
+                            customerNameInput.value = '';
+                            customerDNIInput.value = '';
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            processPaymentButton.disabled = false;
+                            
+                            // Extraer información del stock si es un error de stock insuficiente
+                            let errorMessage = error.message || 'No se pudo procesar la venta. Inténtelo nuevamente.';
+                            
+                            // Verificar si es un error de stock insuficiente
+                            if (errorMessage.includes('Stock insuficiente')) {
+                                // Intentar extraer el stock disponible del mensaje de error
+                                const stockMatch = errorMessage.match(/Disponible: (\d+)/);
+                                if (stockMatch && stockMatch[1]) {
+                                    const stockDisponible = stockMatch[1];
+                                    errorMessage = `Stock insuficiente. Stock disponible: ${stockDisponible}`;
+                                }
+                            }
+                            
+                            showToast('Error', errorMessage, 'error');
                         });
-                    }
-                    return response.text();
-                })
-                .then(codigoVenta => {
-                    showToast('Éxito', `Venta registrada correctamente con código: ${codigoVenta}`, 'success');
-
-                    // Imprimir ticket (simulado)
-                    console.log('Imprimiendo ticket para venta:', codigoVenta);
-
-                    // Limpiar formulario
-                    cartItems = [];
-                    updateCartUI();
-                    updateTotals();
-                    customerNameInput.value = '';
-                    customerDNIInput.value = '';
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    console.error('Error al verificar stock:', error);
                     processPaymentButton.disabled = false;
-                    showToast('Error', error.message || 'No se pudo procesar la venta. Inténtelo nuevamente.', 'error');
+                    showToast('Error', error.message, 'error');
+                    
+                    // Recargar los productos para actualizar el stock
+                    loadProducts();
                 });
         });
     }

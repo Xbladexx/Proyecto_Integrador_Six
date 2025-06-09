@@ -423,4 +423,134 @@ public class VentaController {
                     .body("Error al obtener ventas recientes: " + e.getMessage());
         }
     }
+    
+    /**
+     * Obtiene datos de ventas por periodo para el gráfico del dashboard
+     */
+    @GetMapping("/ventas-por-periodo")
+    public ResponseEntity<?> obtenerVentasPorPeriodo() {
+        try {
+            log.info("Obteniendo datos de ventas por periodo para el gráfico");
+            
+            Map<String, Object> resultado = new HashMap<>();
+            
+            // Datos para el periodo diario (últimos 7 días)
+            List<Object[]> ventasDiarias = ventaRepository.findVentasUltimos7Dias();
+            Map<String, Object> datosVentasDiarias = procesarDatosVentasDiarias(ventasDiarias);
+            resultado.put("daily", datosVentasDiarias);
+            
+            // Datos para el periodo mensual (últimos 12 meses)
+            List<Object[]> ventasMensuales = ventaRepository.findVentasUltimos12Meses();
+            Map<String, Object> datosVentasMensuales = procesarDatosVentasMensuales(ventasMensuales);
+            resultado.put("monthly", datosVentasMensuales);
+            
+            // Datos para el periodo anual (últimos 5 años)
+            List<Object[]> ventasAnuales = ventaRepository.findVentasUltimos5Anos();
+            Map<String, Object> datosVentasAnuales = procesarDatosVentasAnuales(ventasAnuales);
+            resultado.put("yearly", datosVentasAnuales);
+            
+            return ResponseEntity.ok(resultado);
+        } catch (Exception e) {
+            log.error("Error al obtener datos de ventas por periodo", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al obtener datos de ventas por periodo: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Procesa los datos de ventas diarias para el formato esperado por el frontend
+     */
+    private Map<String, Object> procesarDatosVentasDiarias(List<Object[]> ventasDiarias) {
+        Map<String, Object> resultado = new HashMap<>();
+        
+        // Definir los días de la semana en español
+        String[] labels = {"Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"};
+        BigDecimal[] values = new BigDecimal[7];
+        
+        // Inicializar los valores a cero
+        for (int i = 0; i < 7; i++) {
+            values[i] = BigDecimal.ZERO;
+        }
+        
+        // Llenar con los datos reales
+        for (Object[] venta : ventasDiarias) {
+            Integer diaSemana = (Integer) venta[0]; // 1 = Lunes, 7 = Domingo
+            BigDecimal total = (BigDecimal) venta[1];
+            
+            // Ajustar el índice (diaSemana-1 para convertir 1-7 a 0-6)
+            values[diaSemana-1] = total;
+        }
+        
+        resultado.put("labels", labels);
+        resultado.put("values", values);
+        
+        return resultado;
+    }
+    
+    /**
+     * Procesa los datos de ventas mensuales para el formato esperado por el frontend
+     */
+    private Map<String, Object> procesarDatosVentasMensuales(List<Object[]> ventasMensuales) {
+        Map<String, Object> resultado = new HashMap<>();
+        
+        // Definir los meses en español
+        String[] labels = {"Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"};
+        BigDecimal[] values = new BigDecimal[12];
+        
+        // Inicializar los valores a cero
+        for (int i = 0; i < 12; i++) {
+            values[i] = BigDecimal.ZERO;
+        }
+        
+        // Llenar con los datos reales
+        for (Object[] venta : ventasMensuales) {
+            Integer mes = (Integer) venta[0]; // 1 = Enero, 12 = Diciembre
+            BigDecimal total = (BigDecimal) venta[1];
+            
+            // Ajustar el índice (mes-1 para convertir 1-12 a 0-11)
+            values[mes-1] = total;
+        }
+        
+        resultado.put("labels", labels);
+        resultado.put("values", values);
+        
+        return resultado;
+    }
+    
+    /**
+     * Procesa los datos de ventas anuales para el formato esperado por el frontend
+     */
+    private Map<String, Object> procesarDatosVentasAnuales(List<Object[]> ventasAnuales) {
+        Map<String, Object> resultado = new HashMap<>();
+        
+        // Obtener año actual y los 4 anteriores
+        int anoActual = LocalDateTime.now().getYear();
+        String[] labels = new String[5];
+        BigDecimal[] values = new BigDecimal[5];
+        
+        // Inicializar los valores a cero y establecer las etiquetas de años
+        for (int i = 0; i < 5; i++) {
+            labels[i] = String.valueOf(anoActual - 4 + i);
+            values[i] = BigDecimal.ZERO;
+        }
+        
+        // Llenar con los datos reales
+        for (Object[] venta : ventasAnuales) {
+            Integer ano = (Integer) venta[0];
+            BigDecimal total = (BigDecimal) venta[1];
+            
+            // Buscar el índice correspondiente a este año
+            for (int i = 0; i < 5; i++) {
+                if (Integer.parseInt(labels[i]) == ano) {
+                    values[i] = total;
+                    break;
+                }
+            }
+        }
+        
+        resultado.put("labels", labels);
+        resultado.put("values", values);
+        
+        return resultado;
+    }
 } 

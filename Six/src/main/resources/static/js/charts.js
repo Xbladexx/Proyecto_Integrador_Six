@@ -1,23 +1,23 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Datos para los gráficos
+    // Datos para los gráficos (se actualizarán desde la API)
     const salesData = {
         daily: {
             labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-            values: [1200, 1500, 1800, 1200, 2200, 2500, 1900]
+            values: [0, 0, 0, 0, 0, 0, 0]
         },
         monthly: {
             labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
-            values: [24000, 18000, 29800, 27908, 34800, 29800, 32300, 28400, 31200, 36500, 42000, 48000]
+            values: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         },
         yearly: {
             labels: ['2020', '2021', '2022', '2023', '2024'],
-            values: [240000, 320000, 380000, 450000, 520000]
+            values: [0, 0, 0, 0, 0]
         }
     };
     
     const inventoryData = {
         labels: ['Camisetas', 'Pantalones', 'Vestidos', 'Chaquetas', 'Accesorios'],
-        values: [400, 300, 200, 150, 100]
+        values: [0, 0, 0, 0, 0]
     };
     
     // Colores para los gráficos
@@ -33,6 +33,79 @@ document.addEventListener('DOMContentLoaded', function() {
     // Configuración de los gráficos
     let salesChart = null;
     let inventoryChart = null;
+    
+    // Función para cargar los datos de ventas desde la API
+    function cargarDatosVentas() {
+        fetch('/api/ventas/ventas-por-periodo')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error al cargar los datos de ventas');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Actualizar los datos de ventas con los obtenidos de la API
+                if (data.daily) {
+                    salesData.daily.labels = data.daily.labels;
+                    salesData.daily.values = data.daily.values;
+                }
+                
+                if (data.monthly) {
+                    salesData.monthly.labels = data.monthly.labels;
+                    salesData.monthly.values = data.monthly.values;
+                }
+                
+                if (data.yearly) {
+                    salesData.yearly.labels = data.yearly.labels;
+                    salesData.yearly.values = data.yearly.values;
+                }
+                
+                // Si el gráfico ya está inicializado, actualizarlo con los nuevos datos
+                if (salesChart) {
+                    // Determinar qué periodo está activo actualmente
+                    const activePeriodButton = document.querySelector('.chart-period-button.active');
+                    const activePeriod = activePeriodButton ? activePeriodButton.dataset.period : 'daily';
+                    
+                    // Actualizar el gráfico con los datos del periodo activo
+                    salesChart.data.labels = salesData[activePeriod].labels;
+                    salesChart.data.datasets[0].data = salesData[activePeriod].values;
+                    salesChart.update();
+                }
+            })
+            .catch(error => {
+                console.error('Error al cargar los datos de ventas:', error);
+                // Mostrar mensaje de error (opcional)
+            });
+    }
+    
+    // Función para cargar los datos de distribución de inventario desde la API
+    function cargarDatosInventario() {
+        fetch('/api/inventario/distribucion-por-categoria')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error al cargar los datos de inventario');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Actualizar los datos de inventario con los obtenidos de la API
+                if (data.labels && data.values) {
+                    inventoryData.labels = data.labels;
+                    inventoryData.values = data.values;
+                }
+                
+                // Si el gráfico ya está inicializado, actualizarlo con los nuevos datos
+                if (inventoryChart) {
+                    inventoryChart.data.labels = inventoryData.labels;
+                    inventoryChart.data.datasets[0].data = inventoryData.values;
+                    inventoryChart.update();
+                }
+            })
+            .catch(error => {
+                console.error('Error al cargar los datos de inventario:', error);
+                // Mostrar mensaje de error (opcional)
+            });
+    }
     
     // Inicializar gráfico de ventas
     function initSalesChart() {
@@ -75,6 +148,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+        
+        // Cargar los datos reales después de inicializar el gráfico
+        cargarDatosVentas();
     }
     
     // Actualizar gráfico de ventas según el período seleccionado
@@ -127,6 +203,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+        
+        // Cargar los datos reales después de inicializar el gráfico
+        cargarDatosInventario();
     }
     
     // Inicializar todos los gráficos
@@ -142,6 +221,23 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Inicializar gráficos
     initCharts();
+    
+    // Configurar los botones de cambio de periodo
+    document.querySelectorAll('.chart-period-button').forEach(button => {
+        button.addEventListener('click', function() {
+            // Remover clase active de todos los botones
+            document.querySelectorAll('.chart-period-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Agregar clase active al botón clickeado
+            this.classList.add('active');
+            
+            // Actualizar el gráfico con el periodo seleccionado
+            const period = this.dataset.period;
+            updateSalesChart(period);
+        });
+    });
     
     // Manejar cambio de tamaño de ventana
     window.addEventListener('resize', function() {

@@ -10,19 +10,31 @@ SIX es un sistema integral de gestión empresarial desarrollado con Spring Boot 
 - **Gestión de Clientes:** Base de datos completa con información de contacto e historial de compras
 - **Sistema de Usuarios:** Registro, autenticación y administración de permisos
 - **Alertas Automáticas:** Notificaciones para niveles bajos de inventario
+- **Generación de Reportes:** Exportación de datos en formatos PDF y Excel
 
 ## Tecnologías Utilizadas
 
-- **Backend:** Java 11+, Spring Boot
-- **Base de Datos:** MySQL 8.0
-- **Frontend:** Thymeleaf, HTML5, CSS3, JavaScript
-- **Seguridad:** Spring Security
+### Backend
+- **Lenguaje:** Java 21
+- **Framework:** Spring Boot 3.4.5
 - **ORM:** Hibernate, Spring Data JPA
 - **Gestión de Dependencias:** Maven
 
+### Frontend
+- **Motor de Plantillas:** Thymeleaf
+- **Tecnologías Web:** HTML5, CSS3, JavaScript
+- **Frameworks CSS:** [Especificar si se usa Bootstrap, Material, etc.]
+
+### Base de Datos
+- **SGBD:** MySQL 8.0
+
+### Herramientas de Reportes
+- **PDF:** iText
+- **Excel:** Apache POI
+
 ## Requisitos Previos
 
-- Java 11 o superior
+- Java 21 o superior
 - Maven 3.6 o superior
 - MySQL 8.0
 - MySQL Workbench (para gestión de base de datos)
@@ -31,9 +43,9 @@ SIX es un sistema integral de gestión empresarial desarrollado con Spring Boot 
 ## Instalación y Configuración
 
 ### 1. Clonar el repositorio
-```
-git clone https://github.com/tu-usuario/six.git
-cd six
+```bash
+git clone [URL_DEL_REPOSITORIO]
+cd Six
 ```
 
 ### 2. Configurar la base de datos
@@ -61,8 +73,11 @@ spring.jpa.properties.hibernate.format_sql=true
 Si necesitas personalizar estos valores, edita el archivo `src/main/resources/application.properties`.
 
 ### 4. Compilar y ejecutar el proyecto
-```
+```bash
+# Compilar el proyecto
 mvn clean install
+
+# Ejecutar la aplicación
 mvn spring-boot:run
 ```
 
@@ -72,12 +87,25 @@ El servidor estará disponible en http://localhost:8080
 
 El proyecto sigue una arquitectura en capas basada en el patrón MVC:
 
-- **Controllers:** Manejo de peticiones HTTP y flujo de la aplicación
-- **Services:** Implementación de la lógica de negocio
-- **Models:**
-  - **Entities:** Modelos de datos (Usuario, Cliente, Producto, Venta, etc.)
-  - **Repositories:** Interfaces para acceso a datos con Spring Data JPA
-- **DTOs:** Objetos de transferencia de datos entre capas
+```
+src/
+├── main/
+│   ├── java/
+│   │   └── com/
+│   │       └── darkcode/
+│   │           └── spring/
+│   │               └── six/
+│   │                   ├── Controllers/      # Controladores de la aplicación
+│   │                   ├── config/           # Configuraciones
+│   │                   ├── dtos/             # Objetos de transferencia de datos
+│   │                   ├── models/           # Modelos y entidades
+│   │                   │   ├── entities/     # Entidades JPA
+│   │                   │   └── repositories/ # Repositorios JPA
+│   │                   ├── services/         # Servicios de negocio
+│   │                   └── SixApplication.java
+│   └── resources/      # Recursos (templates, archivos estáticos, etc.)
+└── test/               # Pruebas
+```
 
 ## Módulos Principales
 
@@ -95,6 +123,9 @@ Registro y seguimiento de todas las transacciones comerciales con sus respectivo
 
 ### Gestión de Clientes
 Administración completa de la información de clientes y su historial de compras.
+
+### Reportes
+Generación de reportes en formatos PDF y Excel para análisis de datos y toma de decisiones.
 
 ## Base de Datos
 

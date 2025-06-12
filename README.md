@@ -136,5 +136,4 @@ El archivo de la base de datos debe abrirse utilizando **MySQL Workbench**. La c
 - **Usuario:** root
 - **Contraseña:** root
 
-El sistema está configurado para crear automáticamente la base de datos si no existe (`createDatabaseIfNotExist=true`).
 

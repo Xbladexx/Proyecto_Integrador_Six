@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class InventarioDTO {
     private Long id;
     private Long varianteId;
+    private Long productoId;
     private String sku;
     private String nombreProducto;
     private String nombreCategoria;

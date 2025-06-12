@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devoluciones - SIX Inventario</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/ventas.css}">
+    <link rel="stylesheet" th:href="@{/css/ventas-registradas.css}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Estilos específicos para la página de devoluciones */
+        .devoluciones-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .tabs-header {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0;
+            margin-bottom: 15px;
+        }
+        
+        .nav-tab {
+            display: inline-block;
+            padding: 12px 16px;
+            margin-right: 16px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #6c757d;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .nav-tab.active {
+            color: #000;
+            font-weight: 600;
+            border-bottom-color: #000;
+        }
+        
+        .tab-content {
+            padding: 20px;
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .table-wrapper {
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+            margin-top: 16px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        .data-table th {
+            background-color: #f9fafb;
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #374151;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .data-table td {
+            padding: 12px 16px;
+            font-size: 0.875rem;
+            color: #374151;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .data-table .text-center {
+            text-align: center;
+        }
+        
+        .data-table .text-right {
+            text-align: right;
+        }
+        
+        .filters-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .search-box {
+            position: relative;
+            width: 350px;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+        
+        .filter-box {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .status-filter {
+            min-width: 180px;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+        
+        .action-btn {
+            padding: 8px 16px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 1rem;
+        }
+        
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 1rem;
+        }
+        
+        .estado-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-align: center;
+            white-space: nowrap;
+        }
+        
+        .estado-pendiente {
+            background-color: #fff7ed;
+            color: #9a3412;
+        }
+        
+        .estado-aprobada, .estado-completada {
+            background-color: #ecfdf5;
+            color: #065f46;
+        }
+        
+        .estado-rechazada {
+            background-color: #fef2f2;
+            color: #b91c1c;
+        }
+        
+        .estado-procesada, .estado-en-proceso {
+            background-color: #eff6ff;
+            color: #1e40af;
+        }
+        
+        .action-menu {
+            display: inline-block;
+            position: relative;
+        }
+        
+        .action-btn-dots {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: #4b5563;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .action-btn-dots:hover {
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="fas fa-box"></i>
+                    <span>SIX Inventario</span>
+                </div>
+                <div class="user-avatar">
+                    <div class="avatar">
+                        <span id="userInitial" th:text="${#strings.substring(session.usuario,0,1)}">A</span>
+                    </div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a th:href="@{/dashboard-admin}" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+                <a th:href="@{/productos}" class="nav-link">
+                    <i class="fas fa-tshirt"></i>
+                    <span>Productos</span>
+                </a>
+                <a th:href="@{/inventario}" class="nav-link">
+                    <i class="fas fa-box-open"></i>
+                    <span>Inventario</span>
+                </a>
+                <a th:href="@{/ventas}" class="nav-link">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Ventas</span>
+                </a>
+                <a th:href="@{/admin/ventas-registradas}" class="nav-link">
+                    <i class="fas fa-receipt"></i>
+                    <span>Ventas Registradas</span>
+                </a>
+                <a th:href="@{/admin/devoluciones}" class="nav-link active">
+                    <i class="fas fa-undo-alt"></i>
+                    <span>Devoluciones</span>
+                </a>
+                <a th:href="@{/proveedores}" class="nav-link">
+                    <i class="fas fa-truck"></i>
+                    <span>Proveedores</span>
+                </a>
+                <a th:href="@{/usuarios}" class="nav-link">
+                    <i class="fas fa-users"></i>
+                    <span>Usuarios</span>
+                </a>
+                <a th:href="@{/alertas}" class="nav-link">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Alertas</span>
+                </a>
+                <a th:href="@{/reportes}" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reportes</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a th:href="@{/logout}" class="sidebar-logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Cerrar Sesión</span>
+                </a>
+                <p class="copyright">© 2025 SIX. Todos los derechos reservados.</p>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <button class="mobile-menu-button">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="dashboard-title">Devoluciones</h1>
+                </div>
+            </header>
+
+            <!-- Contenedor principal -->
+            <div class="content">
+                <!-- Contenedor de devoluciones -->
+                <div class="devoluciones-container">
+                    <!-- Sistema de pestañas -->
+                    <div class="tabs-header">
+                        <div class="nav-tab active" id="tab-ventas" data-tab="ventas">
+                            <i class="fas fa-undo-alt"></i> Devoluciones de Ventas
+                        </div>
+                        <div class="nav-tab" id="tab-lotes" data-tab="lotes">
+                            <i class="fas fa-boxes"></i> Devoluciones de Lotes
+                        </div>
+                    </div>
+
+                    <!-- Contenido de las pestañas -->
+                    <div id="content-ventas" class="content-tab active" style="display:block;">
+                        <div class="search-filter-container mb-4">
+                            <div class="row g-2 align-items-center">
+                                <div class="col">
+                                    <div class="search-box">
+                                        <input id="search-ventas" type="text" class="form-control" placeholder="Buscar por cliente, producto o ID...">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table class="data-table" id="tabla-devoluciones-ventas">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Fecha</th>
+                                        <th>Cliente</th>
+                                        <th>Producto</th>
+                                        <th class="text-center">Cantidad</th>
+                                        <th class="text-center">Estado</th>
+                                        <th>Valor</th>
+                                        <th>Vendedor</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-devoluciones-ventas">
+                                    <!-- El contenido se cargará dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="content-lotes">
+                        <h2>Devoluciones de Lotes</h2>
+                        <p class="text-muted">Gestión de lotes devueltos a proveedores</p>
+
+                        <div class="filters-row">
+                            <div class="search-box">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="search" id="search-lotes" class="search-input" placeholder="Buscar por proveedor, lote o productos...">
+                            </div>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table class="data-table" id="tabla-devoluciones-lotes">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Fecha</th>
+                                        <th>Proveedor</th>
+                                        <th>Lote</th>
+                                        <th>Productos</th>
+                                        <th class="text-center">Cantidad</th>
+                                        <th class="text-center">Estado</th>
+                                        <th class="text-right">Valor</th>
+                                        <th>Responsable</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-devoluciones-lotes">
+                                    <!-- El contenido se cargará dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modales para detalles y acciones -->
+    <div id="modal-detalle-devolucion" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Detalles de Devolución</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="detalle-devolucion-content">
+                    <!-- El contenido se cargará dinámicamente -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-devolver-lote" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Devolver Lote</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-devolver-lote">
+                        <div class="mb-3">
+                            <label for="proveedor-select" class="form-label">Proveedor</label>
+                            <select id="proveedor-select" class="form-select" required>
+                                <option value="" disabled selected>Seleccione un proveedor</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="lote-select" class="form-label">Lote</label>
+                            <select id="lote-select" class="form-select" required disabled>
+                                <option value="" disabled selected>Seleccione primero un proveedor</option>
+                            </select>
+                        </div>
+                        <div id="detalle-lote" style="display: none;">
+                            <!-- Detalles del lote se cargarán aquí -->
+                        </div>
+                        <div class="mb-3">
+                            <label for="motivo-select" class="form-label">Motivo de devolución</label>
+                            <select id="motivo-select" class="form-select" required>
+                                <option value="" disabled selected>Seleccione un motivo</option>
+                                <option value="PRODUCTOS_DAÑADOS">Productos dañados</option>
+                                <option value="ENVIO_INCORRECTO">Envío incorrecto</option>
+                                <option value="CALIDAD_INSUFICIENTE">Calidad insuficiente</option>
+                                <option value="ERROR_PEDIDO">Error en el pedido</option>
+                                <option value="OTRO">Otro motivo</option>
+                            </select>
+                        </div>
+                        <div id="otro-motivo-container" class="mb-3" style="display: none;">
+                            <label for="otro-motivo" class="form-label">Especifique el motivo</label>
+                            <textarea id="otro-motivo" class="form-control" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="comentarios" class="form-label">Comentarios adicionales</label>
+                            <textarea id="comentarios" class="form-control" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btn-procesar-devolucion" class="btn btn-primary">Procesar Devolución</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script principal para pestañas de devoluciones -->
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            // Referencias a elementos
+            const tabVentas = document.getElementById('tab-ventas');
+            const tabLotes = document.getElementById('tab-lotes');
+            const contentVentas = document.getElementById('content-ventas');
+            const contentLotes = document.getElementById('content-lotes');
+            
+            // Cambio entre pestañas
+            if (tabVentas) {
+                tabVentas.addEventListener('click', () => {
+                    console.log('Tab ventas clicked');
+                    activateTab('ventas');
+                });
+            }
+            
+            if (tabLotes) {
+                tabLotes.addEventListener('click', () => {
+                    console.log('Tab lotes clicked');
+                    activateTab('lotes');
+                });
+            }
+            
+            function activateTab(tabName) {
+                console.log('Activating tab:', tabName);
+                
+                // Desactivar todas las pestañas y contenidos
+                if (tabVentas && tabLotes) {
+                    tabVentas.classList.remove('active');
+                    tabLotes.classList.remove('active');
+                }
+                
+                if (contentVentas && contentLotes) {
+                    contentVentas.classList.remove('active');
+                    contentVentas.style.display = 'none';
+                    contentLotes.classList.remove('active');
+                    contentLotes.style.display = 'none';
+                }
+                
+                // Activar la pestaña seleccionada
+                if (tabName === 'ventas' && tabVentas && contentVentas) {
+                    tabVentas.classList.add('active');
+                    contentVentas.classList.add('active');
+                    contentVentas.style.display = 'block';
+                    if (typeof cargarDevolucionesVentas === 'function') {
+                        cargarDevolucionesVentas();
+                    } else {
+                        console.error('La función cargarDevolucionesVentas no está definida');
+                    }
+                } else if (tabName === 'lotes' && tabLotes && contentLotes) {
+                    tabLotes.classList.add('active');
+                    contentLotes.classList.add('active');
+                    contentLotes.style.display = 'block';
+                    if (typeof cargarDevolucionesLotes === 'function') {
+                        cargarDevolucionesLotes();
+                    } else {
+                        console.error('La función cargarDevolucionesLotes no está definida');
+                    }
+                }
+            }
+            
+            // Cargar datos iniciales - pestaña activa por defecto (ventas)
+            if (typeof cargarDevolucionesVentas === 'function') {
+                cargarDevolucionesVentas();
+            } else {
+                console.error('La función cargarDevolucionesVentas no está definida');
+                // Intentar cargar después de un breve retraso
+                setTimeout(() => {
+                    if (typeof cargarDevolucionesVentas === 'function') {
+                        cargarDevolucionesVentas();
+                    } else {
+                        console.error('La función cargarDevolucionesVentas sigue sin estar definida después del timeout');
+                    }
+                }, 500);
+            }
+        });
+    </script>
+    
+    <!-- Scripts personalizados con forzado de recarga de caché -->
+    <script th:src="@{/js/devoluciones.js(v=${#dates.format(#dates.createNow(), 'yyyyMMddHHmmssSSS')})}"></script>
+    <script th:src="@{/js/devoluciones-lotes.js(v=${#dates.format(#dates.createNow(), 'yyyyMMddHHmmssSSS')})}"></script>
+</body>
+
+</html> 

@@ -29,9 +29,26 @@ public interface MovimientoStockRepository extends JpaRepository<MovimientoStock
     
     List<MovimientoStock> findByFechaBetween(LocalDateTime fechaInicio, LocalDateTime fechaFin);
 
+    List<MovimientoStock> findByMotivoDetalleContaining(String texto);
+    
+    List<MovimientoStock> findByMotivoDetalleContainingAndFechaGreaterThanEqual(String texto, LocalDateTime fecha);
+
     List<MovimientoStock> findByVarianteIdOrderByFechaDesc(Long varianteId);
     
     List<MovimientoStock> findByUsuarioId(Long usuarioId);
+    
+    List<MovimientoStock> findByVarianteAndTipoAndFechaBetween(
+            VarianteProducto variante, 
+            TipoMovimiento tipo, 
+            LocalDateTime fechaInicio, 
+            LocalDateTime fechaFin);
+    
+    List<MovimientoStock> findByVarianteAndTipoAndMotivoAndFechaBetween(
+            VarianteProducto variante, 
+            TipoMovimiento tipo,
+            MotivoMovimiento motivo,
+            LocalDateTime fechaInicio, 
+            LocalDateTime fechaFin);
     
     @Modifying
     @Transactional

@@ -7,7 +7,67 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inicialización de elementos UI
     setupPasswordToggle();
     setupLoginForm();
+
+    // Animaciones para los elementos del menú lateral
+    const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
+    
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            // Si no es el enlace activo, aplicar animación de clic
+            if (!this.classList.contains('active')) {
+                // Crear efecto de onda
+                const ripple = document.createElement('span');
+                ripple.classList.add('nav-ripple-effect');
+                
+                // Estilo para el efecto de onda
+                ripple.style.position = 'absolute';
+                ripple.style.borderRadius = '50%';
+                ripple.style.backgroundColor = 'rgba(255, 255, 255, 0.7)';
+                ripple.style.pointerEvents = 'none';
+                ripple.style.width = '100px';
+                ripple.style.height = '100px';
+                ripple.style.transform = 'translate(-50%, -50%) scale(0)';
+                ripple.style.animation = 'rippleEffect 0.6s linear';
+                
+                // Posicionar el efecto donde se hizo clic
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                ripple.style.left = x + 'px';
+                ripple.style.top = y + 'px';
+                
+                // Añadir el efecto al elemento
+                this.appendChild(ripple);
+                
+                // Escalar el icono brevemente
+                const icon = this.querySelector('i');
+                if (icon) {
+                    icon.style.transform = 'scale(1.5)';
+                    setTimeout(() => {
+                        icon.style.transform = '';
+                    }, 300);
+                }
+                
+                // Eliminar el efecto después de la animación
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            }
+        });
+    });
 });
+
+// Añadir keyframes para la animación de onda
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes rippleEffect {
+        to {
+            transform: translate(-50%, -50%) scale(4);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
 
 // Configurar el botón para mostrar/ocultar contraseña
 function setupPasswordToggle() {

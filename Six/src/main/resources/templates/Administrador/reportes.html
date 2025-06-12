@@ -10,7 +10,64 @@
     <link rel="stylesheet" th:href="@{/css/dashboard.css}">
     <link rel="stylesheet" th:href="@{/css/reportes.css}">
     <link rel="stylesheet" th:href="@{/css/print.css}" media="print">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        /* Estilos para asegurar que las pestañas sean visibles */
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .tab-button {
+            cursor: pointer;
+        }
+        
+        /* Estilos para debug */
+        .debug-info {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 9999;
+            max-width: 300px;
+            display: none;
+        }
+    </style>
+    <!-- Script de depuración -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Depuración de pestañas activada');
+            
+            // Verificar elementos de pestañas
+            setTimeout(function() {
+                const tabButtons = document.querySelectorAll('.tab-button');
+                const tabContents = document.querySelectorAll('.tab-content');
+                
+                console.log('Botones de pestañas encontrados:', tabButtons.length);
+                tabButtons.forEach(btn => {
+                    console.log('- Botón:', btn.textContent.trim(), 'data-tab:', btn.dataset.tab);
+                });
+                
+                console.log('Contenidos de pestañas encontrados:', tabContents.length);
+                tabContents.forEach(content => {
+                    console.log('- Contenido:', content.id, 'visible:', !content.classList.contains('hidden'));
+                });
+            }, 1000);
+        });
+    </script>
 </head>
 
 <body>
@@ -33,6 +90,10 @@
                     <i class="fas fa-home"></i>
                     <span>Inicio</span>
                 </a>
+                <a th:href="@{/productos}" class="nav-link">
+                    <i class="fas fa-tshirt"></i>
+                    <span>Productos</span>
+                </a>
                 <a th:href="@{/inventario}" class="nav-link">
                     <i class="fas fa-box-open"></i>
                     <span>Inventario</span>
@@ -41,13 +102,17 @@
                     <i class="fas fa-shopping-cart"></i>
                     <span>Ventas</span>
                 </a>
-                <a th:href="@{/productos}" class="nav-link">
-                    <i class="fas fa-tshirt"></i>
-                    <span>Productos</span>
+                <a th:href="@{/admin/ventas-registradas}" class="nav-link">
+                    <i class="fas fa-receipt"></i>
+                    <span>Ventas Registradas</span>
                 </a>
-                <a th:href="@{/reportes}" class="nav-link active">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Reportes</span>
+                <a th:href="@{/admin/devoluciones}" class="nav-link">
+                    <i class="fas fa-undo-alt"></i>
+                    <span>Devoluciones</span>
+                </a>
+                <a th:href="@{/proveedores}" class="nav-link">
+                    <i class="fas fa-truck"></i>
+                    <span>Proveedores</span>
                 </a>
                 <a th:href="@{/usuarios}" class="nav-link">
                     <i class="fas fa-users"></i>
@@ -56,6 +121,10 @@
                 <a th:href="@{/alertas}" class="nav-link">
                     <i class="fas fa-exclamation-triangle"></i>
                     <span>Alertas</span>
+                </a>
+                <a th:href="@{/reportes}" class="nav-link active">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reportes</span>
                 </a>
             </nav>
             <div class="sidebar-footer">
@@ -81,11 +150,12 @@
             </header>
 
             <div class="content-wrapper">
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0;">
+                <div class="report-header">
                     <div class="tab-list">
-                        <button class="tab-button active" data-tab="sales">Ventas</button>
-                        <button class="tab-button" data-tab="inventory">Inventario</button>
-                        <button class="tab-button" data-tab="products">Productos</button>
+                        <button class="tab-button active" data-tab="sales" onclick="switchTab('sales')">Ventas</button>
+                        <button class="tab-button" data-tab="inventory" onclick="switchTab('inventory')">Inventario</button>
+                        <button class="tab-button" data-tab="products" onclick="switchTab('products')">Productos</button>
+                        <button class="tab-button" data-tab="abc" onclick="switchTab('abc')">Análisis ABC</button>
                     </div>
                     <div class="date-range-picker">
                         <div class="date-input-group">
@@ -100,9 +170,9 @@
                     </div>
                 </div>
 
-                <div class="report-tabs">
+                <!-- Pestaña de Ventas -->
                     <div class="tab-content active" id="sales-tab">
-                        <div class="report-grid">
+                    <div class="report-grid grid-2x2">
                             <div class="card">
                                 <div class="card-header">
                                     <h2 class="card-title">Ventas por Período</h2>
@@ -137,40 +207,11 @@
                                                     <th>Producto</th>
                                                     <th>Categoría</th>
                                                     <th>Unidades</th>
-                                                    <th>Ingresos</th>
+                                                <th>Total</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr>
-                                                    <td>Camiseta Slim Fit</td>
-                                                    <td>Camisetas</td>
-                                                    <td>45</td>
-                                                    <td>S/. 3,595.50</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Pantalón Chino</td>
-                                                    <td>Pantalones</td>
-                                                    <td>32</td>
-                                                    <td>S/. 3,196.80</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Vestido Casual</td>
-                                                    <td>Vestidos</td>
-                                                    <td>28</td>
-                                                    <td>S/. 3,637.20</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Blusa Estampada</td>
-                                                    <td>Blusas</td>
-                                                    <td>25</td>
-                                                    <td>S/. 2,247.50</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Chaqueta Denim</td>
-                                                    <td>Chaquetas</td>
-                                                    <td>18</td>
-                                                    <td>S/. 2,878.20</td>
-                                                </tr>
+                                            <!-- Datos dinámicos -->
                                             </tbody>
                                         </table>
                                     </div>
@@ -189,8 +230,8 @@
                                             </div>
                                             <div class="stat-content">
                                                 <h3 class="stat-title">Total Ventas</h3>
-                                                <p class="stat-value">S/. 15,555.00</p>
-                                                <p class="stat-change positive">+12.5% vs mes anterior</p>
+                                            <p class="stat-value">S/. 1762.67</p>
+                                            <p class="stat-change positive">+100.0% vs mes anterior</p>
                                             </div>
                                         </div>
                                         <div class="stat-card">
@@ -199,17 +240,17 @@
                                             </div>
                                             <div class="stat-content">
                                                 <h3 class="stat-title">Transacciones</h3>
-                                                <p class="stat-value">148</p>
-                                                <p class="stat-change positive">+8.2% vs mes anterior</p>
+                                            <p class="stat-value">10</p>
+                                            <p class="stat-change positive">+100.0% vs mes anterior</p>
                                             </div>
                                         </div>
                                         <div class="stat-card">
                                             <div class="stat-icon">
-                                                <i class="fas fa-dollar-sign"></i>
+                                            <i class="fas fa-tag"></i>
                                             </div>
                                             <div class="stat-content">
                                                 <h3 class="stat-title">Ticket Promedio</h3>
-                                                <p class="stat-value">S/. 105.10</p>
+                                            <p class="stat-value">S/. 176.27</p>
                                                 <p class="stat-change positive">+4.3% vs mes anterior</p>
                                             </div>
                                         </div>
@@ -229,8 +270,9 @@
                         </div>
                     </div>
 
+                <!-- Pestaña de Inventario -->
                     <div class="tab-content" id="inventory-tab">
-                        <div class="report-grid">
+                    <div class="report-grid grid-2x2">
                             <div class="card">
                                 <div class="card-header">
                                     <h2 class="card-title">Valor de Inventario por Categoría</h2>
@@ -266,31 +308,10 @@
                                                     <th>Variante</th>
                                                     <th>Stock Actual</th>
                                                     <th>Stock Mínimo</th>
-                                                    <th>Estado</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr>
-                                                    <td>Vestido Casual</td>
-                                                    <td>Azul, S</td>
-                                                    <td>2</td>
-                                                    <td>5</td>
-                                                    <td><span class="status-badge status-critical">Crítico</span></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Chaqueta Denim</td>
-                                                    <td>Azul, XL</td>
-                                                    <td>4</td>
-                                                    <td>6</td>
-                                                    <td><span class="status-badge status-low">Bajo</span></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Pantalón Chino</td>
-                                                    <td>Beige, 32</td>
-                                                    <td>5</td>
-                                                    <td>8</td>
-                                                    <td><span class="status-badge status-low">Bajo</span></td>
-                                                </tr>
+                                            <!-- Datos dinámicos -->
                                             </tbody>
                                         </table>
                                     </div>
@@ -309,28 +330,28 @@
                                             </div>
                                             <div class="stat-content">
                                                 <h3 class="stat-title">Valor Total</h3>
-                                                <p class="stat-value">S/. 42,850.00</p>
+                                            <p class="stat-value">S/. 11273.40</p>
                                                 <p class="stat-change positive">+5.2% vs mes anterior</p>
                                             </div>
                                         </div>
                                         <div class="stat-card">
                                             <div class="stat-icon">
-                                                <i class="fas fa-boxes"></i>
+                                            <i class="fas fa-cubes"></i>
                                             </div>
                                             <div class="stat-content">
                                                 <h3 class="stat-title">Unidades</h3>
-                                                <p class="stat-value">857</p>
-                                                <p class="stat-change positive">+3.8% vs mes anterior</p>
+                                            <p class="stat-value">114</p>
+                                            <p class="stat-change positive">+3.9% vs mes anterior</p>
                                             </div>
                                         </div>
                                         <div class="stat-card">
                                             <div class="stat-icon">
-                                                <i class="fas fa-sync"></i>
+                                            <i class="fas fa-sync-alt"></i>
                                             </div>
                                             <div class="stat-content">
                                                 <h3 class="stat-title">Rotación</h3>
                                                 <p class="stat-value">4.2</p>
-                                                <p class="stat-change positive">+0.3 vs mes anterior</p>
+                                            <p class="stat-change positive">+0.3% vs mes anterior</p>
                                             </div>
                                         </div>
                                         <div class="stat-card">
@@ -340,7 +361,7 @@
                                             <div class="stat-content">
                                                 <h3 class="stat-title">Alertas</h3>
                                                 <p class="stat-value">3</p>
-                                                <p class="stat-change negative">+1 vs mes anterior</p>
+                                            <p class="stat-change positive">+1.5% vs mes anterior</p>
                                             </div>
                                         </div>
                                     </div>
@@ -349,8 +370,9 @@
                         </div>
                     </div>
 
+                <!-- Pestaña de Productos -->
                     <div class="tab-content" id="products-tab">
-                        <div class="report-grid">
+                    <div class="report-grid grid-2x2">
                             <div class="card">
                                 <div class="card-header">
                                     <h2 class="card-title">Rendimiento por Categoría</h2>
@@ -390,41 +412,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr>
-                                                    <td>Vestido Casual</td>
-                                                    <td>Vestidos</td>
-                                                    <td>S/. 129.90</td>
-                                                    <td>S/. 64.95</td>
-                                                    <td>50.0%</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Chaqueta Denim</td>
-                                                    <td>Chaquetas</td>
-                                                    <td>S/. 159.90</td>
-                                                    <td>S/. 79.95</td>
-                                                    <td>50.0%</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Pantalón Chino</td>
-                                                    <td>Pantalones</td>
-                                                    <td>S/. 99.90</td>
-                                                    <td>S/. 49.95</td>
-                                                    <td>50.0%</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Camiseta Slim Fit</td>
-                                                    <td>Camisetas</td>
-                                                    <td>S/. 79.90</td>
-                                                    <td>S/. 39.95</td>
-                                                    <td>50.0%</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Blusa Estampada</td>
-                                                    <td>Blusas</td>
-                                                    <td>S/. 89.90</td>
-                                                    <td>S/. 44.95</td>
-                                                    <td>50.0%</td>
-                                                </tr>
+                                            <!-- Datos dinámicos -->
                                             </tbody>
                                         </table>
                                     </div>
@@ -482,37 +470,153 @@
                             </div>
                         </div>
                     </div>
+
+                <!-- Pestaña de Análisis ABC -->
+                    <div class="tab-content" id="abc-tab">
+                    <div class="abc-actions">
+                        <button onclick="cargarClasificacionABC(true)" class="button button-primary" title="Actualizar datos">
+                            <i class="fas fa-sync-alt"></i> Actualizar datos ABC
+                        </button>
+                    </div>
+                    <div class="report-grid grid-2x2">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Distribución ABC de Productos</h2>
+                                </div>
+                                <div class="card-content">
+                                    <div class="chart-container">
+                                        <canvas id="abcDistributionChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Valor de Inventario por Categoría ABC</h2>
+                                </div>
+                                <div class="card-content">
+                                    <div class="chart-container">
+                                        <canvas id="abcValueChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Resumen de Clasificación ABC</h2>
+                                </div>
+                                <div class="card-content">
+                                    <div class="stats-grid">
+                                    <div class="stat-card abc-card">
+                                            <div class="stat-icon abc-a">
+                                                <i class="fas fa-star"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <h3 class="stat-title">Categoría A</h3>
+                                                <p class="stat-value" id="abcCountA">--</p>
+                                                <p class="stat-subvalue" id="abcValueA">S/. --</p>
+                                            <p class="stat-description">Alto valor (80% del valor, 20% de los ítems)</p>
+                                        </div>
+                                    </div>
+                                    <div class="stat-card abc-card">
+                                            <div class="stat-icon abc-b">
+                                                <i class="fas fa-star-half-alt"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <h3 class="stat-title">Categoría B</h3>
+                                                <p class="stat-value" id="abcCountB">--</p>
+                                                <p class="stat-subvalue" id="abcValueB">S/. --</p>
+                                            <p class="stat-description">Valor medio (15% del valor, 30% de los ítems)</p>
+                                        </div>
+                                    </div>
+                                    <div class="stat-card abc-card">
+                                            <div class="stat-icon abc-c">
+                                                <i class="far fa-star"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <h3 class="stat-title">Categoría C</h3>
+                                                <p class="stat-value" id="abcCountC">--</p>
+                                                <p class="stat-subvalue" id="abcValueC">S/. --</p>
+                                            <p class="stat-description">Bajo valor (5% del valor, 50% de los ítems)</p>
+                                        </div>
+                                    </div>
+                                    <div class="stat-card abc-card">
+                                            <div class="stat-icon">
+                                                <i class="fas fa-chart-pie"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <h3 class="stat-title">Total Productos</h3>
+                                                <p class="stat-value" id="abcTotalProducts">--</p>
+                                                <p class="stat-subvalue" id="abcTotalValue">S/. --</p>
+                                            <p class="stat-description">Clasificación basada en el valor de ventas</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">Productos por Clasificación ABC</h2>
+                                <div class="card-actions">
+                                    <button onclick="exportarABC('excel')" class="button" title="Exportar a Excel">
+                                        <i class="fas fa-file-excel"></i>
+                                    </button>
+                                    <button onclick="exportarABC('pdf')" class="button" title="Exportar a PDF">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div class="table-container">
+                                    <table class="data-table" id="abcProductsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Código</th>
+                                                <th>Producto</th>
+                                                <th>Categoría ABC</th>
+                                                <th class="text-right">Valor Anual</th>
+                                                <th class="text-right">% del Valor</th>
+                                                <th class="text-right">% Acumulado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Se llenará dinámicamente con JavaScript -->
+                                            <tr>
+                                                <td colspan="6" class="loading-message">
+                                                    <i class="fas fa-spinner fa-spin"></i> Cargando datos de clasificación ABC...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="report-actions">
-                    <button id="exportPdfButton" class="button">
-                        <i class="fas fa-file-pdf"></i>
-                        Exportar PDF
+            <footer class="footer">
+                <div class="footer-actions">
+                    <button class="button" id="exportPdfButton">
+                        <i class="fas fa-file-pdf"></i> Exportar PDF
                     </button>
-                    <button id="exportExcelButton" class="button">
-                        <i class="fas fa-file-excel"></i>
-                        Exportar Excel
+                    <button class="button" id="exportExcelButton">
+                        <i class="fas fa-file-excel"></i> Exportar Excel
                     </button>
-                    <button id="printReportButton" class="button">
-                        <i class="fas fa-print"></i>
-                        Imprimir
+                    <button class="button" id="printReportButton">
+                        <i class="fas fa-print"></i> Imprimir
                     </button>
                 </div>
-            </div>
+                <p class="copyright">© 2025 SIX. Todos los derechos reservados.</p>
+            </footer>
         </main>
     </div>
 
-    <!-- Toast para notificaciones -->
-    <div id="toast" class="toast hidden">
-        <div class="toast-content">
-            <div class="toast-header">
-                <h3 class="toast-title">Título</h3>
-                <button class="toast-close">&times;</button>
-            </div>
-            <p class="toast-message">Mensaje</p>
-        </div>
-    </div>
+    <!-- Toast de notificaciones -->
+    <div class="toast-container"></div>
 
+    <!-- Scripts -->
     <script th:src="@{/js/reportes.js}"></script>
 </body>
 

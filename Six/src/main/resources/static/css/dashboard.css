@@ -20,6 +20,7 @@
     top: 0;
     z-index: 40;
     transition: transform 0.3s ease;
+    overflow: hidden;
 }
 
 .sidebar-header {
@@ -60,9 +61,58 @@
 }
 
 .sidebar-nav {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 1rem 0;
+    scrollbar-width: none; /* Para Firefox */
+    -ms-overflow-style: none; /* Para IE y Edge */
+}
+
+.sidebar-nav::-webkit-scrollbar {
+    display: none; /* Para Chrome, Safari y Opera */
+    width: 0;
+    height: 0;
+}
+
+.sidebar-nav a[href*="dashboard-admin"] {
+    order: 1;
+}
+
+.sidebar-nav a[href*="productos"] {
+    order: 2;
+}
+
+.sidebar-nav a[href*="inventario"] {
+    order: 3;
+}
+
+.sidebar-nav a[href*="ventas"]:not([href*="ventas-registradas"]):not([href*="devoluciones"]) {
+    order: 4;
+}
+
+.sidebar-nav a[href*="ventas-registradas"] {
+    order: 5;
+}
+
+.sidebar-nav a[href*="devoluciones"] {
+    order: 6;
+}
+
+.sidebar-nav a[href*="proveedores"] {
+    order: 7;
+}
+
+.sidebar-nav a[href*="usuarios"] {
+    order: 8;
+}
+
+.sidebar-nav a[href*="alertas"] {
+    order: 9;
+}
+
+.sidebar-nav a[href*="reportes"] {
+    order: 10;
 }
 
 .sidebar-nav .nav-link {
@@ -76,13 +126,38 @@
     font-weight: 500;
     font-size: 1rem;
     margin-bottom: 0.25rem;
-    transition: background 0.2s, color 0.2s;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    border: none;
+    outline: none;
+}
+
+.sidebar-nav .nav-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    transition: all 0.4s ease;
+}
+
+.sidebar-nav .nav-link:hover::before {
+    left: 100%;
 }
 
 .sidebar-nav .nav-link:hover {
     background: #f3f4f6;
     color: #111827 !important;
     text-decoration: none !important;
+    transform: translateX(5px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-nav .nav-link:active {
+    transform: scale(0.95);
 }
 
 .sidebar-nav .nav-link.activate,
@@ -91,12 +166,40 @@
     color: #fff !important;
     font-weight: 600;
     text-decoration: none !important;
+    box-shadow: none;
+    transform: translateX(0);
+    border: none;
+}
+
+.sidebar-nav .nav-link.active::before {
+    display: none;
 }
 
 .sidebar-nav .nav-link i {
     min-width: 1.5rem;
     text-align: center;
     font-size: 1.1rem;
+    transition: transform 0.3s ease;
+}
+
+.sidebar-nav .nav-link:hover i {
+    transform: scale(1.2);
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.sidebar-nav .nav-link.active i {
+    animation: pulse 1.5s infinite;
 }
 
 .sidebar-footer {

@@ -3,6 +3,8 @@ package com.darkcode.spring.six.Controllers;
 import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
@@ -18,19 +20,20 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.darkcode.spring.six.dtos.UsuarioDTO;
 import com.darkcode.spring.six.models.entities.Usuario;
+import com.darkcode.spring.six.services.AuthService;
 import com.darkcode.spring.six.services.UsuarioService;
 
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Controller
 @RequestMapping("/admin")
 @RequiredArgsConstructor
-@Slf4j
 public class AdminViewController {
 
+    private static final Logger log = LoggerFactory.getLogger(AdminViewController.class);
     private final UsuarioService usuarioService;
+    private final AuthService authService;
     
     /**
      * Vista mejorada de usuarios que recibe los datos directamente del modelo
@@ -216,5 +219,42 @@ public class AdminViewController {
         }
         
         return "redirect:/admin/usuarios";
+    }
+
+    @GetMapping("/ventas-registradas")
+    public String ventasRegistradas(Model model, HttpSession session) {
+        log.info("Cargando vista de ventas registradas");
+        return "Administrador/ventas-registradas";
+    }
+    
+    /**
+     * Muestra la página de devoluciones para el administrador
+     * @param session Sesión del usuario
+     * @param model Modelo para la vista
+     * @return Vista de devoluciones
+     */
+    @GetMapping("/devoluciones")
+    public String showDevolucionesPage(HttpSession session, Model model) {
+        // Verificar autenticación usando AuthService
+        if (!authService.estaAutenticado(session)) {
+            log.warn("Intento de acceso sin autenticación a la página de devoluciones");
+            return "redirect:/";
+        }
+        
+        // Verificar si es administrador usando AuthService
+        if (!authService.esAdmin(session)) {
+            log.warn("Usuario sin privilegios de administrador intentó acceder a devoluciones");
+            if (authService.esEmpleado(session)) {
+                return "redirect:/dashboard-empleado";
+            } else {
+                return "redirect:/";
+            }
+        }
+        
+        // Obtener información del usuario de la sesión
+        String username = (String) session.getAttribute("usuario");
+        model.addAttribute("usuario", username);
+        
+        return "Administrador/devoluciones";
     }
 } 

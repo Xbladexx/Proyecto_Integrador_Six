@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ventas Registradas - SIX Inventario</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/ventas.css}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Agregar Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body, html, .dashboard-container, .main-content, .card, .content, .card-header, .card-content {
+            background-color: #ffffff !important;
+        }
+    </style>
+</head>
+
+<body style="background-color: #ffffff !important;">
+    <div class="dashboard-container" style="background-color: #ffffff !important;">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="fas fa-box"></i>
+                    <span>SIX Inventario</span>
+                </div>
+                <div class="user-avatar">
+                    <div class="avatar">
+                        <span id="userInitial" th:text="${#strings.substring(session.usuario,0,1)}">A</span>
+                    </div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a th:href="@{/dashboard-admin}" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+                <a th:href="@{/productos}" class="nav-link">
+                    <i class="fas fa-tshirt"></i>
+                    <span>Productos</span>
+                </a>
+                <a th:href="@{/inventario}" class="nav-link">
+                    <i class="fas fa-box-open"></i>
+                    <span>Inventario</span>
+                </a>
+                <a th:href="@{/ventas}" class="nav-link">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Ventas</span>
+                </a>
+                <a th:href="@{/admin/ventas-registradas}" class="nav-link active">
+                    <i class="fas fa-receipt"></i>
+                    <span>Ventas Registradas</span>
+                </a>
+                <a th:href="@{/admin/devoluciones}" class="nav-link">
+                    <i class="fas fa-undo-alt"></i>
+                    <span>Devoluciones</span>
+                </a>
+                <a th:href="@{/proveedores}" class="nav-link">
+                    <i class="fas fa-truck"></i>
+                    <span>Proveedores</span>
+                </a>
+                <a th:href="@{/reportes}" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reportes</span>
+                </a>
+                <a th:href="@{/usuarios}" class="nav-link">
+                    <i class="fas fa-users"></i>
+                    <span>Usuarios</span>
+                </a>
+                <a th:href="@{/alertas}" class="nav-link">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Alertas</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a th:href="@{/logout}" class="sidebar-logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Cerrar Sesión</span>
+                </a>
+                <p class="copyright">© 2025 SIX. Todos los derechos reservados.</p>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="main-content" style="background-color: #ffffff !important;">
+            <header class="header">
+                <div class="header-left">
+                    <button class="mobile-menu-button">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="dashboard-title">Ventas Registradas</h1>
+                </div>
+                <div class="header-actions">
+                    <!-- Acciones de header -->
+                </div>
+            </header>
+
+            <div class="content" style="background-color: #ffffff !important;">
+                <div class="card" style="background-color: #ffffff !important;">
+                    <div class="card-header" style="background-color: #ffffff !important;">
+                        <div class="card-header-content">
+                            <div>
+                                <div class="card-title" style="font-size: 1.1rem; font-weight: 500; color: #495057; margin: 0 0 8px 0;">Ventas Procesadas</div>
+                                <div class="card-description" style="margin-top: 0; color: #6B7280; font-size: 0.875rem; font-weight: 400; line-height: 1.2;">Ventas registradas en la base de datos</div>
+                            </div>
+                        </div>
+                        <hr style="margin-top: 10px; margin-bottom: 0; border: 0; border-top: 1px solid #e5e7eb; margin-left: -20px; margin-right: -20px; width: calc(100% + 40px);">
+                    </div>
+                    <div class="card-content" style="background-color: #ffffff !important;">
+                        <div class="inventory-controls" style="display: flex; justify-content: space-between; align-items: center; padding: 16px;">
+                            <div class="search-container" style="position: relative; width: 300px;">
+                                <i class="fas fa-search search-icon" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #aaa;"></i>
+                                <input type="search" id="ventasSearch" placeholder="Buscar ventas..." class="search-input" style="width: 100%; padding: 8px 10px 8px 35px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                            </div>
+                            <div class="date-filter" style="display: flex; align-items: center; gap: 8px;">
+                                <div style="display: flex; align-items: center;">
+                                    <label for="fechaDesde" style="margin-right: 5px; margin-bottom: 0;">Desde:</label>
+                                    <input type="date" id="fechaDesde" class="date-input" style="padding: 3px; border: 1px solid #ccc; border-radius: 4px; height: 34px;">
+                                </div>
+                                <div style="display: flex; align-items: center;">
+                                    <label for="fechaHasta" style="margin-right: 5px; margin-bottom: 0;">Hasta:</label>
+                                    <input type="date" id="fechaHasta" class="date-input" style="padding: 3px; border: 1px solid #ccc; border-radius: 4px; height: 34px;">
+                                </div>
+                                <button id="aplicarFiltro" class="btn btn-primary" style="height: 34px; padding: 0 15px; display: flex; align-items: center; justify-content: center;">Aplicar</button>
+                            </div>
+                        </div>
+
+                        <div class="table-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 0.375rem; margin: 0 1rem 1rem 1rem;">
+                            <table class="data-table" id="ventasTable" style="border-collapse: collapse; width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb; padding: 0.75rem 1rem; text-align: left; font-weight: 600; font-size: 0.875rem; color: #333;">Código Venta</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb; padding: 0.75rem 1rem; text-align: left; font-weight: 600; font-size: 0.875rem; color: #333;">Cliente</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb; padding: 0.75rem 1rem; text-align: left; font-weight: 600; font-size: 0.875rem; color: #333;">Producto</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb; padding: 0.75rem 1rem; text-align: left; font-weight: 600; font-size: 0.875rem; color: #333;">Subtotal</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb; padding: 0.75rem 1rem; text-align: left; font-weight: 600; font-size: 0.875rem; color: #333;">IGV</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb; padding: 0.75rem 1rem; text-align: left; font-weight: 600; font-size: 0.875rem; color: #333;">Total</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb; padding: 0.75rem 1rem; text-align: left; font-weight: 600; font-size: 0.875rem; color: #333;">Fecha</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb; padding: 0.75rem 1rem; text-align: left; font-weight: 600; font-size: 0.875rem; color: #333;">Estado</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb; padding: 0.75rem 1rem; text-align: center; width: 70px; font-weight: 600; font-size: 0.875rem; color: #333;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Los datos se cargarán dinámicamente -->
+                                    <tr class="loading-row">
+                                        <td colspan="9" class="text-center" style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb;">
+                                            <i class="fas fa-spinner fa-spin"></i> Cargando ventas...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal personalizado sin dependencia de Bootstrap para funcionalidad -->
+    <div id="detallesVentaModal" class="modal-custom" style="display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+        <div class="modal-content-custom" style="background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 800px; border-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+            <div class="modal-header-custom" style="padding-bottom: 10px; border-bottom: 1px solid #eee; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <h5 id="detallesVentaModalLabel" style="margin: 0; font-size: 1.25rem;">Detalles de Venta</h5>
+                <button type="button" class="close-modal-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #333;">&times;</button>
+            </div>
+            <div class="modal-body-custom">
+                <div class="row" style="display: flex; flex-wrap: wrap; margin: 0 -15px;">
+                    <div class="col-md-6" style="width: 50%; padding: 0 15px; box-sizing: border-box;">
+                        <h6 style="margin-top: 0;">Información de Venta</h6>
+                        <div class="info-venta-contenedor">
+                            <p><strong>Código:</strong> <span id="ventaCodigo">-</span></p>
+                            <p><strong>Cliente:</strong> <span id="ventaCliente">-</span></p>
+                            <p><strong>DNI:</strong> <span id="ventaDNI">-</span></p>
+                            <p><strong>Fecha:</strong> <span id="ventaFecha">-</span></p>
+                            <p><strong>Estado:</strong> <span id="ventaEstado" class="estado-venta">-</span></p>
+                        </div>
+                    </div>
+                    <div class="col-md-6" style="width: 50%; padding: 0 15px; box-sizing: border-box;">
+                        <h6 style="margin-top: 0;">Totales</h6>
+                        <div class="info-totales-contenedor">
+                            <p><strong>Subtotal:</strong> <span id="ventaSubtotal">S/. 0.00</span></p>
+                            <p><strong>IGV:</strong> <span id="ventaIGV">S/. 0.00</span></p>
+                            <p><strong>Total:</strong> <span id="ventaTotal">S/. 0.00</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <h5 style="margin-top: 20px;">Productos</h5>
+                <div style="overflow-x: auto;">
+                    <table id="detallesTable" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <thead>
+                            <tr style="background-color: #333; color: white;">
+                                <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Producto</th>
+                                <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Cantidad</th>
+                                <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Los datos se cargarán dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer-custom" style="padding-top: 15px; border-top: 1px solid #eee; display: flex; justify-content: flex-end;">
+                <button type="button" id="btnDevolverVenta" onclick="devolverVentaActual()" class="btn-primary-custom" style="padding: 8px 16px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;">
+                    <i class="fas fa-undo-alt"></i> Devolver Venta
+                </button>
+                <button type="button" class="close-modal-btn btn-secondary-custom" style="padding: 8px 16px; background-color: #000000; color: white; border: none; border-radius: 4px; cursor: pointer;">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Estilos y script personalizados al final -->
+    <link rel="stylesheet" th:href="@{/css/ventas-registradas.css}">
+    <script th:src="@{/js/ventas-registradas.js(v=${#dates.format(#dates.createNow(), 'yyyyMMddHHmmss')})}"></script>
+
+    <!-- Script para manejar el modal personalizado -->
+    <script>
+    // Variable para almacenar la venta activa
+    let ventaActualId = null;
+    
+    // Función global para abrir el modal desde cualquier botón
+    function abrirModal(ventaId) {
+        try {
+            // Guardar el ID de la venta actual
+            ventaActualId = ventaId;
+            // Llamar a la función de mostrar detalles (que debe estar definida en ventas-registradas.js)
+            mostrarDetallesVenta(ventaId);
+        } catch (error) {
+            console.error('Error al abrir modal:', error);
+            alert('Error al mostrar detalles. Por favor, intente nuevamente.');
+        }
+    }
+    
+    // Función para devolver la venta actual
+    function devolverVentaActual() {
+        console.log('Iniciando devolución de venta...');
+        // Obtener la venta actual del script ventas-registradas.js
+        if (window.ventaActual && window.ventaActual.id) {
+            console.log('ID de venta encontrado:', window.ventaActual.id);
+            const ventaId = window.ventaActual.id;
+        } else {
+            console.error('No se pudo obtener la venta actual');
+            alert('No se pudo identificar la venta a devolver');
+            return;
+        }
+        
+        if (!confirm('¿Está seguro que desea realizar la devolución completa de esta venta? Esta acción no se puede deshacer.')) {
+            return;
+        }
+        
+        // Mostrar indicador de carga
+        const btnDevolver = document.getElementById('btnDevolverVenta');
+        const textoOriginal = btnDevolver.innerHTML;
+        btnDevolver.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+        btnDevolver.disabled = true;
+        
+        // Realizar la petición al servidor
+        fetch(`/api/ventas/devolucion/${window.ventaActual.id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin' // Esto asegura que la cookie de sesión se envíe
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(text || 'Error al procesar la devolución');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Cerrar modal
+            document.getElementById('detallesVentaModal').style.display = 'none';
+            
+            // Mostrar mensaje de éxito
+            alert('La venta ha sido devuelta correctamente');
+            
+            // Recargar la página para ver los cambios
+            window.location.reload();
+        })
+        .catch(error => {
+            console.error('Error al procesar devolución:', error);
+            alert('No se pudo procesar la devolución: ' + error.message);
+        })
+        .finally(() => {
+            // Restaurar botón
+            btnDevolver.innerHTML = textoOriginal;
+            btnDevolver.disabled = false;
+        });
+    }
+
+    // Cuando la página se cargue
+    document.addEventListener('DOMContentLoaded', function() {
+        // Obtener referencias al modal
+        const modal = document.getElementById('detallesVentaModal');
+        const closeButtons = document.querySelectorAll('.close-modal-btn');
+        
+        // Cerrar el modal al hacer clic en el botón de cerrar
+        closeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto'; // Restaurar scroll
+            });
+        });
+        
+        // Cerrar el modal al hacer clic fuera del contenido
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto'; // Restaurar scroll
+            }
+        });
+        
+        // Prevenir que se cierre al hacer clic dentro del contenido
+        const modalContent = modal.querySelector('.modal-content-custom');
+        modalContent.addEventListener('click', function(event) {
+            event.stopPropagation();
+        });
+    });
+    </script>
+</body>
+
+</html> 

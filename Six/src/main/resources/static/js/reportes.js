@@ -1,4 +1,47 @@
+// Función para mostrar información de depuración
+function mostrarInfoDepuracion() {
+    console.log('=== Información de depuración de reportes.js ===');
+    console.log('Chart.js cargado:', typeof Chart !== 'undefined');
+    console.log('jQuery cargado:', typeof jQuery !== 'undefined');
+    
+    // Verificar elementos clave
+    const elementosClaves = [
+        'salesChart', 'categorySalesChart', 'abcDistributionChart', 'abcValueChart',
+        'abcProductsTable', 'abcCountA', 'abcValueA', 'abcTotalProducts'
+    ];
+    
+    elementosClaves.forEach(id => {
+        const elemento = document.getElementById(id);
+        console.log(`Elemento ${id} encontrado:`, !!elemento);
+    });
+    
+    // Verificar pestañas
+    const tabButtons = document.querySelectorAll('.tab-button');
+    console.log('Botones de pestañas:', tabButtons.length);
+    tabButtons.forEach(btn => {
+        console.log(`- Pestaña: ${btn.textContent.trim()}, data-tab: ${btn.dataset.tab}, activa: ${btn.classList.contains('active')}`);
+    });
+    
+    // Verificar contenidos de pestañas
+    const tabContents = document.querySelectorAll('.tab-content');
+    console.log('Contenidos de pestañas:', tabContents.length);
+    tabContents.forEach(content => {
+        console.log(`- Contenido: ${content.id}, activo: ${content.classList.contains('active')}`);
+    });
+    
+    // Verificar funciones globales
+    console.log('Función updateCharts disponible:', typeof window.updateCharts === 'function');
+    console.log('Función switchTab disponible:', typeof window.switchTab === 'function');
+    
+    console.log('======================================');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM cargado - Iniciando reportes.js');
+    
+    // Mostrar información de depuración
+    mostrarInfoDepuracion();
+    
     // Referencias a elementos del DOM
     const sidebar = document.querySelector('.sidebar');
     const mobileMenuButton = document.querySelector('.mobile-menu-button');
@@ -21,7 +64,21 @@ document.addEventListener('DOMContentLoaded', function() {
     let inventoryTurnoverChart = null;
     let categoryPerformanceChart = null;
     let productMarginChart = null;
+    let abcDistributionChart = null;
+    let abcValueChart = null;
 
+    // Variables para el caché de datos ABC
+    let abcDataCache = null;
+    let abcDataCacheTimestamp = null;
+    let abcDataCacheExpiry = 5 * 60 * 1000; // Reducido a 5 minutos
+    let abcDataLoadingAttempts = 0;
+    const MAX_LOADING_ATTEMPTS = 5;
+    let abcDataLoadingInProgress = false;
+    const RETRY_DELAY = 1000; // 1 segundo entre reintentos
+
+    // Inicializar fechas
+    initializeDates();
+    
     // Mostrar inicial del usuario
     if (userInitial) {
         const usuario = userInitial.getAttribute('data-usuario') || 'A';
@@ -29,32 +86,58 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Función para mostrar toast
-    function showToast(title, message, type = 'success') {
-        const toast = document.getElementById('toast');
-        const toastTitle = toast.querySelector('.toast-title');
-        const toastMessage = toast.querySelector('.toast-message');
+    function showToast(title, message, type = 'info') {
+        console.log(`Toast: ${title} - ${message} (${type})`);
+        
+        // Verificar si existe el contenedor de toast, si no, crearlo
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container';
+            document.body.appendChild(toastContainer);
+        }
+        
+        // Crear el toast
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type} show`;
+        toast.innerHTML = `
+            <div class="toast-header">
+                <strong>${title}</strong>
+                <button type="button" class="close-toast" onclick="this.parentElement.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        `;
 
-        toastTitle.textContent = title;
-        toastMessage.textContent = message;
+        // Añadir el toast al contenedor
+        toastContainer.appendChild(toast);
 
-        toast.classList.remove('hidden', 'success', 'error');
-        toast.classList.add(type);
-
-        // Ocultar el toast después de 5 segundos
+        // Eliminar el toast después de un tiempo
         setTimeout(() => {
-            toast.classList.add('hidden');
-        }, 5000);
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, type === 'error' ? 8000 : 5000);
     }
 
     // Cerrar toast al hacer clic en el botón de cerrar
-    document.querySelector('.toast-close').addEventListener('click', function() {
-        document.getElementById('toast').classList.add('hidden');
-    });
+    const toastCloseButton = document.querySelector('.toast-close');
+    if (toastCloseButton) {
+        toastCloseButton.addEventListener('click', function() {
+            document.getElementById('toast').classList.add('hidden');
+        });
+    }
 
     // Manejar clic en el botón de menú móvil
-    mobileMenuButton.addEventListener('click', function() {
-        sidebar.classList.toggle('open');
-    });
+    if (mobileMenuButton) {
+        mobileMenuButton.addEventListener('click', function() {
+            sidebar.classList.toggle('open');
+        });
+    }
 
     // Cerrar el sidebar al hacer clic fuera de él en dispositivos móviles
     document.addEventListener('click', function(event) {
@@ -67,28 +150,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Funciones para la interfaz de reportes
-
-    // Cambiar entre pestañas
-    tabButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const tabId = this.dataset.tab;
-
-            // Desactivar todas las pestañas
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            tabContents.forEach(content => content.classList.remove('active'));
-
-            // Activar la pestaña seleccionada
-            this.classList.add('active');
-            document.getElementById(`${tabId}-tab`).classList.add('active');
-
-            // Actualizar gráficos
-            updateCharts(tabId);
-        });
-    });
-
     // Inicializar fechas
     function initializeDates() {
+        console.log('Inicializando fechas');
+        if (!startDate || !endDate) {
+            console.error('Elementos de fecha no encontrados');
+            return;
+        }
+        
         const today = new Date();
         const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
@@ -102,28 +171,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
         startDate.value = formatDate(firstDayOfMonth);
         endDate.value = formatDate(today);
+        
+        console.log(`Fechas inicializadas: desde ${startDate.value} hasta ${endDate.value}`);
     }
 
     // Aplicar rango de fechas
-    applyDateRange.addEventListener('click', function() {
-        if (!startDate.value || !endDate.value) {
-            showToast('Error', 'Por favor seleccione un rango de fechas válido', 'error');
-            return;
-        }
+    if (applyDateRange) {
+        applyDateRange.addEventListener('click', function() {
+            if (!startDate.value || !endDate.value) {
+                showToast('Error', 'Por favor seleccione un rango de fechas válido', 'error');
+                return;
+            }
 
-        const start = new Date(startDate.value);
-        const end = new Date(endDate.value);
+            const start = new Date(startDate.value);
+            const end = new Date(endDate.value);
 
-        if (start > end) {
-            showToast('Error', 'La fecha de inicio debe ser anterior a la fecha de fin', 'error');
-            return;
-        }
+            if (start > end) {
+                showToast('Error', 'La fecha de inicio debe ser anterior a la fecha de fin', 'error');
+                return;
+            }
 
-        // Actualizar todos los gráficos con el nuevo rango de fechas
-        updateAllCharts();
+            // Actualizar todos los gráficos con el nuevo rango de fechas
+            updateAllCharts();
 
-        showToast('Rango aplicado', 'Los reportes han sido actualizados con el nuevo rango de fechas');
-    });
+            showToast('Rango aplicado', 'Los reportes han sido actualizados con el nuevo rango de fechas');
+        });
+    }
 
     // Exportar a PDF
     exportPdfButton.addEventListener('click', function() {
@@ -220,11 +293,58 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 500);
     });
 
+    // Función para verificar si Chart.js está cargado
+    function isChartJsLoaded() {
+        const loaded = typeof Chart !== 'undefined';
+        console.log(`Chart.js cargado: ${loaded}`);
+        return loaded;
+    }
+
+    // Función para verificar si un canvas existe
+    function canvasExists(canvasId) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) {
+            console.warn(`Canvas con ID '${canvasId}' no encontrado`);
+            return false;
+        }
+        return true;
+    }
+
+    // Función para inicializar un gráfico de manera segura
+    function initializeChartSafely(canvasId, config) {
+        try {
+            if (!canvasExists(canvasId)) {
+            return null;
+        }
+
+            // Destruir el gráfico si ya existe
+            if (window.chartInstances && window.chartInstances[canvasId]) {
+                window.chartInstances[canvasId].destroy();
+        }
+
+            // Inicializar el gráfico
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            const chart = new Chart(ctx, config);
+            
+            // Almacenar la instancia del gráfico para referencia futura
+            if (!window.chartInstances) {
+                window.chartInstances = {};
+            }
+            window.chartInstances[canvasId] = chart;
+            
+            return chart;
+        } catch (error) {
+            console.error(`Error al inicializar el gráfico ${canvasId}:`, error);
+            return null;
+        }
+    }
+
     // Función para cargar datos de ventas por período
     function cargarVentasPorPeriodo() {
+        console.log('Cargando datos de ventas por período');
         // Construir parámetros de fecha si están disponibles
         let params = '';
-        if (startDate.value && endDate.value) {
+        if (startDate && startDate.value && endDate && endDate.value) {
             const startISO = new Date(startDate.value + 'T00:00:00').toISOString();
             const endISO = new Date(endDate.value + 'T23:59:59').toISOString();
             params = `?desde=${encodeURIComponent(startISO)}&hasta=${encodeURIComponent(endISO)}`;
@@ -233,16 +353,20 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`/api/reportes/ventas-por-periodo${params}`)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Error al cargar los datos de ventas por período');
+                    throw new Error(`Error al cargar los datos de ventas por período: ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
+                console.log('Datos de ventas por período recibidos:', data);
                 if (salesChart) {
                     // Actualizar datos del gráfico
                     salesChart.data.labels = data.labels;
                     salesChart.data.datasets[0].data = data.values;
                     salesChart.update();
+                    console.log('Gráfico de ventas por período actualizado');
+                } else {
+                    console.error('El gráfico salesChart no está inicializado');
                 }
             })
             .catch(error => {
@@ -253,9 +377,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Función para cargar datos de ventas por categoría
     function cargarVentasPorCategoria() {
+        console.log('Cargando datos de ventas por categoría');
         // Construir parámetros de fecha si están disponibles
         let params = '';
-        if (startDate.value && endDate.value) {
+        if (startDate && startDate.value && endDate && endDate.value) {
             const startISO = new Date(startDate.value + 'T00:00:00').toISOString();
             const endISO = new Date(endDate.value + 'T23:59:59').toISOString();
             params = `?desde=${encodeURIComponent(startISO)}&hasta=${encodeURIComponent(endISO)}`;
@@ -264,16 +389,20 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`/api/reportes/ventas-por-categoria${params}`)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Error al cargar los datos de ventas por categoría');
+                    throw new Error(`Error al cargar los datos de ventas por categoría: ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
+                console.log('Datos de ventas por categoría recibidos:', data);
                 if (categorySalesChart) {
                     // Actualizar datos del gráfico
                     categorySalesChart.data.labels = data.labels;
                     categorySalesChart.data.datasets[0].data = data.values;
                     categorySalesChart.update();
+                    console.log('Gráfico de ventas por categoría actualizado');
+                } else {
+                    console.error('El gráfico categorySalesChart no está inicializado');
                 }
             })
             .catch(error => {
@@ -672,118 +801,253 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
+    /**
+     * Carga y procesa los datos de clasificación ABC
+     * @param {boolean} forzarRecarga - Indica si se debe forzar la recarga de datos
+     * @returns {Promise} - Promesa con los datos de clasificación ABC
+     */
+    async function cargarClasificacionABC(forzarRecarga = false) {
+        const ahora = new Date().getTime();
+        
+        // Verificar si podemos usar el caché
+        if (!forzarRecarga && abcDataCache && abcDataCacheTimestamp && 
+            (ahora - abcDataCacheTimestamp) < abcDataCacheExpiry) {
+            console.log('Usando datos ABC en caché');
+            return abcDataCache;
+        }
+
+        // Evitar múltiples cargas simultáneas
+        if (abcDataLoadingInProgress) {
+            console.log('Ya hay una carga de datos ABC en progreso');
+            showToast('Información', 'Cargando datos de clasificación ABC, por favor espere...', 'info');
+            return;
+        }
+
+        abcDataLoadingInProgress = true;
+        abcDataLoadingAttempts = 0;
+        
+        // Mostrar indicador de carga
+        const tablaABC = document.querySelector('#abcProductsTable tbody');
+        if (tablaABC) {
+            tablaABC.innerHTML = '<tr><td colspan="6" class="loading-message"><i class="fas fa-spinner fa-spin"></i> Cargando datos de clasificación ABC...</td></tr>';
+        }
+        
+        // Mostrar indicadores de carga en los resúmenes
+        const elementos = ['abcCountA', 'abcCountB', 'abcCountC', 'abcTotalProducts', 'abcValueA', 'abcValueB', 'abcValueC', 'abcTotalValue'];
+        elementos.forEach(id => {
+            const elemento = document.getElementById(id);
+            if (elemento) elemento.textContent = 'Cargando...';
+        });
+
+        // Mostrar indicadores de carga en los gráficos
+        if (abcDistributionChart) {
+            abcDistributionChart.data.datasets[0].data = [33, 33, 34]; // Valores temporales para mostrar algo
+            abcDistributionChart.update();
+        }
+        
+        if (abcValueChart) {
+            abcValueChart.data.datasets[0].data = [80, 15, 5]; // Valores temporales para mostrar algo
+            abcValueChart.update();
+        }
+
+        // Primero intentar precalcular la clasificación ABC para asegurar que existan datos
+        try {
+            console.log('Intentando precalcular clasificación ABC...');
+            await fetch('/api/reportes/precalcular-abc?forzar=' + (forzarRecarga ? 'true' : 'false'), {
+                method: 'GET',
+                headers: { 'Cache-Control': 'no-cache' }
+            });
+            console.log('Precálculo de clasificación ABC completado');
+        } catch (error) {
+            console.warn('No se pudo precalcular la clasificación ABC:', error);
+            // Continuamos de todos modos, ya que podría haber datos existentes
+        }
+
+        async function intentarCarga() {
+            try {
+                // Usar un parámetro de tiempo para evitar caché del navegador
+                const timestamp = new Date().getTime();
+                console.log('Intentando cargar datos ABC, intento:', abcDataLoadingAttempts + 1);
+                
+                // Mostrar feedback visual
+                if (abcDataLoadingAttempts > 0) {
+                    const tablaABC = document.querySelector('#abcProductsTable tbody');
+                    if (tablaABC) {
+                        tablaABC.innerHTML = `<tr><td colspan="6" class="loading-message"><i class="fas fa-spinner fa-spin"></i> Cargando datos de clasificación ABC... (Intento ${abcDataLoadingAttempts + 1})</td></tr>`;
+                    }
+                }
+                
+                const response = await fetch(`/api/reportes/clasificacion-abc?_=${timestamp}`, {
+                    method: 'GET',
+                    headers: { 'Cache-Control': 'no-cache' }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Datos ABC recibidos:', data);
+                
+                // Verificar si hay datos válidos
+                if (!data || !data.productos || data.productos.length === 0) {
+                    console.warn('No hay productos en los datos ABC recibidos');
+                    throw new Error('No hay productos en los datos ABC');
+                }
+                
+                abcDataCache = data;
+                abcDataCacheTimestamp = new Date().getTime();
+                abcDataLoadingInProgress = false;
+                abcDataLoadingAttempts = 0;
+                
+                console.log('Datos ABC cargados exitosamente');
+                
+                // Procesar y mostrar datos inmediatamente
+                await procesarYMostrarDatosABC(data);
+                
+                return data;
+            } catch (error) {
+                console.error('Error cargando datos ABC:', error);
+                abcDataLoadingAttempts++;
+                
+                if (abcDataLoadingAttempts < MAX_LOADING_ATTEMPTS) {
+                    console.log(`Reintentando carga (intento ${abcDataLoadingAttempts})...`);
+                    showToast('Información', `Reintentando cargar datos ABC (intento ${abcDataLoadingAttempts})...`, 'info');
+                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * abcDataLoadingAttempts));
+                    return intentarCarga();
+                } else {
+                    abcDataLoadingInProgress = false;
+                    mostrarEstadoSinDatos();
+                    
+                    // Agregar botón de reintento
+                    const tablaABC = document.querySelector('#abcProductsTable tbody');
+                    if (tablaABC) {
+                        tablaABC.innerHTML = `
+                            <tr>
+                                <td colspan="6" class="error-message">
+                                    No se pudieron cargar los datos de clasificación ABC.
+                                    <button id="retryABCButton" class="button button-primary" onclick="cargarClasificacionABC(true)">
+                                        <i class="fas fa-sync-alt"></i> Reintentar
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                    
+                    showToast('Error', 'No se pudieron cargar los datos de clasificación ABC después de varios intentos', 'error');
+                    throw new Error('Máximo número de intentos alcanzado');
+                }
+            }
+        }
+
+        return intentarCarga();
+    }
+
     // Inicializar gráficos
     function initializeCharts() {
+        console.log('Inicializando gráficos');
+        
         // Gráfico de ventas por período
-        const salesChartCtx = document.getElementById('salesChart').getContext('2d');
-        salesChart = new Chart(salesChartCtx, {
-            type: 'line',
-            data: {
-                labels: ['Cargando datos...'],
-                datasets: [{
-                    label: 'Ventas (S/.)',
-                    data: [0],
-                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                    borderColor: 'rgba(59, 130, 246, 1)',
-                    borderWidth: 2,
-                    tension: 0.3,
-                    pointBackgroundColor: 'rgba(59, 130, 246, 1)'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return 'S/. ' + value.toLocaleString();
+        if (canvasExists('salesChart')) {
+            console.log('Inicializando gráfico de ventas por período');
+            salesChart = initializeChartSafely('salesChart', {
+                type: 'line',
+                data: {
+                    labels: ['Cargando datos...'],
+                    datasets: [{
+                        label: 'Ventas (S/.)',
+                        data: [0],
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        pointBackgroundColor: 'rgba(59, 130, 246, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'S/. ' + value.toLocaleString();
+                                }
                             }
                         }
-                    }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return 'S/. ' + context.raw.toLocaleString();
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'S/. ' + context.raw.toLocaleString();
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
 
         // Gráfico de ventas por categoría
-        const categorySalesChartCtx = document.getElementById('categorySalesChart').getContext('2d');
-        categorySalesChart = new Chart(categorySalesChartCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Cargando datos...'],
-                datasets: [{
-                    data: [100],
-                    backgroundColor: [
-                        'rgba(59, 130, 246, 0.7)',
-                        'rgba(16, 185, 129, 0.7)',
-                        'rgba(245, 158, 11, 0.7)',
-                        'rgba(236, 72, 153, 0.7)',
-                        'rgba(139, 92, 246, 0.7)'
-                    ],
-                    borderColor: [
-                        'rgba(59, 130, 246, 1)',
-                        'rgba(16, 185, 129, 1)',
-                        'rgba(245, 158, 11, 1)',
-                        'rgba(236, 72, 153, 1)',
-                        'rgba(139, 92, 246, 1)'
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.raw || 0;
-                                const total = context.dataset.data.reduce((acc, data) => acc + data, 0);
-                                const percentage = Math.round((value / total) * 100);
-                                return `${label}: S/. ${value.toLocaleString()} (${percentage}%)`;
+        if (canvasExists('categorySalesChart')) {
+            console.log('Inicializando gráfico de ventas por categoría');
+            categorySalesChart = initializeChartSafely('categorySalesChart', {
+                type: 'doughnut',
+                data: {
+                    labels: ['Cargando datos...'],
+                    datasets: [{
+                        data: [100],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(245, 158, 11, 0.7)',
+                            'rgba(236, 72, 153, 0.7)',
+                            'rgba(139, 92, 246, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(245, 158, 11, 1)',
+                            'rgba(236, 72, 153, 1)',
+                            'rgba(139, 92, 246, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((acc, data) => acc + data, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: S/. ${value.toLocaleString()} (${percentage}%)`;
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
 
-        // Inicializar los gráficos de productos
+        // Inicializar los gráficos restantes
         initializeRemainingCharts();
-        
-        // Cargar datos reales
-        cargarVentasPorPeriodo();
-        cargarVentasPorCategoria();
-        cargarProductosMasVendidos();
-        cargarResumenVentas();
-        
-        // Cargar datos de inventario
-        cargarValorInventarioPorCategoria();
-        cargarRotacionInventario();
-        cargarProductosBajoStock();
-        cargarResumenInventario();
     }
     
     // Inicializar los gráficos restantes
     function initializeRemainingCharts() {
-        // Estos gráficos no se conectarán a la API en esta primera implementación
-        // pero se mantienen para no romper la funcionalidad existente
+        console.log('Inicializando gráficos restantes');
         
         // Gráfico de valor de inventario por categoría
-        const inventoryValueChartCtx = document.getElementById('inventoryValueChart');
-        if (inventoryValueChartCtx) {
-            inventoryValueChart = new Chart(inventoryValueChartCtx.getContext('2d'), {
+        if (canvasExists('inventoryValueChart')) {
+            console.log('Inicializando gráfico de valor de inventario');
+            inventoryValueChart = initializeChartSafely('inventoryValueChart', {
                 type: 'bar',
                 data: {
                     labels: ['Camisetas', 'Pantalones', 'Vestidos', 'Blusas', 'Chaquetas'],
@@ -822,9 +1086,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Gráfico de rotación de inventario
-        const inventoryTurnoverChartCtx = document.getElementById('inventoryTurnoverChart');
-        if (inventoryTurnoverChartCtx) {
-            inventoryTurnoverChart = new Chart(inventoryTurnoverChartCtx.getContext('2d'), {
+        if (canvasExists('inventoryTurnoverChart')) {
+            console.log('Inicializando gráfico de rotación de inventario');
+            inventoryTurnoverChart = initializeChartSafely('inventoryTurnoverChart', {
                 type: 'line',
                 data: {
                     labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
@@ -851,157 +1115,838 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Gráfico de rendimiento por categoría
-        const categoryPerformanceCtx = document.getElementById('categoryPerformanceChart');
-        categoryPerformanceChart = new Chart(categoryPerformanceCtx, {
-            type: 'bar',
-            data: {
-                labels: [],
-                datasets: [
-                    {
-                        label: 'Ingresos (S/.)',
-                        data: [],
-                        backgroundColor: 'rgba(66, 135, 245, 0.7)',
-                        borderColor: 'rgba(66, 135, 245, 1)',
-                        borderWidth: 1,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: 'Unidades Vendidas',
-                        data: [],
-                        backgroundColor: 'rgba(153, 102, 255, 0.7)',
-                        borderColor: 'rgba(153, 102, 255, 1)',
-                        borderWidth: 1,
-                        yAxisID: 'y1'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        type: 'linear',
-                        position: 'left',
-                        title: {
-                            display: true,
-                            text: 'Ingresos (S/.)'
+        if (canvasExists('categoryPerformanceChart')) {
+            console.log('Inicializando gráfico de rendimiento por categoría');
+            categoryPerformanceChart = initializeChartSafely('categoryPerformanceChart', {
+                type: 'bar',
+                data: {
+                    labels: ['Camisetas', 'Pantalones', 'Vestidos', 'Blusas', 'Chaquetas'],
+                    datasets: [
+                        {
+                            label: 'Ingresos (S/.)',
+                            data: [3500, 4200, 3800, 2900, 3100],
+                            backgroundColor: 'rgba(66, 135, 245, 0.7)',
+                            borderColor: 'rgba(66, 135, 245, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Unidades Vendidas',
+                            data: [45, 32, 28, 25, 18],
+                            backgroundColor: 'rgba(153, 102, 255, 0.7)',
+                            borderColor: 'rgba(153, 102, 255, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'y1'
                         }
-                    },
-                    y1: {
-                        beginAtZero: true,
-                        type: 'linear',
-                        position: 'right',
-                        grid: {
-                            drawOnChartArea: false
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            type: 'linear',
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Ingresos (S/.)'
+                            }
+                        },
+                        y1: {
+                            beginAtZero: true,
+                            type: 'linear',
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'Unidades'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Gráfico de margen por producto
+        if (canvasExists('productMarginChart')) {
+            console.log('Inicializando gráfico de margen por producto');
+            productMarginChart = initializeChartSafely('productMarginChart', {
+                type: 'bar',
+                data: {
+                    labels: ['Vestido Casual', 'Chaqueta Denim', 'Pantalón Chino', 'Camiseta Slim Fit', 'Blusa Estampada'],
+                    datasets: [{
+                        label: 'Margen (%)',
+                        data: [50.0, 50.0, 50.0, 50.0, 50.0],
+                        backgroundColor: 'rgba(255, 159, 64, 0.7)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Gráfico de distribución ABC
+        if (canvasExists('abcDistributionChart')) {
+            console.log('Inicializando gráfico de distribución ABC');
+            abcDistributionChart = initializeChartSafely('abcDistributionChart', {
+                type: 'doughnut',
+                data: {
+                    labels: ['Categoría A', 'Categoría B', 'Categoría C'],
+                    datasets: [{
+                        data: [20, 30, 50], // Valores predeterminados según la teoría ABC
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)', // Azul para A
+                            'rgba(16, 185, 129, 0.7)', // Verde para B
+                            'rgba(245, 158, 11, 0.7)'  // Naranja para C
+                        ],
+                        borderColor: [
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(245, 158, 11, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                boxWidth: 12,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((acc, data) => acc + data, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value} productos (${percentage}%)`;
+                                }
+                            }
                         },
                         title: {
                             display: true,
-                            text: 'Unidades'
+                            text: 'Distribución de Productos por Categoría ABC',
+                            font: {
+                                size: 16
+                            },
+                            padding: {
+                                top: 10,
+                                bottom: 20
+                            }
                         }
                     }
+                }
+            });
+        }
+        
+        // Gráfico de valor ABC
+        if (canvasExists('abcValueChart')) {
+            console.log('Inicializando gráfico de valor ABC');
+            abcValueChart = initializeChartSafely('abcValueChart', {
+                type: 'bar',
+                data: {
+                    labels: ['Categoría A', 'Categoría B', 'Categoría C'],
+                    datasets: [{
+                        label: 'Valor (S/.)',
+                        data: [80, 15, 5], // Valores predeterminados según la teoría ABC
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)', // Azul para A
+                            'rgba(16, 185, 129, 0.7)', // Verde para B
+                            'rgba(245, 158, 11, 0.7)'  // Naranja para C
+                        ],
+                        borderColor: [
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(245, 158, 11, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
                 },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Rendimiento por Categoría'
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'S/. ' + value.toLocaleString();
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                drawBorder: true,
+                                drawOnChartArea: true,
+                                drawTicks: true,
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false
+                            }
+                        }
                     },
-                    legend: {
-                        position: 'bottom'
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((acc, data) => acc + data, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: S/. ${value.toLocaleString()} (${percentage}%)`;
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Valor de Inventario por Categoría ABC',
+                            font: {
+                                size: 16
+                            },
+                            padding: {
+                                top: 10,
+                                bottom: 20
+                            }
+                        }
                     }
                 }
-            }
-        });
-
-        // Gráfico de margen por producto
-        const productMarginCtx = document.getElementById('productMarginChart');
-        productMarginChart = new Chart(productMarginCtx, {
-            type: 'bar',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Margen (%)',
-                    data: [],
-                    backgroundColor: 'rgba(255, 159, 64, 0.7)',
-                    borderColor: 'rgba(255, 159, 64, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                indexAxis: 'y', // Esto hace que el gráfico sea horizontal
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        max: 100
-                    }
-                },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Margen por Producto (%)'
-                    },
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
+            });
+        }
     }
 
-    // Actualizar gráficos según la pestaña seleccionada
+    // Cambiar entre pestañas - CORREGIDO
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            // Prevenir comportamiento por defecto
+            event.preventDefault();
+            
+            const tabId = this.dataset.tab;
+            console.log(`Cambiando a la pestaña: ${tabId}`);
+
+            // Desactivar todas las pestañas
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            // Activar la pestaña seleccionada
+            this.classList.add('active');
+            const tabContent = document.getElementById(`${tabId}-tab`);
+            if (tabContent) {
+                tabContent.classList.add('active');
+                console.log(`Pestaña ${tabId} activada`);
+            } else {
+                console.error(`No se encontró el contenido para la pestaña ${tabId}`);
+            }
+
+            // Actualizar gráficos
+            updateCharts(tabId);
+        });
+    });
+
+    /**
+     * Actualiza los gráficos según la pestaña activa
+     * @param {string} tabId - ID de la pestaña activa
+     */
     function updateCharts(tabId) {
-        if (tabId === 'sales') {
+        console.log('Actualizando gráficos para la pestaña:', tabId);
+        
+        try {
+            switch (tabId) {
+                case 'sales':
             cargarVentasPorPeriodo();
             cargarVentasPorCategoria();
             cargarProductosMasVendidos();
             cargarResumenVentas();
-        } else if (tabId === 'inventory') {
+                    break;
+                case 'inventory':
             cargarValorInventarioPorCategoria();
             cargarRotacionInventario();
             cargarProductosBajoStock();
             cargarResumenInventario();
-        } else if (tabId === 'products') {
+                    break;
+                case 'products':
             cargarRendimientoProductos();
             cargarTendenciasProductos();
             cargarDistribucionProductosCategoria();
+                    break;
+                case 'abc':
+                    console.log('Cargando datos de clasificación ABC');
+                    cargarClasificacionABC();
+                    break;
+                default:
+                    console.warn('Pestaña desconocida:', tabId);
+                    break;
+            }
+        } catch (error) {
+            console.error('Error al actualizar gráficos:', error);
         }
     }
-
-    // Actualizar todos los gráficos con el nuevo rango de fechas
+    
+    /**
+     * Actualiza todos los gráficos en todas las pestañas
+     */
     function updateAllCharts() {
-        // Cargar datos para todos los gráficos
-        cargarVentasPorPeriodo();
-        cargarVentasPorCategoria();
-        cargarProductosMasVendidos();
-        cargarResumenVentas();
+        console.log('Actualizando todos los gráficos');
         
-        cargarValorInventarioPorCategoria();
-        cargarRotacionInventario();
-        cargarProductosBajoStock();
-        cargarResumenInventario();
-        
-        cargarRendimientoProductos();
-        cargarTendenciasProductos();
-        cargarDistribucionProductosCategoria();
+        // Obtener la pestaña activa
+        const activeTab = document.querySelector('.tab-button.active');
+        if (activeTab) {
+            // Actualizar solo los gráficos de la pestaña activa
+            updateCharts(activeTab.dataset.tab);
+        } else {
+            // Si no hay pestaña activa, actualizar todos los gráficos
+            updateCharts('sales');
+            updateCharts('inventory');
+            updateCharts('products');
+            updateCharts('abc');
+        }
     }
 
     // Inicializar la aplicación
     function initialize() {
-        // Establecer las fechas predeterminadas
-        initializeDates();
+        console.log('Inicializando aplicación de reportes');
         
-        // Inicializar los gráficos
+        // Verificar si Chart.js está cargado
+        if (!isChartJsLoaded()) {
+            console.error('Chart.js no está disponible. Los gráficos no se pueden mostrar.');
+            showToast('Error', 'No se pudieron cargar los gráficos. Por favor, recargue la página.', 'error');
+            return;
+        }
+        
+        // Inicializar gráficos
         initializeCharts();
         
-        // Cargar los datos iniciales
-        updateAllCharts();
+        // Precalcular datos ABC en segundo plano
+        setTimeout(() => {
+            try {
+                console.log('Precalculando datos ABC en segundo plano...');
+                fetch('/api/reportes/precalcular-abc', {
+                    method: 'GET',
+                    headers: { 'Cache-Control': 'no-cache' }
+                }).then(response => {
+                    if (response.ok) {
+                        console.log('Precálculo de datos ABC completado');
+                    } else {
+                        console.warn('El precálculo de datos ABC no fue exitoso');
+                    }
+                }).catch(error => {
+                    console.error('Error en precálculo de datos ABC:', error);
+                });
+            } catch (error) {
+                console.error('Error al iniciar precálculo de datos ABC:', error);
+            }
+        }, 1000);
         
-        // Inicializar los elementos interactivos
-        // Ya están inicializados en el código anterior (eventos, etc.)
+        // Cargar datos iniciales
+        const activeTab = document.querySelector('.tab-button.active').dataset.tab;
+        updateCharts(activeTab);
+        
+        // Mostrar mensaje de inicialización completada
+        console.log('Inicialización de reportes completada');
     }
-    
+
     // Iniciar la aplicación
     initialize();
+
+    // Función para procesar y mostrar datos ABC
+    async function procesarYMostrarDatosABC(data) {
+        console.log('Procesando datos ABC:', data);
+        
+        if (!data) {
+            console.error('No hay datos ABC para procesar');
+            mostrarEstadoSinDatos();
+            return;
+        }
+
+        try {
+            // Verificar si hay productos en los datos
+            if (!data.productos || data.productos.length === 0) {
+                console.warn('No hay productos en los datos ABC');
+                
+                // Intentar precalcular nuevamente si no hay productos
+                try {
+                    console.log('Intentando forzar precálculo de clasificación ABC...');
+                    await fetch('/api/reportes/precalcular-abc?forzar=true', {
+                        method: 'GET',
+                        headers: { 'Cache-Control': 'no-cache' }
+                    });
+                    
+                    // Esperar un momento y volver a cargar los datos
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    // Intentar cargar los datos nuevamente
+                    const response = await fetch('/api/reportes/clasificacion-abc', {
+                        method: 'GET',
+                        headers: { 'Cache-Control': 'no-cache' }
+                    });
+                    
+                    if (response.ok) {
+                        const nuevosDatos = await response.json();
+                        if (nuevosDatos && nuevosDatos.productos && nuevosDatos.productos.length > 0) {
+                            console.log('Se obtuvieron nuevos datos después del precálculo');
+                            data = nuevosDatos;
+                        } else {
+                            mostrarEstadoSinDatos();
+                            return;
+                        }
+                    } else {
+                        mostrarEstadoSinDatos();
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error al intentar forzar el precálculo:', error);
+                    mostrarEstadoSinDatos();
+                    return;
+                }
+            }
+
+            // Actualizar visualizaciones
+            actualizarGraficosABC(data);
+            actualizarTablaABC(data);
+            actualizarResumenABC(data);
+            
+            showToast('Éxito', 'Datos ABC actualizados correctamente', 'success');
+        } catch (error) {
+            console.error('Error procesando datos ABC:', error);
+            showToast('Error', 'Error al procesar los datos ABC: ' + error.message, 'error');
+            mostrarEstadoSinDatos();
+        }
+    }
+
+    function mostrarEstadoSinDatos() {
+        console.log('Mostrando estado sin datos ABC');
+        
+        const elementos = {
+            'abcCountA': '0',
+            'abcCountB': '0',
+            'abcCountC': '0',
+            'abcTotalProducts': '0',
+            'abcValueA': 'S/. 0.00',
+            'abcValueB': 'S/. 0.00',
+            'abcValueC': 'S/. 0.00',
+            'abcTotalValue': 'S/. 0.00'
+        };
+
+        Object.entries(elementos).forEach(([id, valor]) => {
+            const elemento = document.getElementById(id);
+            if (elemento) elemento.textContent = valor;
+        });
+
+        const tablaTbody = document.querySelector('#abcProductsTable tbody');
+        if (tablaTbody) {
+            tablaTbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="empty-message">
+                        No hay datos disponibles para el análisis ABC.
+                        <p>Asegúrate de tener productos y ventas registradas.</p>
+                        <button onclick="cargarClasificacionABC(true)" class="button button-primary">
+                            <i class="fas fa-sync-alt"></i> Intentar nuevamente
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Actualizar los gráficos con datos vacíos
+        if (abcDistributionChart) {
+            abcDistributionChart.data.datasets[0].data = [0, 0, 0];
+            abcDistributionChart.update();
+        }
+        
+        if (abcValueChart) {
+            abcValueChart.data.datasets[0].data = [0, 0, 0];
+            abcValueChart.update();
+        }
+
+        showToast('Información', 'No hay datos disponibles para el análisis ABC', 'info');
+    }
+
+    /**
+     * Actualiza los gráficos de clasificación ABC
+     * @param {Object} data - Datos de clasificación ABC
+     */
+    function actualizarGraficosABC(data) {
+        console.log('Actualizando gráficos ABC con datos');
+        
+        if (!data) {
+            console.error('No hay datos para actualizar los gráficos ABC');
+            return;
+        }
+        
+        const { conteoCategoria = {}, valorCategoria = {} } = data;
+        
+        // Preparar datos para los gráficos
+        const labels = ['Categoría A', 'Categoría B', 'Categoría C'];
+        
+        // Datos para el gráfico de distribución de productos
+        const datosConteo = [
+            conteoCategoria.A || 0,
+            conteoCategoria.B || 0,
+            conteoCategoria.C || 0
+        ];
+        
+        // Datos para el gráfico de valor por categoría
+        const datosValor = [
+            valorCategoria.A || 0,
+            valorCategoria.B || 0,
+            valorCategoria.C || 0
+        ];
+        
+        // Colores para las categorías
+        const backgroundColors = [
+            'rgba(59, 130, 246, 0.7)',   // Azul para A
+            'rgba(16, 185, 129, 0.7)',    // Verde para B
+            'rgba(245, 158, 11, 0.7)'     // Naranja para C
+        ];
+        
+        const borderColors = [
+            'rgba(59, 130, 246, 1)',
+            'rgba(16, 185, 129, 1)',
+            'rgba(245, 158, 11, 1)'
+        ];
+
+        // Calcular porcentajes para las etiquetas
+        const totalProductos = datosConteo.reduce((a, b) => a + b, 0);
+        const totalValor = datosValor.reduce((a, b) => a + b, 0);
+        
+        const labelsConPorcentaje = labels.map((label, index) => {
+            const porcentajeProductos = totalProductos > 0 ? 
+                ((datosConteo[index] / totalProductos) * 100).toFixed(1) : 0;
+            return `${label} (${porcentajeProductos}%)`;
+        });
+        
+        // Actualizar gráfico de distribución de productos
+        if (abcDistributionChart) {
+            try {
+                abcDistributionChart.data.labels = labelsConPorcentaje;
+                abcDistributionChart.data.datasets[0].data = datosConteo;
+                abcDistributionChart.data.datasets[0].backgroundColor = backgroundColors;
+                abcDistributionChart.data.datasets[0].borderColor = borderColors;
+                abcDistributionChart.options.plugins.tooltip = {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const percentage = totalProductos > 0 ? 
+                                ((value / totalProductos) * 100).toFixed(1) : 0;
+                            return `${label.split(' (')[0]}: ${value} productos (${percentage}%)`;
+                        }
+                    }
+                };
+                abcDistributionChart.update();
+                console.log('Gráfico de distribución ABC actualizado');
+            } catch (error) {
+                console.error('Error al actualizar gráfico de distribución ABC:', error);
+            }
+        } else {
+            console.warn('El gráfico abcDistributionChart no está inicializado');
+        }
+
+        // Actualizar gráfico de valor por categoría
+        if (abcValueChart) {
+            try {
+                // Crear etiquetas con porcentaje de valor
+                const labelsConPorcentajeValor = labels.map((label, index) => {
+                    const porcentajeValor = totalValor > 0 ? 
+                        ((datosValor[index] / totalValor) * 100).toFixed(1) : 0;
+                    return `${label} (${porcentajeValor}%)`;
+                });
+                
+                abcValueChart.data.labels = labelsConPorcentajeValor;
+                abcValueChart.data.datasets[0].data = datosValor;
+                abcValueChart.data.datasets[0].backgroundColor = backgroundColors;
+                abcValueChart.data.datasets[0].borderColor = borderColors;
+                abcValueChart.options.plugins.tooltip = {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const percentage = totalValor > 0 ? 
+                                ((value / totalValor) * 100).toFixed(1) : 0;
+                            return `${label.split(' (')[0]}: ${formatearMoneda(value)} (${percentage}%)`;
+                        }
+                    }
+                };
+                abcValueChart.update();
+                console.log('Gráfico de valor ABC actualizado');
+            } catch (error) {
+                console.error('Error al actualizar gráfico de valor ABC:', error);
+            }
+        } else {
+            console.warn('El gráfico abcValueChart no está inicializado');
+        }
+    }
+
+    /**
+     * Actualiza la tabla de productos clasificados ABC
+     * @param {Object} data - Datos de clasificación ABC
+     */
+    function actualizarTablaABC(data) {
+        console.log('Actualizando tabla ABC con datos');
+        
+        const tablaTbody = document.querySelector('#abcProductsTable tbody');
+        if (!tablaTbody) {
+            console.error('No se encontró la tabla ABC');
+            return;
+        }
+
+        // Limpiar la tabla
+        tablaTbody.innerHTML = '';
+        
+        // Verificar si hay productos
+        const productos = data.productos || [];
+        if (productos.length === 0) {
+            tablaTbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="empty-message">
+                        No hay productos clasificados en el análisis ABC.
+                        <button onclick="cargarClasificacionABC(true)" class="button button-primary">
+                            <i class="fas fa-sync-alt"></i> Actualizar datos
+                        </button>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        // Ordenar productos: primero por categoría (A, B, C) y luego por valor anual (descendente)
+        const productosOrdenados = [...productos].sort((a, b) => {
+            const catOrder = { 'A': 0, 'B': 1, 'C': 2 };
+            const catDiff = catOrder[a.categoria] - catOrder[b.categoria];
+            return catDiff !== 0 ? catDiff : b.valorAnual - a.valorAnual;
+        });
+
+        // Crear filas para cada producto
+        productosOrdenados.forEach(producto => {
+            if (!producto) return;
+
+            // Formatear valores
+            const valorAnual = formatearMoneda(producto.valorAnual);
+            const porcentajeValor = formatearPorcentaje(producto.porcentajeValor);
+            const porcentajeAcumulado = formatearPorcentaje(producto.porcentajeAcumulado);
+            
+            // Determinar clase CSS para la categoría
+            const categoriaClase = `categoria-${producto.categoria.toLowerCase()}`;
+            
+            // Crear fila
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${producto.codigo || 'N/A'}</td>
+                <td>${producto.nombre || 'Sin nombre'}</td>
+                <td><span class="badge ${categoriaClase}">${producto.categoria}</span></td>
+                <td class="text-right">${valorAnual}</td>
+                <td class="text-right">${porcentajeValor}</td>
+                <td class="text-right">${porcentajeAcumulado}</td>
+            `;
+            
+            tablaTbody.appendChild(row);
+        });
+        
+        // Si hay muchos productos, agregar un mensaje informativo
+        if (productosOrdenados.length > 50) {
+            const infoRow = document.createElement('tr');
+            infoRow.innerHTML = `
+                <td colspan="6" class="info-message">
+                    <i class="fas fa-info-circle"></i> Mostrando ${productosOrdenados.length} productos clasificados.
+                </td>
+            `;
+            tablaTbody.appendChild(infoRow);
+    }
+    }
+    
+    /**
+     * Formatea un valor monetario
+     * @param {number} valor - Valor a formatear
+     * @returns {string} - Valor formateado como moneda
+     */
+    function formatearMoneda(valor) {
+        if (valor === undefined || valor === null) return 'S/. 0.00';
+        return 'S/. ' + parseFloat(valor).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    }
+    
+    /**
+     * Formatea un porcentaje
+     * @param {number} valor - Valor a formatear
+     * @returns {string} - Valor formateado como porcentaje
+     */
+    function formatearPorcentaje(valor) {
+        if (valor === undefined || valor === null) return '0.00%';
+        return parseFloat(valor).toFixed(2) + '%';
+    }
+
+    /**
+     * Actualiza el resumen de clasificación ABC
+     * @param {Object} data - Datos de clasificación ABC
+     */
+    function actualizarResumenABC(data) {
+        console.log('Actualizando resumen ABC con datos');
+        
+        if (!data) {
+            console.error('No hay datos para actualizar el resumen ABC');
+            return;
+        }
+        
+        try {
+            const { conteoCategoria = {}, valorCategoria = {}, productos = [] } = data;
+        
+            // Obtener conteos por categoría
+            const countA = conteoCategoria.A || 0;
+            const countB = conteoCategoria.B || 0;
+            const countC = conteoCategoria.C || 0;
+            const totalProductos = countA + countB + countC;
+            
+            // Obtener valores por categoría
+            const valorA = valorCategoria.A || 0;
+            const valorB = valorCategoria.B || 0;
+            const valorC = valorCategoria.C || 0;
+            const valorTotal = valorA + valorB + valorC;
+            
+            // Actualizar elementos del DOM con los valores
+            document.getElementById('abcCountA').textContent = countA;
+            document.getElementById('abcCountB').textContent = countB;
+            document.getElementById('abcCountC').textContent = countC;
+            document.getElementById('abcTotalProducts').textContent = totalProductos;
+            
+            document.getElementById('abcValueA').textContent = formatearMoneda(valorA);
+            document.getElementById('abcValueB').textContent = formatearMoneda(valorB);
+            document.getElementById('abcValueC').textContent = formatearMoneda(valorC);
+            document.getElementById('abcTotalValue').textContent = formatearMoneda(valorTotal);
+
+            // Agregar porcentajes si hay productos
+            if (totalProductos > 0) {
+                const porcentajeA = (countA / totalProductos * 100).toFixed(1);
+                const porcentajeB = (countB / totalProductos * 100).toFixed(1);
+                const porcentajeC = (countC / totalProductos * 100).toFixed(1);
+                
+                // Crear elementos para mostrar porcentajes
+                const countAElement = document.getElementById('abcCountA');
+                const countBElement = document.getElementById('abcCountB');
+                const countCElement = document.getElementById('abcCountC');
+                
+                if (countAElement) countAElement.innerHTML = `${countA} <small>(${porcentajeA}%)</small>`;
+                if (countBElement) countBElement.innerHTML = `${countB} <small>(${porcentajeB}%)</small>`;
+                if (countCElement) countCElement.innerHTML = `${countC} <small>(${porcentajeC}%)</small>`;
+        }
+
+            // Agregar porcentajes de valor si hay valor total
+            if (valorTotal > 0) {
+                const porcentajeValorA = (valorA / valorTotal * 100).toFixed(1);
+                const porcentajeValorB = (valorB / valorTotal * 100).toFixed(1);
+                const porcentajeValorC = (valorC / valorTotal * 100).toFixed(1);
+                
+                // Crear elementos para mostrar porcentajes de valor
+                const valueAElement = document.getElementById('abcValueA');
+                const valueBElement = document.getElementById('abcValueB');
+                const valueCElement = document.getElementById('abcValueC');
+                
+                if (valueAElement) valueAElement.innerHTML = `${formatearMoneda(valorA)} <small>(${porcentajeValorA}%)</small>`;
+                if (valueBElement) valueBElement.innerHTML = `${formatearMoneda(valorB)} <small>(${porcentajeValorB}%)</small>`;
+                if (valueCElement) valueCElement.innerHTML = `${formatearMoneda(valorC)} <small>(${porcentajeValorC}%)</small>`;
+            }
+            
+            console.log('Resumen ABC actualizado correctamente');
+        } catch (error) {
+            console.error('Error al actualizar resumen ABC:', error);
+        }
+    }
+
+    // Exponer funciones para uso global
+    window.updateCharts = updateCharts;
+    window.cargarClasificacionABC = cargarClasificacionABC;
+    window.exportarABC = exportarABC;
+    window.switchTab = switchTab;
+    window.showToast = showToast;
 });
+
+/**
+ * Exporta los datos de análisis ABC a Excel o PDF
+ * @param {string} formato - Formato de exportación ('excel' o 'pdf')
+ */
+function exportarABC(formato) {
+    console.log(`Exportando datos ABC a ${formato}`);
+    
+    // Verificar si hay datos para exportar
+    if (!window.abcDataCache || !window.abcDataCache.productos || window.abcDataCache.productos.length === 0) {
+        showToast('Error', 'No hay datos disponibles para exportar', 'error');
+        return;
+    }
+    
+    try {
+        // Construir la URL de exportación
+        const fechaActual = new Date().toISOString().split('T')[0];
+        const url = `/api/reportes/exportar-${formato === 'excel' ? 'excel' : 'pdf'}?seccion=abc`;
+        
+        // Mostrar mensaje de progreso
+        showToast('Exportando', `Generando archivo ${formato.toUpperCase()}...`, 'info');
+        
+        // Crear un enlace temporal para la descarga
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.download = `analisis-abc-${fechaActual}.${formato === 'excel' ? 'xlsx' : 'pdf'}`;
+        
+        // Simular clic para iniciar la descarga
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Mostrar mensaje de éxito después de un breve retraso
+        setTimeout(() => {
+            showToast('Éxito', `Datos exportados a ${formato.toUpperCase()} correctamente`, 'success');
+        }, 2000);
+    } catch (error) {
+        console.error(`Error al exportar datos a ${formato}:`, error);
+        showToast('Error', `No se pudo exportar a ${formato.toUpperCase()}: ${error.message}`, 'error');
+    }
+}
+
+/**
+ * Cambia entre las pestañas de reportes
+ * @param {string} tabId - ID de la pestaña a mostrar
+ */
+function switchTab(tabId) {
+    console.log(`Cambiando a pestaña: ${tabId}`);
+    
+    // Actualizar botones de pestañas
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+    });
+    document.querySelector(`.tab-button[data-tab="${tabId}"]`).classList.add('active');
+    
+    // Actualizar contenido de pestaña
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(`${tabId}-tab`).classList.add('active');
+    
+    // Actualizar gráficos para la pestaña seleccionada
+    updateCharts(tabId);
+}

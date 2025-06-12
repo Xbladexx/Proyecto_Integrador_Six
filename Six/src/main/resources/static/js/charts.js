@@ -45,17 +45,17 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(data => {
                 // Actualizar los datos de ventas con los obtenidos de la API
-                if (data.daily) {
+                if (data.daily && data.daily.labels && data.daily.values) {
                     salesData.daily.labels = data.daily.labels;
                     salesData.daily.values = data.daily.values;
                 }
                 
-                if (data.monthly) {
+                if (data.monthly && data.monthly.labels && data.monthly.values) {
                     salesData.monthly.labels = data.monthly.labels;
                     salesData.monthly.values = data.monthly.values;
                 }
                 
-                if (data.yearly) {
+                if (data.yearly && data.yearly.labels && data.yearly.values) {
                     salesData.yearly.labels = data.yearly.labels;
                     salesData.yearly.values = data.yearly.values;
                 }
@@ -74,7 +74,8 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error al cargar los datos de ventas:', error);
-                // Mostrar mensaje de error (opcional)
+                // Mostrar mensaje de error en el gráfico
+                mostrarErrorEnGrafico('salesChart', 'Error al cargar datos de ventas');
             });
     }
     
@@ -89,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(data => {
                 // Actualizar los datos de inventario con los obtenidos de la API
-                if (data.labels && data.values) {
+                if (data.labels && data.values && data.labels.length > 0 && data.values.length > 0) {
                     inventoryData.labels = data.labels;
                     inventoryData.values = data.values;
                 }
@@ -103,13 +104,30 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error al cargar los datos de inventario:', error);
-                // Mostrar mensaje de error (opcional)
+                // Mostrar mensaje de error en el gráfico
+                mostrarErrorEnGrafico('inventoryChart', 'Error al cargar datos de inventario');
             });
+    }
+    
+    // Función para mostrar mensaje de error en un gráfico
+    function mostrarErrorEnGrafico(canvasId, mensaje) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.font = '14px Arial';
+        ctx.fillStyle = '#ef4444';
+        ctx.textAlign = 'center';
+        ctx.fillText(mensaje, canvas.width / 2, canvas.height / 2);
     }
     
     // Inicializar gráfico de ventas
     function initSalesChart() {
-        const ctx = document.getElementById('salesChart').getContext('2d');
+        const canvas = document.getElementById('salesChart');
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
         
         salesChart = new Chart(ctx, {
             type: 'bar',
@@ -164,7 +182,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Inicializar gráfico de inventario
     function initInventoryChart() {
-        const ctx = document.getElementById('inventoryChart').getContext('2d');
+        const canvas = document.getElementById('inventoryChart');
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
         
         inventoryChart = new Chart(ctx, {
             type: 'pie',
@@ -177,7 +198,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         colors.success,
                         colors.warning,
                         colors.danger,
-                        colors.info
+                        colors.info,
+                        '#6c757d' // Color adicional para la sexta categoría
                     ],
                     borderWidth: 1
                 }]
@@ -187,7 +209,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: 'bottom'
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 15
+                        }
                     },
                     tooltip: {
                         callbacks: {

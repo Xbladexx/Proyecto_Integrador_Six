@@ -53,11 +53,12 @@
             display: none;
             position: absolute;
             right: 0;
-            z-index: 10;
+            z-index: 100;
             background-color: white;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             border-radius: 4px;
             min-width: 150px;
+            border: 1px solid #eee;
         }
         .actions-menu.show {
             display: block;
@@ -159,6 +160,61 @@
         th.stock-column {
             text-align: center;
         }
+        /* Toast para notificaciones */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 4px;
+            color: white;
+            max-width: 350px;
+            z-index: 1100;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .toast.success {
+            background-color: #28a745;
+        }
+        .toast.error {
+            background-color: #dc3545;
+        }
+        .toast.info {
+            background-color: #17a2b8;
+        }
+        .toast.hidden {
+            display: none;
+        }
+        .toast-content {
+            flex: 1;
+        }
+        .toast-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .toast-message {
+            font-size: 14px;
+        }
+        .toast-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        /* Estilos para los detalles del lote */
+        .detail-value {
+            padding: 8px;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            min-height: 38px;
+            display: flex;
+            align-items: center;
+        }
     </style>
 </head>
 
@@ -185,7 +241,11 @@
                     <i class="fas fa-home"></i>
                     <span>Inicio</span>
                 </a>
-                <a th:href="@{/inventario}" class="nav-link activate">
+                <a th:href="@{/productos}" class="nav-link">
+                    <i class="fas fa-tshirt"></i>
+                    <span>Productos</span>
+                </a>
+                <a th:href="@{/inventario}" class="nav-link active">
                     <i class="fas fa-box-open"></i>
                     <span>Inventario</span>
                 </a>
@@ -193,25 +253,33 @@
                     <i class="fas fa-shopping-cart"></i>
                     <span>Ventas</span>
                 </a>
-                <a th:href="@{/productos}" class="nav-link">
-                    <i class="fas fa-box"></i>
-                    <span>Productos</span>
+                <a th:href="@{/admin/ventas-registradas}" class="nav-link">
+                    <i class="fas fa-receipt"></i>
+                    <span>Ventas Registradas</span>
                 </a>
-                <a th:href="@{/reportes}" class="nav-link">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Reportes</span>
+                <a th:href="@{/admin/devoluciones}" class="nav-link">
+                    <i class="fas fa-undo-alt"></i>
+                    <span>Devoluciones</span>
+                </a>
+                <a th:href="@{/proveedores}" class="nav-link">
+                    <i class="fas fa-truck"></i>
+                    <span>Proveedores</span>
+                </a>
+                <a th:href="@{/alertas}" class="nav-link">
+                    <i class="fas fa-bell"></i>
+                    <span>Alertas</span>
                 </a>
                 <a th:href="@{/usuarios}" class="nav-link">
                     <i class="fas fa-users"></i>
                     <span>Usuarios</span>
                 </a>
-                <a th:href="@{/alertas}" class="nav-link">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span>Alertas</span>
+                <a th:href="@{/reportes}" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reportes</span>
                 </a>
             </nav>
             <div class="sidebar-footer">
-                <a th:href="@{/logout}" class="sidebar-logout">
+                <a href="#" id="logoutButton" class="sidebar-logout">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Cerrar Sesión</span>
                 </a>
@@ -281,23 +349,62 @@
                                         <td th:text="${'S/. ' + #numbers.formatDecimal(item.precio, 1, 2)}">S/. 79.90</td>
                                         <td class="actions-cell">
                                             <div class="actions-dropdown">
-                                                <button class="actions-toggle">...</button>
+                                                <button class="actions-toggle">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
                                                 <div class="actions-menu">
-                                                    <a href="#" th:data-id="${item.id}" 
-                                                       th:data-nombre="${item.nombreProducto}"
-                                                       th:data-color="${item.color}"
-                                                       th:data-talla="${item.talla}"
-                                                       class="add-stock-action">
-                                                       <i class="fas fa-plus-circle"></i> Añadir stock</a>
-                                                    <a href="#" th:data-id="${item.id}" 
-                                                       th:data-nombre="${item.nombreProducto}"
-                                                       th:data-color="${item.color}"
-                                                       th:data-talla="${item.talla}"
-                                                       class="reduce-stock-action">
-                                                       <i class="fas fa-minus-circle"></i> Reducir stock</a>
+                                                    <a href="#" class="add-stock-action" th:data-id="${item.id}" th:data-nombre="${item.nombreProducto}" th:data-color="${item.color}" th:data-talla="${item.talla}">
+                                                        <i class="fas fa-plus"></i> Añadir Stock
+                                                    </a>
+                                                    <a href="#" class="reduce-stock-action" th:data-id="${item.id}" th:data-nombre="${item.nombreProducto}" th:data-color="${item.color}" th:data-talla="${item.talla}">
+                                                        <i class="fas fa-minus"></i> Reducir Stock
+                                                    </a>
+                                                    <a href="#" class="add-lote-action" th:data-id="${item.varianteId}" th:data-nombre="${item.nombreProducto}" th:data-color="${item.color}" th:data-talla="${item.talla}" th:data-producto-id="${item.productoId}">
+                                                        <i class="fas fa-box"></i> Registrar Lote
+                                                    </a>
                                                 </div>
                                             </div>
                                         </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Añadir pestaña para el historial de lotes -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Historial de Lotes</div>
+                        <div class="card-description">Registro de lotes ingresados al inventario</div>
+                    </div>
+                    <div class="card-content">
+                        <div class="inventory-controls">
+                            <div class="search-container">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="search" id="lotesSearch" placeholder="Buscar lotes..." class="search-input">
+                            </div>
+                        </div>
+
+                        <div class="table-container" style="max-height: 500px; overflow-y: auto;">
+                            <table class="data-table" id="lotesTable">
+                                <thead>
+                                    <tr>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb;">Nº Lote</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb;">Producto</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb;">Talla/Color</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb;">Cantidad</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb;">Costo Unit.</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb;">Proveedor</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb;">Fecha Entrada</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb;">Fecha Deterioro</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb;">Estado</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb; width: 70px; text-align: center;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lotesTableBody">
+                                    <tr>
+                                        <td colspan="10" class="empty-data">Cargando historial de lotes...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -354,6 +461,274 @@
         </div>
     </div>
 
+    <!-- Modal para registrar lote con mejor distribución -->
+    <div id="loteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="loteModalTitle" class="modal-title">Registrar Lote</h3>
+                <button class="modal-close lote-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="loteForm">
+                    <input type="hidden" id="loteVarianteId">
+                    
+                    <div class="form-group">
+                        <label for="loteProductInfo">Producto</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-tshirt"></i></span>
+                            </div>
+                            <input type="text" id="loteProductInfo" class="form-control" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="loteCantidad">Cantidad *</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-cubes"></i></span>
+                                </div>
+                                <input type="number" id="loteCantidad" class="form-control" min="1" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="loteCosto">Costo Unitario *</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">S/</span>
+                                </div>
+                                <input type="number" id="loteCosto" class="form-control" min="0.01" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="loteProveedor">Proveedor</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-truck"></i></span>
+                                </div>
+                                <select id="loteProveedor" class="form-control">
+                                    <option value="">Seleccione un proveedor</option>
+                                </select>
+                                <div class="input-group-append">
+                                    <button type="button" id="btnNuevoProveedorModal" class="btn-primary" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Seleccione un proveedor o cree uno nuevo</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="loteFechaFabricacion">Fecha de Fabricación</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                </div>
+                                <input type="date" id="loteFechaFabricacion" class="form-control">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="loteFechaVencimiento">Fecha de Deterioro Estimada</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-calendar-times"></i></span>
+                                </div>
+                                <input type="date" id="loteFechaVencimiento" class="form-control">
+                            </div>
+                            <small class="form-text text-muted">Para productos textiles, se estima 180 días por defecto.</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="loteObservaciones">Observaciones</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-comment-alt"></i></span>
+                            </div>
+                            <textarea id="loteObservaciones" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn-secondary lote-modal-close-btn">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="submit" id="btnSaveLote" class="btn-primary">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para crear proveedor rápido con mejor distribución -->
+    <div id="proveedorRapidoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Nuevo Proveedor</h3>
+                <button class="modal-close proveedor-rapido-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="proveedorRapidoForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="proveedorRapidoNombre">Nombre *</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-building"></i></span>
+                                </div>
+                                <input type="text" id="proveedorRapidoNombre" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="proveedorRapidoRuc">RUC</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                                </div>
+                                <input type="text" id="proveedorRapidoRuc" class="form-control" maxlength="11">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="proveedorRapidoTelefono">Teléfono</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                                </div>
+                                <input type="text" id="proveedorRapidoTelefono" class="form-control">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="proveedorRapidoEmail">Email</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                </div>
+                                <input type="email" id="proveedorRapidoEmail" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="proveedorRapidoDireccion">Dirección</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                            </div>
+                            <input type="text" id="proveedorRapidoDireccion" class="form-control">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-secondary proveedor-rapido-modal-close-btn">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="submit" id="btnSaveProveedorRapido" class="btn-primary">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para ver detalles del lote -->
+    <div id="loteDetalleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Detalles del Lote</h3>
+                <button class="modal-close lote-detalle-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Número de Lote</label>
+                        <div class="detail-value" id="loteDetalleNumero"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Producto</label>
+                        <div class="detail-value" id="loteDetalleProducto"></div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Talla / Color</label>
+                        <div class="detail-value" id="loteDetalleTallaColor"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>SKU</label>
+                        <div class="detail-value" id="loteDetalleSku"></div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Cantidad Inicial</label>
+                        <div class="detail-value" id="loteDetalleCantidadInicial"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Stock Actual</label>
+                        <div class="detail-value" id="loteDetalleCantidadActual"></div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Costo Unitario</label>
+                        <div class="detail-value" id="loteDetalleCostoUnitario"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Costo Total</label>
+                        <div class="detail-value" id="loteDetalleCostoTotal"></div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Estado</label>
+                        <div class="detail-value" id="loteDetalleEstado"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Proveedor</label>
+                        <div class="detail-value" id="loteDetalleProveedor"></div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Fecha de Entrada</label>
+                        <div class="detail-value" id="loteDetalleFechaEntrada"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha de Fabricación</label>
+                        <div class="detail-value" id="loteDetalleFechaFabricacion"></div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Fecha de Deterioro</label>
+                        <div class="detail-value" id="loteDetalleFechaVencimiento"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Observaciones</label>
+                    <div class="detail-value" id="loteDetalleObservaciones"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-dark lote-detalle-modal-close-btn" style="background-color: #212529; color: white; padding: 10px 20px; font-size: 16px; border-radius: 4px; border: none; cursor: pointer; margin-right: 10px;">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+                <button class="btn btn-danger" id="btnDevolverLoteDetalle" style="background-color: #dc3545; color: white; padding: 10px 20px; font-size: 16px; border-radius: 4px; border: none; cursor: pointer;">
+                    <i class="fas fa-undo-alt"></i> Devolver Lote
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast para notificaciones -->
     <div id="toast" class="toast hidden">
         <div class="toast-content">
@@ -364,6 +739,154 @@
     </div>
 
     <script th:src="@{/js/inventario.js}"></script>
+    <script th:src="@{/js/devoluciones-lotes.js}"></script>
+    
+    <!-- Modal para devolver lote -->
+    <div id="devolverLoteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Devolución de Lote</h3>
+                <button class="modal-close devolver-lote-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="devolucionLoteForm">
+                    <!-- Campo oculto para el ID del lote -->
+                    <input type="hidden" id="loteIdHidden" name="loteIdHidden">
+                    
+                    <!-- Selección de proveedor -->
+                    <div class="form-group" id="proveedorSelectContainer">
+                        <label for="proveedorSelect">Proveedor</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-truck"></i></span>
+                            </div>
+                            <select id="proveedorSelect" class="form-control" required>
+                                <option value="" disabled selected>Seleccione un proveedor</option>
+                                <!-- Los proveedores se cargarán dinámicamente -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Selección de lote -->
+                    <div class="form-group">
+                        <label for="loteSelect">Lote a devolver</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-box"></i></span>
+                            </div>
+                            <select id="loteSelect" class="form-control" required disabled>
+                                <option value="" disabled selected>Seleccione primero un proveedor</option>
+                                <!-- Los lotes se cargarán dinámicamente según el proveedor seleccionado -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Información del lote seleccionado -->
+                    <div id="infoLote" class="info-panel" style="display: none;">
+                        <h4>Detalles del Lote</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Código:</label>
+                                <div class="detail-value" id="loteCodigo">-</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Fecha de recepción:</label>
+                                <div class="detail-value" id="loteFecha">-</div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Total:</label>
+                                <div class="detail-value" id="loteTotal">S/. 0.00</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Proveedor:</label>
+                                <div class="detail-value" id="proveedorNombre">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Productos del lote -->
+                    <div id="productosLote" style="display: none;">
+                        <h4>Productos incluidos en el lote</h4>
+                        <div class="table-responsive">
+                            <table class="data-table" id="tablaProductosLote">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="seleccionarTodos">
+                                                <label class="form-check-label" for="seleccionarTodos"></label>
+                                            </div>
+                                        </th>
+                                        <th>Producto</th>
+                                        <th>SKU</th>
+                                        <th>Cantidad</th>
+                                        <th>Precio Unit.</th>
+                                        <th>Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Los productos se cargarán dinámicamente -->
+                                    <tr>
+                                        <td colspan="6" class="text-center">Seleccione un lote para ver sus productos</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Motivo de devolución -->
+                    <div class="form-group">
+                        <label for="motivoDevolucion">Motivo de la devolución</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-exclamation-circle"></i></span>
+                            </div>
+                            <select id="motivoDevolucion" class="form-control" required>
+                                <option value="" disabled selected>Seleccione un motivo</option>
+                                <option value="PRODUCTOS_DAÑADOS">Productos dañados</option>
+                                <option value="ENVIO_INCORRECTO">Envío incorrecto</option>
+                                <option value="CALIDAD_INSUFICIENTE">Calidad insuficiente</option>
+                                <option value="ERROR_PEDIDO">Error en el pedido</option>
+                                <option value="OTRO">Otro motivo</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Campo para otros motivos -->
+                    <div id="otroMotivoGroup" class="form-group" style="display: none;">
+                        <label for="otroMotivo">Especifique el motivo</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-comment-alt"></i></span>
+                            </div>
+                            <textarea id="otroMotivo" class="form-control" rows="3" placeholder="Describa el motivo de la devolución"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Comentarios adicionales -->
+                    <div class="form-group">
+                        <label for="comentarios">Comentarios adicionales</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-comment-alt"></i></span>
+                            </div>
+                            <textarea id="comentarios" class="form-control" rows="3" placeholder="Comentarios adicionales sobre la devolución"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-dark devolver-lote-modal-close-btn" style="background-color: #212529; color: white; padding: 10px 20px; font-size: 16px; border-radius: 4px; border: none; cursor: pointer; margin-right: 10px;">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="button" id="procesarDevolucionLoteBtn" class="btn btn-danger" style="background-color: #dc3545; color: white; padding: 10px 20px; font-size: 16px; border-radius: 4px; border: none; cursor: pointer;">
+                    <i class="fas fa-undo-alt"></i> Procesar Devolución
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html> 

@@ -28,7 +28,7 @@ public class MovimientoStock {
     }
     
     public enum MotivoMovimiento {
-        REPOSICION, DETERIORADO, VENTA, AJUSTE, OTRO
+        REPOSICION, DETERIORADO, VENTA, AJUSTE, DEVOLUCION_VENTA, DEVOLUCION_LOTE, OTRO
     }
     
     @Id
@@ -54,12 +54,18 @@ public class MovimientoStock {
     @Column(nullable = false)
     private MotivoMovimiento motivo;
     
-    @Column
+    @Column(length = 255)
     private String motivoDetalle;
     
     @Column(nullable = false)
     private LocalDateTime fecha = LocalDateTime.now();
     
-    @Column
+    @Column(length = 100)
+    private String referencia;
+    
+    @Column(length = 500)
+    private String notas;
+    
+    @Column(length = 500)
     private String observaciones;
 } 

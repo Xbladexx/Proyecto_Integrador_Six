@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -25,17 +27,32 @@ public class Alerta {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false)
-    private String tipo;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private TipoAlerta tipo;
     
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(nullable = false, length = 100)
+    private String titulo;
+    
+    @Column(nullable = false, length = 500)
     private String mensaje;
     
-    @Column(name = "fecha_creacion", nullable = false)
+    @Column(nullable = false)
     private LocalDateTime fechaCreacion = LocalDateTime.now();
+    
+    @Column
+    private LocalDateTime fechaLectura;
     
     @Column(nullable = false)
     private boolean leida = false;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private PrioridadAlerta prioridad;
+    
+    @ManyToOne
+    @JoinColumn(name = "producto_id")
+    private Producto producto;
     
     @ManyToOne
     @JoinColumn(name = "variante_id")
@@ -44,4 +61,30 @@ public class Alerta {
     @ManyToOne
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
+    
+    // Campos adicionales para contexto
+    @Column(name = "stock_actual")
+    private Integer stockActual;
+    
+    @Column(name = "umbral")
+    private Integer umbral;
+    
+    @Column(name = "accion_requerida", length = 200)
+    private String accionRequerida;
+    
+    // Enumeraciones
+    public enum TipoAlerta {
+        STOCK_BAJO,
+        STOCK_CRITICO,
+        PEDIDO_AUTOMATICO,
+        PRODUCTO_SIN_MOVIMIENTO,
+        SISTEMA
+    }
+    
+    public enum PrioridadAlerta {
+        BAJA,
+        MEDIA,
+        ALTA,
+        CRITICA
+    }
 } 

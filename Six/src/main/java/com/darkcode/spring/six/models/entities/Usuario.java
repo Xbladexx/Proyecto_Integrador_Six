@@ -13,14 +13,12 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Entity
 @Table(name = "usuarios")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Slf4j
 public class Usuario {
     
     @Id
@@ -98,6 +96,10 @@ public class Usuario {
      */
     @PreUpdate
     public void preUpdate() {
+        if (fechaCreacion == null) {
+            fechaCreacion = LocalDateTime.now();
+        }
+        
         if (password == null || password.isEmpty()) {
             // No permitimos que la contraseña se vuelva nula en actualizaciones
             // En este caso, mantenemos la contraseña anterior (esto se maneja en el servicio)

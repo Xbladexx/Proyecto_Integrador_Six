@@ -5,6 +5,9 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -25,6 +28,7 @@ import lombok.ToString;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Venta {
     
     @Id
@@ -36,10 +40,12 @@ public class Venta {
     
     @ManyToOne
     @JoinColumn(name = "cliente_id")
+    @JsonIgnoreProperties({"ventas"})
     private Cliente cliente;
     
     @ManyToOne
     @JoinColumn(name = "usuario_id", nullable = false)
+    @JsonIgnoreProperties({"password", "ventas"})
     private Usuario usuario;
     
     @Column(nullable = false)
@@ -66,5 +72,6 @@ public class Venta {
     @OneToMany(mappedBy = "venta")
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
+    @JsonManagedReference
     private Set<DetalleVenta> detalles = new HashSet<>();
 } 

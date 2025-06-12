@@ -24,6 +24,10 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     
     List<Venta> findByFechaBetween(LocalDateTime inicio, LocalDateTime fin);
     
+    List<Venta> findByEstado(String estado);
+    
+    List<Venta> findByEstadoAndFechaBetween(String estado, LocalDateTime inicio, LocalDateTime fin);
+    
     @Query("SELECT v FROM Venta v WHERE v.fecha >= CURRENT_DATE")
     List<Venta> findVentasHoy();
     

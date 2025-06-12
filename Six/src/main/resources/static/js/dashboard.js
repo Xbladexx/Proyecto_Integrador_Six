@@ -5,6 +5,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
     const userInitial = document.getElementById('userInitial');
+    const logoutButton = document.getElementById('logoutButton');
+
+    // Gestionar el botón de cierre de sesión
+    if (logoutButton) {
+        logoutButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = '/logout';
+        });
+    }
 
     // Mostrar inicial del usuario si existe en la página
     if (userInitial) {

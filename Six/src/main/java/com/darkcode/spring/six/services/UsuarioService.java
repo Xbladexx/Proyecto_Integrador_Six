@@ -6,6 +6,8 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -17,13 +19,12 @@ import com.darkcode.spring.six.models.entities.Usuario;
 import com.darkcode.spring.six.models.repositories.UsuarioRepository;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class UsuarioService {
     
+    private static final Logger log = LoggerFactory.getLogger(UsuarioService.class);
     private final UsuarioRepository usuarioRepository;
     
     /**
@@ -438,20 +439,29 @@ public class UsuarioService {
     }
     
     /**
-     * Convierte una entidad Usuario a un DTO
+     * Convierte un Usuario en un DTO para la UI
      */
     private UsuarioDTO convertirADTO(Usuario usuario) {
         UsuarioDTO dto = new UsuarioDTO();
         dto.setId(usuario.getId());
         dto.setNombre(usuario.getNombre());
-        dto.setUsuario(usuario.getUsuario());
         dto.setEmail(usuario.getEmail());
+        dto.setTelefono(usuario.getTelefono());
+        dto.setUsuario(usuario.getUsuario());
         dto.setRol(usuario.getRol());
         dto.setActivo(usuario.isActivo());
-        dto.setUltimoAcceso(usuario.getUltimoAcceso());
         dto.setFechaCreacion(usuario.getFechaCreacion());
+        dto.setUltimoAcceso(usuario.getUltimoAcceso());
         dto.setNotas(usuario.getNotas());
-        
         return dto;
+    }
+    
+    /**
+     * Busca un usuario por su nombre de usuario
+     * @param username El nombre de usuario a buscar
+     * @return Optional conteniendo el usuario si existe
+     */
+    public Optional<Usuario> findByUsuario(String username) {
+        return usuarioRepository.findByUsuario(username);
     }
 } 

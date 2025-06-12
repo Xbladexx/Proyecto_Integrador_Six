@@ -3,6 +3,9 @@ package com.darkcode.spring.six.models.entities;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -17,8 +20,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "variantes_producto")
@@ -53,4 +54,10 @@ public class VarianteProducto {
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     private Set<MovimientoStock> movimientos = new HashSet<>();
+    
+    @OneToMany(mappedBy = "variante")
+    @JsonIgnore
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private Set<LoteProducto> lotes = new HashSet<>();
 } 

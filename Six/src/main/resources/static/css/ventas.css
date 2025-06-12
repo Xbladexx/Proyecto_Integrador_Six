@@ -416,3 +416,173 @@ input,
     border-color: #F44336 !important;
     background-color: rgba(244, 67, 54, 0.05) !important;
 }
+
+/* Estilos para la página de ventas */
+.ventas-container {
+    padding: 20px;
+}
+
+.ventas-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ventas-table th,
+.ventas-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.ventas-table th {
+    background-color: #f9fafb;
+    font-weight: 600;
+    color: #111827;
+}
+
+.ventas-table tr:hover {
+    background-color: #f9fafb;
+}
+
+/* Estilos para los estados de ventas */
+.estado-venta {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+    text-transform: uppercase;
+}
+
+.completada {
+    background-color: #00b300;
+    color: white;
+}
+
+.pendiente {
+    background-color: #e69900;
+    color: black;
+}
+
+.anulada {
+    background-color: #cc0000;
+    color: white;
+}
+
+.desconocido {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* Estilos para acciones */
+.acciones {
+    display: flex;
+    justify-content: center;
+}
+
+.btn-acciones {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #4b5563;
+    font-size: 1rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.btn-acciones:hover {
+    background-color: #f3f4f6;
+}
+
+/* Estilos para detalles de venta */
+.detalles-venta {
+    margin-top: 20px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #f9fafb;
+}
+
+.detalles-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.detalles-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+/* Toast notifications */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    padding: 16px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: transform 0.3s, opacity 0.3s;
+    z-index: 9999;
+    display: flex;
+    justify-content: space-between;
+}
+
+.toast.hidden {
+    transform: translateY(100%);
+    opacity: 0;
+}
+
+.toast-success {
+    border-left: 4px solid #10b981;
+}
+
+.toast-error {
+    border-left: 4px solid #ef4444;
+}
+
+.toast-info {
+    border-left: 4px solid #3b82f6;
+}
+
+.toast-content {
+    flex: 1;
+}
+
+.toast-title {
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 4px;
+}
+
+.toast-message {
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0;
+    margin-left: 8px;
+}
+
+.toast-close:hover {
+    color: #6b7280;
+}
+
+.modal-content {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    max-width: 95%;
+    margin: 0 auto;
+}

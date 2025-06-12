@@ -82,8 +82,10 @@ body {
 }
 
 label {
-    font-size: 0.875rem;
+    display: block;
+    margin-bottom: 8px;
     font-weight: 500;
+    color: #333;
 }
 
 input {
@@ -133,8 +135,16 @@ input:focus {
     border: 1px solid transparent;
 }
 
+.btn-primary, .btn-secondary {
+    font-weight: 500;
+    border: none;
+    transition: background-color 0.2s ease-in-out;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    width: 100%;
+}
+
 .btn-primary {
-    background-color: #111827;
+    background-color: #111111;
     color: white;
 }
 
@@ -376,3 +386,428 @@ input:focus {
 .btn-secondary:hover {
     background-color: #e5e7eb;
 }
+
+/* Estilos para modales y formularios */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    width: 80%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: slideIn 0.3s ease-out;
+}
+
+.modal.show .modal-content {
+    transform: none;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    cursor: pointer;
+    color: #6c757d;
+    padding: 0;
+    line-height: 1;
+}
+
+.modal-body {
+    padding: 0 10px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 20px;
+    margin-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* Estilos para formularios dentro de modales */
+.form-group {
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 0;
+}
+
+.form-row .form-group {
+    flex: 1;
+    min-width: 250px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: 0;
+}
+
+/* Estilos para input groups */
+.input-group {
+    display: flex;
+    width: 100%;
+}
+
+.input-group-prepend {
+    display: flex;
+}
+
+.input-group-append {
+    display: flex;
+}
+
+.input-group-text {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    font-size: 1rem;
+    font-weight: 400;
+    color: #495057;
+    text-align: center;
+    white-space: nowrap;
+    background-color: #e9ecef;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.input-group .form-control:not(:first-child) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.input-group .form-control:not(:last-child) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+/* Estilos para botones */
+.btn-primary, .btn-secondary {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background-color: #111111;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #1f2937;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+.btn-sm {
+    padding: 6px 10px;
+    font-size: 0.875rem;
+}
+
+/* Texto de ayuda */
+.form-text {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.875em;
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+
+/* Mejoras en los botones */
+.btn-primary {
+    background-color: #111111;
+    transition: background-color 0.2s ease;
+}
+
+.btn-secondary {
+    transition: background-color 0.2s ease;
+}
+
+/* Animaciones para modales */
+.modal {
+    transition: opacity 0.15s linear;
+}
+
+.modal-content {
+    transform: translate(0, 0);
+    transition: transform 0.3s ease-out;
+}
+
+.modal.show .modal-content {
+    transform: none;
+}
+
+/* Mejoras en los formularios */
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: 0;
+}
+
+/* Estilos para el botón de nuevo proveedor */
+#btnNuevoProveedorModal {
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+}
+
+/* Estilos adicionales para mejorar la apariencia de los formularios */
+textarea.form-control {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.form-row {
+    margin-left: -10px;
+    margin-right: -10px;
+}
+
+.form-row > .form-group {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+/* Mejoras para los modales en pantallas pequeñas */
+@media (max-width: 768px) {
+    .modal-content {
+        margin: 15% auto;
+        width: 95%;
+    }
+    
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .form-row .form-group {
+        min-width: 100%;
+    }
+}
+
+/* Estilos para los campos de fecha */
+input[type="date"].form-control {
+    padding: 9px 12px;
+}
+
+/* Mejoras para los botones en los modales */
+.modal-footer .btn-primary,
+.modal-footer .btn-secondary {
+    min-width: 120px;
+}
+
+/* Mejoras para los select */
+select.form-control {
+    padding: 9px 12px;
+    height: 42px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23495057' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px 12px;
+    appearance: none;
+}
+
+/* Mejoras para los input group */
+.input-group-text {
+    min-width: 42px;
+    justify-content: center;
+}
+
+/* Mejoras para los textareas */
+textarea.form-control {
+    padding: 12px;
+}
+
+/* Animaciones para los modales */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Botones pequeños */
+.btn-xs {
+    padding: 0.2rem 0.4rem !important;
+    font-size: 0.8rem !important;
+    line-height: 1.2 !important;
+}
+
+/* Estilos adicionales para las animaciones del menú lateral */
+.sidebar-nav .nav-link {
+    position: relative;
+    z-index: 1;
+}
+
+.sidebar-nav .nav-link span {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.sidebar-nav .nav-link:hover span {
+    letter-spacing: 0.5px;
+}
+
+.sidebar-nav .nav-link.active span {
+    letter-spacing: 0.5px;
+}
+
+/* Mejorar la accesibilidad con focus */
+.sidebar-nav .nav-link:focus {
+    outline: 2px solid rgba(59, 130, 246, 0.5);
+    outline-offset: 2px;
+}
+
+/* Estilos para badges de estado */
+.estado-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.estado-completo {
+    background-color: #28a745;
+    color: white;
+}
+
+.estado-devuelto {
+    background-color: #dc3545;
+    color: white;
+}
+
+.estado-disponible {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.estado-agotado {
+    background-color: #6c757d;
+    color: white;
+}
+
+.estado-vencido {
+    background-color: #ffc107;
+    color: #343a40;
+}
+
+/* Estilo para el menú de acciones */
+.actions-cell {
+    position: relative;
+}
+
+.actions-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.actions-toggle {
+    background: transparent;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 5px 10px;
+    transition: color 0.2s;
+}
+
+.actions-toggle:hover {
+    color: #343a40;
+}
+
+.actions-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    min-width: 160px;
+    z-index: 1000;
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    padding: 8px 0;
+}
+
+.actions-menu.show {
+    display: block;
+}
+
+.actions-menu a {
+    display: block;
+    padding: 8px 16px;
+    color: #333;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.actions-menu a:hover {
+    background-color: #f8f9fa;
+}
+
+/* Contenido principal */

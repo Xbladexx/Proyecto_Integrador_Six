@@ -31,6 +31,10 @@
                     <i class="fas fa-home"></i>
                     <span>Inicio</span>
                 </a>
+                <a th:href="@{/productos}" class="nav-link">
+                    <i class="fas fa-tshirt"></i>
+                    <span>Productos</span>
+                </a>
                 <a th:href="@{/inventario}" class="nav-link">
                     <i class="fas fa-box-open"></i>
                     <span>Inventario</span>
@@ -39,13 +43,17 @@
                     <i class="fas fa-shopping-cart"></i>
                     <span>Ventas</span>
                 </a>
-                <a th:href="@{/productos}" class="nav-link">
-                    <i class="fas fa-tshirt"></i>
-                    <span>Productos</span>
+                <a th:href="@{/admin/ventas-registradas}" class="nav-link">
+                    <i class="fas fa-receipt"></i>
+                    <span>Ventas Registradas</span>
                 </a>
-                <a th:href="@{/reportes}" class="nav-link">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Reportes</span>
+                <a th:href="@{/admin/devoluciones}" class="nav-link">
+                    <i class="fas fa-undo-alt"></i>
+                    <span>Devoluciones</span>
+                </a>
+                <a th:href="@{/proveedores}" class="nav-link">
+                    <i class="fas fa-truck"></i>
+                    <span>Proveedores</span>
                 </a>
                 <a th:href="@{/usuarios}" class="nav-link">
                     <i class="fas fa-users"></i>
@@ -54,6 +62,10 @@
                 <a th:href="@{/alertas}" class="nav-link active">
                     <i class="fas fa-exclamation-triangle"></i>
                     <span>Alertas</span>
+                </a>
+                <a th:href="@{/reportes}" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reportes</span>
                 </a>
             </nav>
             <div class="sidebar-footer">
@@ -112,8 +124,8 @@
                                     <th style="position: sticky; top: 0; z-index: 1; background-color: #F9FAFB;">Color</th>
                                     <th style="position: sticky; top: 0; z-index: 1; background-color: #F9FAFB;">Stock Actual</th>
                                     <th style="position: sticky; top: 0; z-index: 1; background-color: #F9FAFB;">Stock Mínimo</th>
-                                    <th style="position: sticky; top: 0; z-index: 1; background-color: #F9FAFB;">Stock Máximo</th>
-                                    <th style="position: sticky; top: 0; z-index: 1; background-color: #F9FAFB;">Categoría</th>
+                                    <th style="position: sticky; top: 0; z-index: 1; background-color: #F9FAFB;">Fecha</th>
+                                    <th style="position: sticky; top: 0; z-index: 1; background-color: #F9FAFB;">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="alertsTableBody">
@@ -370,18 +382,22 @@
         </main>
     </div>
 
-    <!-- Toast para notificaciones -->
+    <!-- Toast de notificación -->
     <div id="toast" class="toast hidden">
         <div class="toast-content">
-            <div class="toast-header">
-                <h3 class="toast-title">Título</h3>
-                <button class="toast-close">&times;</button>
-            </div>
-            <p class="toast-message">Mensaje</p>
+            <div class="toast-title"></div>
+            <div class="toast-message"></div>
         </div>
+        <button class="toast-close"><i class="fas fa-times"></i></button>
     </div>
+    
+    <!-- Contenedor de notificaciones en tiempo real -->
+    <div id="notificationsContainer" class="notifications-container"></div>
 
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
     <script th:src="@{/js/alertas.js}"></script>
+    <script th:src="@{/js/alertas-inventario.js}"></script>
 </body>
 
 </html>

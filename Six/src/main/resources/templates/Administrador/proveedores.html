@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proveedores - SIX Sistema de Gestión</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Estilos específicos para la página de proveedores */
+        .card {
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+            border-radius: 0.25rem;
+            border: 1px solid #dee2e6;
+            background-color: white;
+            margin-bottom: 1rem;
+            width: 100%;
+        }
+        .card-header {
+            padding: 1rem;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin: 0;
+            color: #495057;
+        }
+        .card-content {
+            padding: 0;
+        }
+        .table-container {
+            overflow-x: auto;
+            margin: 0 1rem 1rem 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th, .data-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .data-table th {
+            background-color: #f9fafb;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #333;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .search-container {
+            position: relative;
+            margin: 0;
+            max-width: 300px;
+        }
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #aaa;
+            z-index: 1;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px 10px 10px 35px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-shadow: none;
+            outline: none;
+            position: relative;
+        }
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--primary-foreground);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .btn-primary:hover {
+            background-color: #1f2937;
+        }
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-success {
+            background-color: #d1ffd8;
+            color: #007814;
+        }
+        .badge-danger {
+            background-color: #ffd1d1;
+            color: #d00000;
+        }
+        .actions-cell {
+            text-align: center;
+            white-space: nowrap;
+        }
+        .empty-data {
+            text-align: center;
+            padding: 2rem;
+            color: #6c757d;
+        }
+        /* Estilos para el modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+        }
+        .form-control {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+            font-size: 1rem;
+        }
+        .form-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #dee2e6;
+            margin-top: 1rem;
+        }
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: var(--secondary-foreground);
+            border: 1px solid #d1d5db;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+        }
+        .btn-secondary:hover {
+            background-color: #e5e7eb;
+        }
+        /* Toast para notificaciones */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 4px;
+            color: white;
+            max-width: 350px;
+            z-index: 1100;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .toast.success {
+            background-color: #28a745;
+        }
+        .toast.error {
+            background-color: #dc3545;
+        }
+        .toast.info {
+            background-color: #17a2b8;
+        }
+        .toast.hidden {
+            display: none;
+        }
+        .toast-content {
+            flex: 1;
+        }
+        .toast-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .toast-message {
+            font-size: 14px;
+        }
+        .toast-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        /* Nuevos estilos para mejorar la interfaz */
+        .provider-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .provider-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        .provider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        .provider-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+        .provider-ruc {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 4px;
+        }
+        .provider-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+        }
+        .provider-detail {
+            display: flex;
+            align-items: flex-start;
+            padding: 6px 0;
+        }
+        .provider-detail i {
+            margin-right: 0.5rem;
+            color: #6c757d;
+            width: 20px;
+            text-align: center;
+            padding-top: 3px;
+        }
+        .provider-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .search-container {
+            position: relative;
+            width: 300px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 0.6rem 1rem 0.6rem 2.5rem;
+            border: 1px solid #ced4da;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+        .btn-primary {
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.3rem;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        /* Separador en tarjetas */
+        .card-separator {
+            border-top: 1px solid #eee;
+            margin: 12px 0;
+            padding-top: 12px;
+        }
+        /* Vista de grid mejorada */
+        .grid-view {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.25rem;
+            padding: 1rem;
+        }
+        /* Restaurar estilos que fueron eliminados */
+        .filter-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            align-items: center;
+        }
+        .filter-label {
+            font-weight: 500;
+            margin-right: 0.5rem;
+        }
+        .filter-select {
+            padding: 0.375rem 0.75rem;
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+            background-color: white;
+        }
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .view-toggle button {
+            background: none;
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+            padding: 0.375rem 0.75rem;
+            cursor: pointer;
+            color: #6c757d;
+        }
+        .view-toggle button.active {
+            background-color: #e9ecef;
+            color: #495057;
+            font-weight: 500;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            background-color: #f8f9fa;
+            border-radius: 0.5rem;
+            border: 1px dashed #ced4da;
+        }
+        .empty-state-icon {
+            font-size: 3rem;
+            color: #adb5bd;
+            margin-bottom: 1rem;
+        }
+        .empty-state-text {
+            font-size: 1.1rem;
+            color: #6c757d;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Indicador de rol para JavaScript -->
+    <div id="esAdminFlag" data-es-admin="true" style="display:none;"></div>
+    
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="fas fa-box"></i>
+                    <span>SIX Inventario</span>
+                </div>
+                <div class="user-avatar">
+                    <div class="avatar">
+                        <span id="userInitial" th:data-usuario="${session.usuario}" th:data-usuario-id="${session.usuarioId}">A</span>
+                    </div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a th:href="@{/dashboard-admin}" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+                <a th:href="@{/productos}" class="nav-link">
+                    <i class="fas fa-tshirt"></i>
+                    <span>Productos</span>
+                </a>
+                <a th:href="@{/inventario}" class="nav-link">
+                    <i class="fas fa-box-open"></i>
+                    <span>Inventario</span>
+                </a>
+                <a th:href="@{/ventas}" class="nav-link">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Ventas</span>
+                </a>
+                <a th:href="@{/admin/ventas-registradas}" class="nav-link">
+                    <i class="fas fa-receipt"></i>
+                    <span>Ventas Registradas</span>
+                </a>
+                <a th:href="@{/admin/devoluciones}" class="nav-link">
+                    <i class="fas fa-undo-alt"></i>
+                    <span>Devoluciones</span>
+                </a>
+                <a th:href="@{/proveedores}" class="nav-link active">
+                    <i class="fas fa-truck"></i>
+                    <span>Proveedores</span>
+                </a>
+                <a th:href="@{/alertas}" class="nav-link">
+                    <i class="fas fa-bell"></i>
+                    <span>Alertas</span>
+                </a>
+                <a th:href="@{/usuarios}" class="nav-link">
+                    <i class="fas fa-users"></i>
+                    <span>Usuarios</span>
+                </a>
+                <a th:href="@{/reportes}" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reportes</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="#" id="logoutButton" class="sidebar-logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Cerrar Sesión</span>
+                </a>
+                <p class="copyright">© 2025 SIX. Todos los derechos reservados.</p>
+            </div>
+        </aside>
+
+        <!-- Contenido principal -->
+        <main class="main-content">
+            <div class="mobile-header">
+                <button class="mobile-menu-button">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1>Gestión de Proveedores</h1>
+            </div>
+
+            <div class="content-wrapper">
+                <div class="content-header">
+                    <!-- Eliminar este h1 duplicado -->
+                </div>
+
+                <div class="content-body">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title" style="margin-top: 20px;">Lista de Proveedores</h2>
+                            <div class="header-actions" style="display: flex; align-items: center; gap: 1rem;">
+                                <div class="search-container" style="width: 300px;">
+                                    <i class="fas fa-search search-icon"></i>
+                                    <input type="text" id="searchProveedor" class="search-input" placeholder="Buscar proveedor...">
+                                </div>
+                                <button id="btnNuevoProveedor" class="btn btn-primary" style="white-space: nowrap; min-width: 130px; padding: 0.4rem 0.8rem; font-size: 0.9rem;">
+                                    <i class="fas fa-plus"></i> Nuevo Proveedor
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-container" style="padding: 0 1rem;">
+                            <div>
+                                <span class="filter-label">Estado:</span>
+                                <select id="filterEstado" class="filter-select">
+                                    <option value="todos">Todos</option>
+                                    <option value="activos" selected>Activos</option>
+                                    <option value="inactivos">Inactivos</option>
+                                </select>
+                            </div>
+                            <div class="view-toggle">
+                                <button id="btnListView" class="btn btn-secondary active">
+                                    <i class="fas fa-list"></i> Lista
+                                </button>
+                                <button id="btnGridView" class="btn btn-secondary">
+                                    <i class="fas fa-th-large"></i> Tarjetas
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="card-content">
+                            <!-- Vista de tabla (por defecto) -->
+                            <div id="tableView" class="table-container">
+                                <table class="data-table" id="proveedoresTable">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Nombre</th>
+                                            <th>RUC</th>
+                                            <th>Teléfono</th>
+                                            <th>Email</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="proveedoresTableBody">
+                                        <tr>
+                                            <td colspan="7" class="empty-data">Cargando proveedores...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Vista de tarjetas (alternativa) -->
+                            <div id="gridView" class="grid-view" style="display: none; padding: 0 1rem;">
+                                <!-- Las tarjetas se generarán dinámicamente con JavaScript -->
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">
+                                        <i class="fas fa-truck"></i>
+                                    </div>
+                                    <div class="empty-state-text">
+                                        Aún no hay proveedores registrados
+                                    </div>
+                                    <button id="btnEmptyStateNuevoProveedor" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Registrar Proveedor
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal para crear/editar proveedor con mejor distribución -->
+    <div id="proveedorModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="proveedorModalTitle" class="modal-title">Nuevo Proveedor</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="proveedorForm">
+                    <input type="hidden" id="proveedorId">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nombre">Nombre *</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-building"></i></span>
+                                </div>
+                                <input type="text" id="nombre" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="ruc">RUC</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                                </div>
+                                <input type="text" id="ruc" class="form-control" maxlength="20">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="telefono">Teléfono</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                                </div>
+                                <input type="text" id="telefono" class="form-control" maxlength="20">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                </div>
+                                <input type="email" id="email" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="direccion">Dirección</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                            </div>
+                            <input type="text" id="direccion" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="contacto">Persona de Contacto</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                </div>
+                                <input type="text" id="contacto" class="form-control">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="telefonoContacto">Teléfono de Contacto</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                                </div>
+                                <input type="text" id="telefonoContacto" class="form-control" maxlength="20">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="observaciones">Observaciones</label>
+                        <textarea id="observaciones" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary modal-close-btn">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="submit" id="btnGuardarProveedor" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast para notificaciones -->
+    <div id="toast" class="toast hidden">
+        <div class="toast-content">
+            <div class="toast-title">Título</div>
+            <div class="toast-message">Mensaje</div>
+        </div>
+        <button class="toast-close">&times;</button>
+    </div>
+
+    <script th:src="@{/js/scripts.js}"></script>
+    <script th:src="@{/js/proveedores.js}"></script>
+</body>
+
+</html>
+ 

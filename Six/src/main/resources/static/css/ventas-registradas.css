@@ -1,0 +1,506 @@
+/* Estilos para la página de ventas registradas */
+
+/* Fondo blanco para la página */
+body, html, .dashboard-container, .main-content, .card, .content {
+    background-color: #ffffff !important;
+}
+
+.card-header, .card-content {
+    background-color: #ffffff !important;
+}
+
+/* Estilos para la tabla de ventas */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.data-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: #f9fafb;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #333;
+    text-align: left;
+}
+
+.data-table tbody tr:hover {
+    background-color: #f3f4f6;
+}
+
+/* Estilos para la paginación y filtrado */
+.inventory-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    margin-bottom: 10px;
+}
+
+.search-container {
+    position: relative;
+    width: 300px;
+}
+
+.search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #aaa;
+}
+
+.search-input {
+    width: 100%;
+    padding: 8px 10px 8px 35px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.date-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.date-input {
+    padding: 3px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    height: 34px;
+}
+
+/* Estilos para los botones */
+.btn {
+    display: inline-block;
+    font-weight: 400;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    user-select: none;
+    border: 1px solid transparent;
+    padding: .375rem .75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    border-radius: .25rem;
+    transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: #000000;
+    border-color: #000000;
+}
+
+.btn-primary:hover {
+    color: #fff;
+    background-color: #333333;
+    border-color: #333333;
+}
+
+.btn-sm {
+    padding: 5px 15px;
+    font-size: 0.875rem;
+    line-height: 1;
+    border-radius: .2rem;
+}
+
+/* Estilos para las etiquetas de estado */
+.badge {
+    display: inline-block;
+    padding: 0.25em 0.6em;
+    font-size: 75%;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+.badge-success {
+    color: #fff;
+    background-color: #28a745;
+}
+
+.badge-warning {
+    color: #212529;
+    background-color: #ffc107;
+}
+
+/* Estilos para el menú de acciones */
+.actions-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.actions-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 18px;
+    padding: 0 5px;
+}
+
+.actions-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: white;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    border-radius: 4px;
+    padding: 5px 0;
+}
+
+.actions-menu a {
+    color: black;
+    padding: 8px 16px;
+    text-decoration: none;
+    display: block;
+    font-size: 14px;
+}
+
+.actions-menu a:hover {
+    background-color: #f1f1f1;
+}
+
+/* Estilos para el toast de notificaciones */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    min-width: 250px;
+    max-width: 350px;
+    background-color: white;
+    color: #333;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    padding: 16px;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.toast.hidden {
+    display: none;
+}
+
+.toast-content {
+    flex-grow: 1;
+}
+
+.toast-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.toast-message {
+    font-size: 14px;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+/* Estilos para los modales */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto;
+    padding: 0;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 700px;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modal-lg {
+    max-width: 900px;
+}
+
+.modal-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.close-modal {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+/* Estilos para información en modal */
+.venta-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.info-group {
+    padding: 15px;
+    background-color: #f9fafb;
+    border-radius: 5px;
+}
+
+.info-group h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+}
+
+.info-row {
+    display: flex;
+    margin-bottom: 5px;
+}
+
+.info-label {
+    font-weight: 500;
+    min-width: 100px;
+}
+
+.info-value {
+    color: #666;
+}
+
+/* Estilos para el formulario de devolución */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.form-group input, .form-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.form-group textarea {
+    min-height: 80px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+    .inventory-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .search-container {
+        width: 100%;
+    }
+    
+    .date-filter {
+        flex-wrap: wrap;
+    }
+    
+    .venta-info {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 5% auto;
+    }
+}
+
+/* Estilos para botones de devolución */
+.btn-devolver {
+    padding: 5px 10px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: inline-block;
+    min-width: 80px;
+    transition: background-color 0.2s ease;
+}
+
+.btn-devolver:hover {
+    background-color: #c82333;
+}
+
+/* Estilos para la columna de acciones */
+.text-center {
+    text-align: center;
+}
+
+/* Estilos para botones de confirmación */
+.btn-primary-custom {
+    padding: 6px 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    min-width: 120px;
+    transition: background-color 0.2s ease;
+}
+
+.btn-primary-custom:hover {
+    background-color: #0069d9;
+}
+
+.btn-secondary-custom {
+    padding: 6px 12px;
+    background-color: #000000;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease;
+}
+
+.btn-secondary-custom:hover {
+    background-color: #333333;
+}
+
+/* Clase para centrar contenido en celdas */
+.actions-cell {
+    text-align: center;
+} 
+
+/* Estilos para los estados de devolución */
+.estado-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+.estado-pendiente {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.estado-aprobada, .estado-completada {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.estado-rechazada {
+    background-color: #fee2e2;
+    color: #b91c1c;
+}
+
+.estado-procesada, .estado-en-proceso {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+/* Estilos para el botón de tres puntos vertical */
+.btn-acciones {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #4b5563;
+    font-size: 1.2rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.btn-acciones:hover {
+    background-color: #f3f4f6;
+}
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    z-index: 1000;
+    min-width: 160px;
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    padding: 0.5rem 0;
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 8px 16px;
+    clear: both;
+    font-size: 0.875rem;
+    color: #333;
+    text-align: inherit;
+    white-space: nowrap;
+    background-color: transparent;
+    border: 0;
+    text-decoration: none;
+}
+
+.dropdown-item:hover {
+    background-color: #f3f4f6;
+} 

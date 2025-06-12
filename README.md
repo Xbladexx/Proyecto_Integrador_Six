@@ -23,7 +23,7 @@ SIX es un sistema integral de gestión empresarial desarrollado con Spring Boot 
 ### Frontend
 - **Motor de Plantillas:** Thymeleaf
 - **Tecnologías Web:** HTML5, CSS3, JavaScript
-- **Frameworks CSS:** [Especificar si se usa Bootstrap, Material, etc.]
+- Frameworks CSS
 
 ### Base de Datos
 - **SGBD:** MySQL 8.0
@@ -37,7 +37,7 @@ SIX es un sistema integral de gestión empresarial desarrollado con Spring Boot 
 - Java 21 o superior
 - Maven 3.6 o superior
 - MySQL 8.0
-- MySQL Workbench (para gestión de base de datos)
+- MySQL Workbench 
 - Git
 
 ## Instalación y Configuración

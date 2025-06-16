@@ -19,6 +19,42 @@ ALTER TABLE movimientos_stock
     MODIFY COLUMN motivo_detalle VARCHAR(100),
     MODIFY COLUMN observaciones VARCHAR(500);
 
+-- Tabla de devoluciones_venta
+CREATE TABLE IF NOT EXISTS devoluciones_venta (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    cantidad INT NOT NULL,
+    codigo VARCHAR(50),
+    estado VARCHAR(20) NOT NULL,
+    fecha_devolucion DATETIME NOT NULL,
+    monto_devuelto DECIMAL(10,2) NOT NULL,
+    motivo VARCHAR(50),
+    detalle_venta_id BIGINT NOT NULL,
+    usuario_id BIGINT NOT NULL,
+    venta_id BIGINT NOT NULL,
+    monto_total DECIMAL(10,2) NOT NULL,
+    observaciones VARCHAR(500),
+    FOREIGN KEY (detalle_venta_id) REFERENCES detalles_venta(id),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+    FOREIGN KEY (venta_id) REFERENCES ventas(id)
+);
+
+-- Tabla de devoluciones_lote
+CREATE TABLE IF NOT EXISTS devoluciones_lote (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    lote_id BIGINT NOT NULL,
+    cantidad INT NOT NULL,
+    estado VARCHAR(20) NOT NULL,
+    fecha_devolucion DATETIME NOT NULL,
+    motivo VARCHAR(100),
+    comentarios VARCHAR(1000),
+    valor_total DECIMAL(10,2) NOT NULL,
+    proveedor_id BIGINT,
+    usuario_id BIGINT,
+    FOREIGN KEY (lote_id) REFERENCES lotes_producto(id),
+    FOREIGN KEY (proveedor_id) REFERENCES proveedores(id),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+);
+
 -- Tabla de proveedores
 CREATE TABLE IF NOT EXISTS proveedores (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

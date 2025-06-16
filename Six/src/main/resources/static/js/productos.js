@@ -373,10 +373,10 @@ document.addEventListener('DOMContentLoaded', function() {
         toast.classList.remove('hidden', 'success', 'error');
         toast.classList.add(type);
 
-        // Ocultar el toast después de 5 segundos
+        // Ocultar el toast después de 3 segundos
         setTimeout(() => {
             toast.classList.add('hidden');
-        }, 5000);
+        }, 3000);
     }
 
     // Cerrar toast al hacer clic en el botón de cerrar
@@ -506,7 +506,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (errorToast) {
                             errorToast.querySelector('.toast-message').textContent = 'ID de producto inválido';
                             errorToast.classList.remove('hidden');
-                            setTimeout(() => errorToast.classList.add('hidden'), 5000);
+                            setTimeout(() => errorToast.classList.add('hidden'), 3000);
                         } else {
                             showToast('Error', 'ID de producto inválido', 'error');
                         }

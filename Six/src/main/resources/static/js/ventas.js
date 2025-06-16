@@ -58,8 +58,13 @@ document.addEventListener('DOMContentLoaded', function() {
         toastTitle.textContent = title;
         toastMessage.textContent = message;
 
-        toast.classList.remove('hidden', 'success', 'error');
+        toast.classList.remove('hidden', 'success', 'error', 'venta-completada');
         toast.classList.add(type);
+        
+        // Aplicar clase especial para mensaje de venta completada
+        if (type === 'success' && message.includes('Venta registrada correctamente')) {
+            toast.classList.add('venta-completada');
+        }
 
         // Ocultar el toast después de 5 segundos
         setTimeout(() => {

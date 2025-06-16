@@ -48,10 +48,25 @@
         .tab-content {
             padding: 20px;
             display: none;
+            border: 1px solid #e5e7eb;
+            border-radius: 0 0 8px 8px;
+            margin-top: -15px;
         }
         
         .tab-content.active {
             display: block;
+        }
+        
+        .tab-content h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .tab-content p.text-muted {
+            margin-bottom: 20px;
+            color: #6c757d;
         }
         
         .table-wrapper {
@@ -60,6 +75,8 @@
             overflow: hidden;
             border: 1px solid #e5e7eb;
             margin-top: 16px;
+            max-height: 600px;
+            overflow-y: auto;
         }
         
         .data-table {
@@ -76,6 +93,9 @@
             color: #374151;
             text-align: left;
             border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         
         .data-table td {
@@ -305,14 +325,14 @@
                     </div>
 
                     <!-- Contenido de las pestañas -->
-                    <div id="content-ventas" class="content-tab active" style="display:block;">
-                        <div class="search-filter-container mb-4">
-                            <div class="row g-2 align-items-center">
-                                <div class="col">
-                                    <div class="search-box">
-                                        <input id="search-ventas" type="text" class="form-control" placeholder="Buscar por cliente, producto o ID...">
-                                    </div>
-                                </div>
+                    <div id="content-ventas" class="tab-content active" style="display:block;">
+                        <h2>Devoluciones de Ventas</h2>
+                        <p class="text-muted">Gestión de productos devueltos por clientes</p>
+
+                        <div class="filters-row">
+                            <div class="search-box">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="search" id="search-ventas" class="search-input" placeholder="Buscar por cliente, producto o ID...">
                             </div>
                         </div>
 
@@ -511,6 +531,9 @@
                         console.error('La función cargarDevolucionesLotes no está definida');
                     }
                 }
+                
+                // Forzar un reflow para aplicar correctamente los estilos
+                document.body.offsetHeight;
             }
             
             // Cargar datos iniciales - pestaña activa por defecto (ventas)

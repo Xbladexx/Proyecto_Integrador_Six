@@ -140,8 +140,8 @@ function showToast(title, message, type = '') {
     const toastTitle = toast.querySelector('.toast-title');
     const toastMessage = toast.querySelector('.toast-message');
 
-    // Limpiar clases de tipo anteriores
-    toast.classList.remove('error', 'success', 'warning', 'info');
+    // Limpiar solo las clases de tipo anteriores, sin afectar otras clases de estilo
+    toast.classList.remove('error', 'success', 'warning', 'info', 'hidden');
 
     // Agregar clase de tipo si existe
     if (type) {
@@ -155,10 +155,10 @@ function showToast(title, message, type = '') {
     // Mostrar el toast
     toast.classList.remove('hidden');
 
-    // Configurar cierre automático
+    // Configurar cierre automático - reducido a 3 segundos
     setTimeout(() => {
         toast.classList.add('hidden');
-    }, 5000);
+    }, 3000);
 
     // Configurar botón de cierre
     const closeButton = toast.querySelector('.toast-close');

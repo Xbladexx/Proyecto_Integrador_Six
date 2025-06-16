@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         alertsTableBody.innerHTML = `
             <tr>
-                <td colspan="9" class="text-center">
+                <td colspan="8" class="text-center">
                     <i class="fas fa-spinner fa-spin"></i> Cargando alertas...
                 </td>
             </tr>
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error al cargar alertas:', error);
                 alertsTableBody.innerHTML = `
                     <tr>
-                        <td colspan="9" class="text-center">
+                        <td colspan="8" class="text-center">
                             Error al cargar las alertas. Por favor, intente nuevamente.
                         </td>
                     </tr>
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (alertas.length === 0) {
             alertsTableBody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="text-center">No se encontraron alertas que coincidan con los criterios de búsqueda.</td>
+                    <td colspan="8" class="text-center">No se encontraron alertas que coincidan con los criterios de búsqueda.</td>
                 </tr>
             `;
             return;
@@ -125,22 +125,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${alerta.stockActual || 0}</td>
                     <td>${alerta.stockMinimo || 0}</td>
                     <td>${fechaFormateada}</td>
-                    <td>
-                        <button class="btn btn-sm btn-secondary" onclick="verDetallesProducto(${alerta.id})">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </td>
                 </tr>
             `;
         });
         
         alertsTableBody.innerHTML = html;
-    }
-    
-    // Función para ver detalles del producto (redirige a la página del producto)
-    window.verDetallesProducto = function(inventarioId) {
-        // Redireccionar a la página de detalles del producto
-        window.location.href = `/inventario/detalles?id=${inventarioId}`;
     }
     
     // Inicializar carga de alertas

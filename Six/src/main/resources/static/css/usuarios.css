@@ -652,10 +652,11 @@ tr:nth-last-child(-n+3) .dropdown-content {
     background-color: white;
     border-radius: 0.375rem;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    min-width: 20rem;
-    max-width: 30rem;
+    min-width: 15rem;
+    max-width: 20rem;
     overflow: hidden;
-    border-left: 4px solid #3b82f6;
+    border-left: 2px solid #3b82f6;
+    font-size: 0.75rem;
 }
 
 .toast.hidden {
@@ -663,38 +664,41 @@ tr:nth-last-child(-n+3) .dropdown-content {
 }
 
 .toast-content {
-    padding: 1rem;
+    padding: 0.4rem 0.6rem;
 }
 
 .toast-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.2rem;
 }
 
 .toast-title {
     font-weight: 600;
     color: #111827;
     margin: 0;
+    font-size: 0.8rem;
 }
 
 .toast-message {
     color: #6b7280;
     margin: 0;
+    font-size: 0.7rem;
+    line-height: 1.2;
 }
 
 .toast-message .user-created-info {
     background-color: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 0.375rem;
-    padding: 1rem;
-    margin-top: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    margin-top: 0.3rem;
 }
 
 .toast-message .user-created-info p {
-    margin: 0.5rem 0;
-    line-height: 1.5;
+    margin: 0.3rem 0;
+    line-height: 1.2;
 }
 
 .toast-message .user-created-info p:first-child {
@@ -708,17 +712,17 @@ tr:nth-last-child(-n+3) .dropdown-content {
 .toast-message .warning-text {
     color: #b91c1c;
     font-weight: 500;
-    margin-top: 0.75rem;
-    font-size: 0.875rem;
+    margin-top: 0.4rem;
+    font-size: 0.7rem;
     border-top: 1px dashed #fca5a5;
-    padding-top: 0.75rem;
+    padding-top: 0.4rem;
 }
 
 .toast-close {
     background: none;
     border: none;
     color: #9ca3af;
-    font-size: 1.25rem;
+    font-size: 14px;
     line-height: 1;
     cursor: pointer;
 }

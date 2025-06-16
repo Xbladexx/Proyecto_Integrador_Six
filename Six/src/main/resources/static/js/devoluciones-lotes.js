@@ -166,6 +166,13 @@ function renderizarTablaDevolucionesLotes(devoluciones) {
             responsable = dev.usuarioNombre;
         }
         
+        // Formatear el responsable para una mejor visualización
+        if (responsable === 'Sistema') {
+            responsable = '<span class="text-secondary">Sistema</span>';
+        } else if (responsable.includes('(Admin)')) {
+            responsable = '<span class="text-primary">' + responsable + '</span>';
+        }
+        
         tr.innerHTML = `
             <td>${dev.id || 'N/A'}</td>
             <td>${fecha}</td>

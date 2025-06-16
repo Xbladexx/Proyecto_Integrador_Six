@@ -341,26 +341,28 @@ public class ClasificacionABCService {
         log.debug("Calculando valor anual para producto {}", producto.getCodigo());
         
         try {
-        // Obtener todas las variantes del producto
-        List<VarianteProducto> variantes = varianteRepository.findByProducto(producto);
+            // Obtener todas las variantes del producto
+            List<VarianteProducto> variantes = varianteRepository.findByProducto(producto);
             
             if (variantes.isEmpty()) {
                 log.debug("El producto {} no tiene variantes", producto.getCodigo());
                 return BigDecimal.ZERO;
             }
         
-        BigDecimal valorTotal = BigDecimal.ZERO;
+            BigDecimal valorTotal = BigDecimal.ZERO;
         
             // Para cada variante, buscar los movimientos de salida (ventas)
-        for (VarianteProducto variante : variantes) {
+            for (VarianteProducto variante : variantes) {
                 // Buscar movimientos de salida (tipo SALIDA con motivo VENTA) para esta variante en el período especificado
-            List<MovimientoStock> movimientos = movimientoRepository.findByVarianteAndTipoAndMotivoAndFechaBetween(
-                    variante, 
-                    MovimientoStock.TipoMovimiento.SALIDA,
-                    MovimientoStock.MotivoMovimiento.VENTA,
-                    fechaInicio, 
-                    fechaFin);
-            
+                // Asumimos que solo se consideran los movimientos con motivo VENTA para los productos vendidos
+                // (excluyendo devoluciones y otros ajustes)
+                List<MovimientoStock> movimientos = movimientoRepository.findByVarianteAndTipoAndMotivoAndFechaBetween(
+                        variante, 
+                        MovimientoStock.TipoMovimiento.SALIDA,
+                        MovimientoStock.MotivoMovimiento.VENTA,
+                        fechaInicio, 
+                        fechaFin);
+                
                 // Sumar el valor de cada movimiento (cantidad * precio)
                 for (MovimientoStock movimiento : movimientos) {
                     BigDecimal cantidad = new BigDecimal(Math.abs(movimiento.getCantidad()));

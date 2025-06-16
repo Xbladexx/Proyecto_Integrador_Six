@@ -149,7 +149,7 @@ input:focus {
 }
 
 .btn-primary:hover {
-    background-color: #1f2937;
+    background-color: #333333;
 }
 
 .btn-block {
@@ -294,13 +294,30 @@ input:focus {
     border: 1px solid var(--border);
     border-radius: var(--radius);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    padding: 1rem;
+    padding: 0.4rem 0.6rem;
     display: flex;
     align-items: flex-start;
     gap: 0.5rem;
-    max-width: 24rem;
+    max-width: 200px;
     z-index: 50;
     animation: slideIn 0.3s ease-out;
+    font-size: 0.75rem;
+}
+
+/* Estilo especial para el mensaje de venta completada */
+.toast.venta-completada {
+    max-width: 300px;
+    padding: 0.8rem 1rem;
+}
+
+.toast.venta-completada .toast-title {
+    font-size: 1.1rem;
+    margin-bottom: 0.4rem;
+}
+
+.toast.venta-completada .toast-message {
+    font-size: 0.9rem;
+    font-weight: 500;
 }
 
 .toast-content {
@@ -309,12 +326,14 @@ input:focus {
 
 .toast-title {
     font-weight: 600;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.2rem;
+    font-size: 0.8rem;
 }
 
 .toast-message {
-    font-size: 0.875rem;
+    font-size: 0.7rem;
     color: var(--muted-foreground);
+    line-height: 1.2;
 }
 
 .toast-close {
@@ -322,7 +341,8 @@ input:focus {
     border: none;
     cursor: pointer;
     color: var(--muted-foreground);
-    padding: 0.25rem;
+    padding: 0.2rem;
+    font-size: 14px;
 }
 
 .toast.error .toast-title {
@@ -389,6 +409,7 @@ input:focus {
 
 /* Estilos para modales y formularios */
 .modal {
+    transition: opacity 0.15s linear;
     display: none;
     position: fixed;
     z-index: 1000;
@@ -398,19 +419,21 @@ input:focus {
     height: 100%;
     overflow: auto;
     background-color: rgba(0, 0, 0, 0.5);
-    animation: fadeIn 0.3s ease-out;
 }
 
 .modal-content {
     background-color: #fff;
-    margin: 10% auto;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    margin: 5% auto;
     width: 80%;
-    max-width: 800px;
-    max-height: 80vh;
-    overflow-y: auto;
+    max-width: 600px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    transform: translate(0, 0);
+    transition: transform 0.3s ease-out;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
     animation: slideIn 0.3s ease-out;
 }
 
@@ -419,12 +442,18 @@ input:focus {
 }
 
 .modal-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 15px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid #e5e7eb;
+    background-color: white;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .modal-title {
@@ -445,16 +474,25 @@ input:focus {
 }
 
 .modal-body {
-    padding: 0 10px;
+    padding: 15px 20px;
+    overflow-y: auto;
+    flex: 1;
+    overflow-x: hidden;
 }
 
 .modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #eee;
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-    padding-top: 20px;
-    margin-top: 20px;
-    border-top: 1px solid #e5e7eb;
+    background-color: white;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Estilos para formularios dentro de modales */
@@ -547,7 +585,7 @@ input:focus {
 }
 
 .btn-primary:hover {
-    background-color: #1f2937;
+    background-color: #333333;
 }
 
 .btn-secondary {
@@ -811,3 +849,78 @@ textarea.form-control {
 }
 
 /* Contenido principal */
+
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 15px;
+}
+
+#devolverLoteModal .modal-body {
+    overflow-x: hidden;
+}
+
+#tablaProductosLote {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#tablaProductosLote th,
+#tablaProductosLote td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+#tablaProductosLote th {
+    background-color: #f9fafb;
+    font-weight: 600;
+}
+
+#tablaProductosLote tbody tr:hover {
+    background-color: #f9fafb;
+}
+
+/* Ajuste para centrar mejor los modales */
+@media (min-width: 768px) {
+    .modal-content {
+        margin: 15vh auto;
+    }
+    
+    #devolverLoteModal .modal-content {
+        margin: 10vh auto;
+    }
+}
+
+@media (max-width: 767px) {
+    .modal-content {
+        margin: 15vh auto;
+        width: 95%;
+        max-height: 98vh;
+    }
+}
+
+#devolverLoteModal .modal-content {
+    transition: margin-top 0.1s ease-out;
+}
+
+/* Botón primario específico para los modales */
+.modal .btn-primary {
+    background-color: #111111;
+    color: white;
+    border: none;
+}
+
+.modal .btn-primary:hover {
+    background-color: #333333;
+}
+
+/* Centrado específico para modales de productos y categorías */
+#productModal .modal-content,
+#categoryModal .modal-content {
+    margin: 2% auto;
+    width: 90%;
+    max-width: 650px;
+}

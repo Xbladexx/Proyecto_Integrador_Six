@@ -180,17 +180,18 @@ body, html, .dashboard-container, .main-content, .card, .content {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    min-width: 250px;
-    max-width: 350px;
+    min-width: 200px;
+    max-width: 200px;
     background-color: white;
     color: #333;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     border-radius: 4px;
-    padding: 16px;
+    padding: 0.4rem 0.6rem;
     z-index: 1000;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    font-size: 0.75rem;
 }
 
 .toast.hidden {
@@ -203,19 +204,21 @@ body, html, .dashboard-container, .main-content, .card, .content {
 
 .toast-title {
     font-weight: bold;
-    margin-bottom: 5px;
+    margin-bottom: 0.2rem;
+    font-size: 0.8rem;
 }
 
 .toast-message {
-    font-size: 14px;
+    font-size: 0.7rem;
+    line-height: 1.2;
 }
 
 .toast-close {
     background: none;
     border: none;
-    font-size: 16px;
+    font-size: 14px;
     cursor: pointer;
-    padding: 0 5px;
+    padding: 0 0.2rem;
 }
 
 /* Estilos para los modales */

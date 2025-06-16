@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,6 +33,7 @@ import com.darkcode.spring.six.dtos.VentaDTO;
 import com.darkcode.spring.six.models.entities.Alerta;
 import com.darkcode.spring.six.models.entities.Cliente;
 import com.darkcode.spring.six.models.entities.DetalleVenta;
+import com.darkcode.spring.six.models.entities.DevolucionVenta;
 import com.darkcode.spring.six.models.entities.Inventario;
 import com.darkcode.spring.six.models.entities.MovimientoStock;
 import com.darkcode.spring.six.models.entities.Producto;
@@ -40,6 +42,7 @@ import com.darkcode.spring.six.models.entities.VarianteProducto;
 import com.darkcode.spring.six.models.entities.Venta;
 import com.darkcode.spring.six.models.repositories.ClienteRepository;
 import com.darkcode.spring.six.models.repositories.DetalleVentaRepository;
+import com.darkcode.spring.six.models.repositories.DevolucionVentaRepository;
 import com.darkcode.spring.six.models.repositories.InventarioRepository;
 import com.darkcode.spring.six.models.repositories.MovimientoStockRepository;
 import com.darkcode.spring.six.models.repositories.UsuarioRepository;
@@ -68,6 +71,7 @@ public class VentaController {
     private final WebSocketService webSocketService;
     private final MovimientoStockRepository movimientoStockRepository;
     private final AlertaService alertaService;
+    private final DevolucionVentaRepository devolucionVentaRepository;
 
     
     /**
@@ -598,8 +602,8 @@ public class VentaController {
         try {
             log.info("Obteniendo ventas recientes para el dashboard de administrador");
             
-            // Obtener todas las ventas más recientes, ordenadas por fecha descendente
-            List<Venta> ventasRecientes = ventaRepository.findTop20ByOrderByFechaDesc();
+            // Obtener las ventas completadas más recientes, ordenadas por fecha descendente
+            List<Venta> ventasRecientes = ventaRepository.findTop20ByEstadoOrderByFechaDesc("COMPLETADA");
             
             // Contar el total de ventas del mes actual
             Long ventasMes = ventaRepository.countVentasMesActual();
@@ -938,6 +942,23 @@ public class VentaController {
                         
                         movimientoStockRepository.save(movimiento);
                         
+                        // Registrar la devolución en la tabla devoluciones_venta
+                        DevolucionVenta devolucion = new DevolucionVenta();
+                        devolucion.setCantidad(cantidadDevuelta);
+                        devolucion.setCodigo("DEV-" + venta.getCodigo());
+                        devolucion.setEstado("DEVUELTA");
+                        devolucion.setFechaDevolucion(LocalDateTime.now());
+                        devolucion.setMontoDevuelto(detalle.getSubtotal());
+                        devolucion.setMotivo("Devolución por cliente");
+                        devolucion.setDetalleVenta(detalle);
+                        devolucion.setUsuario(usuario);
+                        devolucion.setVenta(venta);
+                        devolucion.setMontoTotal(venta.getTotal());
+                        devolucion.setObservaciones("Devolución procesada el " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
+                        
+                        // Guardar la devolución
+                        devolucionVentaRepository.save(devolucion);
+                        
                         log.info("Devueltos {} unidades del producto {} al inventario", cantidadDevuelta, variante.getProducto().getNombre());
                     } else {
                         log.warn("No se encontró inventario para la variante con ID: {}", variante.getId());
@@ -996,106 +1017,151 @@ public class VentaController {
         try {
             log.info("Obteniendo devoluciones con filtros - desde: {}, hasta: {}", desde, hasta);
             
-            List<Venta> ventas;
+            List<Map<String, Object>> devolucionesConDetalles = new ArrayList<>();
+            
+            // Buscar en la tabla de devoluciones_venta primero
+            List<DevolucionVenta> devoluciones;
             
             if (desde != null && hasta != null) {
                 // Convertir LocalDate a LocalDateTime para el inicio y fin del día
                 LocalDateTime fechaDesde = desde.atStartOfDay();
                 LocalDateTime fechaHasta = hasta.atTime(23, 59, 59);
                 log.info("Buscando devoluciones entre {} y {}", fechaDesde, fechaHasta);
-                ventas = ventaRepository.findByEstadoAndFechaBetween("DEVUELTA", fechaDesde, fechaHasta);
+                devoluciones = devolucionVentaRepository.findByFechaDevolucionBetween(fechaDesde, fechaHasta);
             } else {
-                ventas = ventaRepository.findByEstado("DEVUELTA");
+                devoluciones = devolucionVentaRepository.findAll();
             }
             
-            // Ordenar por fecha descendente (más recientes primero)
-            ventas.sort((v1, v2) -> v2.getFecha().compareTo(v1.getFecha()));
-            
-            // Cargar detalles para cada devolución
-            List<Map<String, Object>> devolucionesConDetalles = new ArrayList<>();
-            
-            for (Venta venta : ventas) {
-                List<DetalleVenta> detalles = detalleVentaRepository.findByVenta(venta);
-                
-                // Crear un mapa para almacenar los datos de la devolución
+            // Procesar devoluciones desde la tabla específica devoluciones_venta
+            for (DevolucionVenta devolucion : devoluciones) {
                 Map<String, Object> devolucionMap = new HashMap<>();
-                devolucionMap.put("id", venta.getId());
-                devolucionMap.put("codigo", venta.getCodigo());
-                devolucionMap.put("fechaVenta", venta.getFecha());
                 
-                // Obtener fecha de devolución (buscamos el último movimiento de tipo ENTRADA relacionado con esta venta)
-                List<MovimientoStock> movimientos = movimientoStockRepository.findByMotivoDetalleContaining("Devolución de venta #" + venta.getCodigo());
-                if (!movimientos.isEmpty()) {
-                    // Ordenar movimientos por fecha, el más reciente primero
-                    movimientos.sort((m1, m2) -> m2.getFecha().compareTo(m1.getFecha()));
-                    devolucionMap.put("fechaDevolucion", movimientos.get(0).getFecha());
-                    
-                    // Obtener usuario que procesó la devolución
-                    if (movimientos.get(0).getUsuario() != null) {
-                        devolucionMap.put("usuarioId", movimientos.get(0).getUsuario().getId());
-                        devolucionMap.put("usuarioNombre", movimientos.get(0).getUsuario().getNombre());
-                    }
-                } else {
-                    // Si no hay movimientos, usamos la fecha de la venta como fecha de devolución
-                    devolucionMap.put("fechaDevolucion", venta.getFecha());
-                }
+                // Datos básicos de la devolución
+                devolucionMap.put("id", devolucion.getVenta().getId());
+                devolucionMap.put("codigo", devolucion.getVenta().getCodigo());
+                devolucionMap.put("fechaVenta", devolucion.getVenta().getFecha());
+                devolucionMap.put("fechaDevolucion", devolucion.getFechaDevolucion());
+                devolucionMap.put("subtotal", devolucion.getVenta().getSubtotal());
+                devolucionMap.put("igv", devolucion.getVenta().getIgv());
+                devolucionMap.put("total", devolucion.getMontoTotal());
+                devolucionMap.put("estado", devolucion.getEstado());
                 
-                devolucionMap.put("subtotal", venta.getSubtotal());
-                devolucionMap.put("igv", venta.getIgv());
-                devolucionMap.put("total", venta.getTotal());
-                devolucionMap.put("estado", venta.getEstado());
-                
-                // Agregar información del cliente si está disponible
-                if (venta.getCliente() != null) {
+                // Información del cliente
+                if (devolucion.getVenta().getCliente() != null) {
                     Map<String, Object> clienteMap = new HashMap<>();
-                    clienteMap.put("id", venta.getCliente().getId());
-                    clienteMap.put("nombre", venta.getCliente().getNombre());
-                    clienteMap.put("dni", venta.getCliente().getDni());
+                    clienteMap.put("id", devolucion.getVenta().getCliente().getId());
+                    clienteMap.put("nombre", devolucion.getVenta().getCliente().getNombre());
                     devolucionMap.put("cliente", clienteMap);
                 }
                 
-                // Procesar los detalles de venta
-                List<Map<String, Object>> detallesArray = new ArrayList<>();
-                for (DetalleVenta detalle : detalles) {
-                    Map<String, Object> detalleMap = new HashMap<>();
-                    detalleMap.put("id", detalle.getId());
-                    detalleMap.put("cantidad", detalle.getCantidad());
-                    detalleMap.put("precioUnitario", detalle.getPrecioUnitario());
-                    detalleMap.put("subtotal", detalle.getSubtotal());
-                    
-                    // Agregar información de la variante si está disponible
-                    if (detalle.getVariante() != null) {
-                        Map<String, Object> varianteMap = new HashMap<>();
-                        varianteMap.put("id", detalle.getVariante().getId());
-                        varianteMap.put("color", detalle.getVariante().getColor());
-                        varianteMap.put("talla", detalle.getVariante().getTalla());
-                        varianteMap.put("sku", detalle.getVariante().getSku());
-                        
-                        // Agregar información del producto si está disponible
-                        if (detalle.getVariante().getProducto() != null) {
-                            Map<String, Object> productoMap = new HashMap<>();
-                            Producto producto = detalle.getVariante().getProducto();
-                            productoMap.put("id", producto.getId());
-                            productoMap.put("nombre", producto.getNombre());
-                            productoMap.put("codigo", producto.getCodigo());
-                            
-                            // Por defecto, usar una imagen predeterminada
-                            productoMap.put("imagen", "/img/producto-default.png");
-                            
-                            varianteMap.put("producto", productoMap);
-                        }
-                        
-                        detalleMap.put("variante", varianteMap);
-                    }
-                    
-                    detallesArray.add(detalleMap);
+                // Usuario que procesó la devolución
+                if (devolucion.getUsuario() != null) {
+                    devolucionMap.put("usuarioId", devolucion.getUsuario().getId());
+                    devolucionMap.put("usuarioNombre", devolucion.getUsuario().getNombre());
                 }
                 
-                devolucionMap.put("detalles", detallesArray);
+                // Información del producto y detalle de venta
+                List<Map<String, Object>> detallesProductos = new ArrayList<>();
+                Map<String, Object> detalleMap = new HashMap<>();
+                detalleMap.put("id", devolucion.getDetalleVenta().getId());
+                detalleMap.put("cantidad", devolucion.getCantidad());
+                detalleMap.put("precioUnitario", devolucion.getDetalleVenta().getPrecioUnitario());
+                detalleMap.put("subtotal", devolucion.getDetalleVenta().getSubtotal());
+                
+                if (devolucion.getDetalleVenta().getVariante() != null && 
+                    devolucion.getDetalleVenta().getVariante().getProducto() != null) {
+                    Map<String, Object> productoMap = new HashMap<>();
+                    productoMap.put("id", devolucion.getDetalleVenta().getVariante().getProducto().getId());
+                    productoMap.put("nombre", devolucion.getDetalleVenta().getVariante().getProducto().getNombre());
+                    detalleMap.put("producto", productoMap);
+                }
+                
+                detallesProductos.add(detalleMap);
+                devolucionMap.put("detalles", detallesProductos);
+                
                 devolucionesConDetalles.add(devolucionMap);
             }
             
+            // Si no se encontraron devoluciones en la tabla específica, buscar en el enfoque anterior 
+            if (devolucionesConDetalles.isEmpty()) {
+                List<Venta> ventas;
+                
+                if (desde != null && hasta != null) {
+                    // Convertir LocalDate a LocalDateTime para el inicio y fin del día
+                    LocalDateTime fechaDesde = desde.atStartOfDay();
+                    LocalDateTime fechaHasta = hasta.atTime(23, 59, 59);
+                    ventas = ventaRepository.findByEstadoAndFechaBetween("DEVUELTA", fechaDesde, fechaHasta);
+                } else {
+                    ventas = ventaRepository.findByEstado("DEVUELTA");
+                }
+                
+                // Ordenar por fecha descendente (más recientes primero)
+                ventas.sort((v1, v2) -> v2.getFecha().compareTo(v1.getFecha()));
+                
+                for (Venta venta : ventas) {
+                    List<DetalleVenta> detalles = detalleVentaRepository.findByVenta(venta);
+                    
+                    // Crear un mapa para almacenar los datos de la devolución
+                    Map<String, Object> devolucionMap = new HashMap<>();
+                    devolucionMap.put("id", venta.getId());
+                    devolucionMap.put("codigo", venta.getCodigo());
+                    devolucionMap.put("fechaVenta", venta.getFecha());
+                    
+                    // Obtener fecha de devolución (buscamos el último movimiento de tipo ENTRADA relacionado con esta venta)
+                    List<MovimientoStock> movimientos = movimientoStockRepository.findByMotivoDetalleContaining("Devolución de venta #" + venta.getCodigo());
+                    if (!movimientos.isEmpty()) {
+                        // Ordenar movimientos por fecha, el más reciente primero
+                        movimientos.sort((m1, m2) -> m2.getFecha().compareTo(m1.getFecha()));
+                        devolucionMap.put("fechaDevolucion", movimientos.get(0).getFecha());
+                        
+                        // Obtener usuario que procesó la devolución
+                        if (movimientos.get(0).getUsuario() != null) {
+                            devolucionMap.put("usuarioId", movimientos.get(0).getUsuario().getId());
+                            devolucionMap.put("usuarioNombre", movimientos.get(0).getUsuario().getNombre());
+                        }
+                    } else {
+                        // Si no hay movimientos, usamos la fecha de la venta como fecha de devolución
+                        devolucionMap.put("fechaDevolucion", venta.getFecha());
+                    }
+                    
+                    devolucionMap.put("subtotal", venta.getSubtotal());
+                    devolucionMap.put("igv", venta.getIgv());
+                    devolucionMap.put("total", venta.getTotal());
+                    devolucionMap.put("estado", venta.getEstado());
+                    
+                    // Agregar información del cliente si está disponible
+                    if (venta.getCliente() != null) {
+                        Map<String, Object> clienteMap = new HashMap<>();
+                        clienteMap.put("id", venta.getCliente().getId());
+                        clienteMap.put("nombre", venta.getCliente().getNombre());
+                        devolucionMap.put("cliente", clienteMap);
+                    }
+                    
+                    // Cargar detalles de productos
+                    List<Map<String, Object>> detallesProductos = new ArrayList<>();
+                    for (DetalleVenta detalle : detalles) {
+                        Map<String, Object> detalleMap = new HashMap<>();
+                        detalleMap.put("id", detalle.getId());
+                        detalleMap.put("cantidad", detalle.getCantidad());
+                        detalleMap.put("precioUnitario", detalle.getPrecioUnitario());
+                        detalleMap.put("subtotal", detalle.getSubtotal());
+                        
+                        if (detalle.getVariante() != null && detalle.getVariante().getProducto() != null) {
+                            Map<String, Object> productoMap = new HashMap<>();
+                            productoMap.put("id", detalle.getVariante().getProducto().getId());
+                            productoMap.put("nombre", detalle.getVariante().getProducto().getNombre());
+                            detalleMap.put("producto", productoMap);
+                        }
+                        
+                        detallesProductos.add(detalleMap);
+                    }
+                    devolucionMap.put("detalles", detallesProductos);
+                    devolucionesConDetalles.add(devolucionMap);
+                }
+            }
+            
             return ResponseEntity.ok(devolucionesConDetalles);
+            
         } catch (Exception e) {
             log.error("Error al obtener devoluciones", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

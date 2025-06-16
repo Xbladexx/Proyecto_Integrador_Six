@@ -5,11 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario - SIX Sistema de Gestión</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/styles.css}">
     <link rel="stylesheet" th:href="@{/css/dashboard.css}">
     <link rel="stylesheet" th:href="@{/css/inventario.css}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Eliminar la barra de desplazamiento horizontal de la ventana principal */
+        html, body {
+            overflow-x: hidden;
+            max-width: 100%;
+        }
+        
         /* Estilos adicionales para la página de inventario del administrador */
         .stock-badge {
             display: inline-block;
@@ -163,47 +169,113 @@
         /* Toast para notificaciones */
         .toast {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
+            top: 10px;
+            right: 10px;
+            padding: 0;
             border-radius: 4px;
-            color: white;
-            max-width: 350px;
+            color: #333;
+            max-width: 200px;
             z-index: 1100;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-size: 0.75rem;
+        }
+        
+        /* Estilos para los toasts de sección específicos */
+        .section-toast {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: inline-flex;
+            padding: 0;
+            border-radius: 4px;
+            color: #333;
+            max-width: 300px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 0.7rem;
+            align-items: center;
+            z-index: 10;
+        }
+        
+        .section-toast.hidden {
+            display: none;
+        }
+        
+        .section-toast .toast-content {
+            padding: 0.3rem 0.5rem;
+            flex: 1;
+        }
+        
+        .section-toast .toast-title {
+            font-weight: 600;
+            margin-bottom: 0.1rem;
+            font-size: 0.75rem;
+        }
+        
+        .section-toast .toast-message {
+            font-size: 0.65rem;
+            line-height: 1.1;
+        }
+        
+        .section-toast.success {
+            border-left: 2px solid #28a745;
+        }
+        
+        .section-toast.error {
+            border-left: 2px solid #dc3545;
+        }
+        
+        .section-toast .toast-close {
+            font-size: 12px;
+            padding: 0.1rem 0.3rem;
+        }
+        
+        /* Estilos para el título de la tarjeta con toast */
+        .card-title {
+            display: flex;
+            align-items: center;
         }
         .toast.success {
-            background-color: #28a745;
+            background-color: white;
+            border-left: 2px solid #28a745;
         }
         .toast.error {
-            background-color: #dc3545;
+            background-color: white;
+            border-left: 2px solid #dc3545;
         }
         .toast.info {
-            background-color: #17a2b8;
+            background-color: white;
+            border-left: 2px solid #17a2b8;
         }
         .toast.hidden {
             display: none;
         }
         .toast-content {
             flex: 1;
+            padding: 0.4rem 0.6rem;
         }
         .toast-title {
             font-weight: 600;
-            margin-bottom: 5px;
+            margin-bottom: 0.2rem;
+            font-size: 0.8rem;
+            color: #333;
         }
         .toast-message {
-            font-size: 14px;
+            font-size: 0.7rem;
+            line-height: 1.2;
+            color: #555;
         }
         .toast-close {
             background: none;
             border: none;
-            color: white;
-            font-size: 20px;
+            color: #666;
+            font-size: 14px;
             cursor: pointer;
-            margin-left: 10px;
+            margin-left: 5px;
+            padding: 0.2rem;
         }
         /* Estilos para los detalles del lote */
         .detail-value {
@@ -219,9 +291,6 @@
 </head>
 
 <body>
-    <!-- Indicador de rol para JavaScript -->
-    <div id="esAdminFlag" data-es-admin="true" style="display:none;"></div>
-    
     <div class="dashboard-container">
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -265,13 +334,13 @@
                     <i class="fas fa-truck"></i>
                     <span>Proveedores</span>
                 </a>
-                <a th:href="@{/alertas}" class="nav-link">
-                    <i class="fas fa-bell"></i>
-                    <span>Alertas</span>
-                </a>
                 <a th:href="@{/usuarios}" class="nav-link">
                     <i class="fas fa-users"></i>
                     <span>Usuarios</span>
+                </a>
+                <a th:href="@{/alertas}" class="nav-link">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Alertas</span>
                 </a>
                 <a th:href="@{/reportes}" class="nav-link">
                     <i class="fas fa-chart-bar"></i>
@@ -279,7 +348,7 @@
                 </a>
             </nav>
             <div class="sidebar-footer">
-                <a href="#" id="logoutButton" class="sidebar-logout">
+                <a th:href="@{/logout}" class="sidebar-logout">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Cerrar Sesión</span>
                 </a>
@@ -303,9 +372,19 @@
 
             <div class="content">
                 <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">Inventario Actual</div>
+                    <div class="card-header" style="position: relative;">
+                        <div class="card-title">
+                            Inventario Actual
+                        </div>
                         <div class="card-description">Administra el stock de productos, tallas y colores</div>
+                        <!-- Toast para notificaciones de Inventario Actual -->
+                        <div id="inventarioToast" class="section-toast hidden">
+                            <div class="toast-content">
+                                <div class="toast-title">Título</div>
+                                <div class="toast-message">Mensaje</div>
+                            </div>
+                            <button class="toast-close">&times;</button>
+                        </div>
                     </div>
                     <div class="card-content">
                         <div class="inventory-controls">
@@ -374,9 +453,19 @@
 
                 <!-- Añadir pestaña para el historial de lotes -->
                 <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">Historial de Lotes</div>
+                    <div class="card-header" style="position: relative;">
+                        <div class="card-title">
+                            Historial de Lotes
+                        </div>
                         <div class="card-description">Registro de lotes ingresados al inventario</div>
+                        <!-- Toast para notificaciones de Historial de Lotes -->
+                        <div id="lotesHistorialToast" class="section-toast hidden">
+                            <div class="toast-content">
+                                <div class="toast-title">Título</div>
+                                <div class="toast-message">Mensaje</div>
+                            </div>
+                            <button class="toast-close">&times;</button>
+                        </div>
                     </div>
                     <div class="card-content">
                         <div class="inventory-controls">
@@ -397,6 +486,7 @@
                                         <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb;">Costo Unit.</th>
                                         <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb;">Proveedor</th>
                                         <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb;">Fecha Entrada</th>
+                                        <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb;">Fecha Fabricación</th>
                                         <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb;">Fecha Deterioro</th>
                                         <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb;">Estado</th>
                                         <th style="position: sticky; top: 0; z-index: 1; background-color: #f9fafb; width: 70px; text-align: center;">Acciones</th>
@@ -443,9 +533,7 @@
                     <div class="form-group">
                         <label for="stockReason">Motivo:</label>
                         <select id="stockReason" class="form-control">
-                            <option value="reposition">Reposición de stock</option>
-                            <option value="damaged">Producto deteriorado</option>
-                            <option value="other">Otro motivo</option>
+                            <!-- Las opciones se cargarán dinámicamente desde JavaScript -->
                         </select>
                     </div>
                     <div class="form-group" id="otherReasonGroup" style="display: none;">
@@ -456,7 +544,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary modal-close-btn">Cancelar</button>
-                <button class="btn btn-primary" id="btnSaveStock">Guardar</button>
+                <button class="btn btn-primary" id="btnSaveStock" style="background-color: #111111; color: white;">Guardar</button>
             </div>
         </div>
     </div>
@@ -494,7 +582,6 @@
                         </div>
                     </div>
                     
-                    <div class="form-row">
                         <div class="form-group">
                             <label for="loteCosto">Costo Unitario *</label>
                             <div class="input-group">
@@ -504,6 +591,7 @@
                                 <input type="number" id="loteCosto" class="form-control" min="0.01" step="0.01" required>
                             </div>
                         </div>
+                    
                         <div class="form-group">
                             <label for="loteProveedor">Proveedor</label>
                             <div class="input-group">
@@ -520,7 +608,6 @@
                                 </div>
                             </div>
                             <small class="form-text text-muted">Seleccione un proveedor o cree uno nuevo</small>
-                        </div>
                     </div>
                     
                     <div class="form-row">
@@ -541,7 +628,6 @@
                                 </div>
                                 <input type="date" id="loteFechaVencimiento" class="form-control">
                             </div>
-                            <small class="form-text text-muted">Para productos textiles, se estima 180 días por defecto.</small>
                         </div>
                     </div>
                     
@@ -559,7 +645,7 @@
                         <button type="button" class="btn-secondary lote-modal-close-btn">
                             <i class="fas fa-times"></i> Cancelar
                         </button>
-                        <button type="submit" id="btnSaveLote" class="btn-primary">
+                        <button type="submit" id="btnSaveLote" class="btn-primary" style="background-color: #111111; color: white;">
                             <i class="fas fa-save"></i> Guardar
                         </button>
                     </div>
@@ -630,7 +716,7 @@
                         <button type="button" class="btn-secondary proveedor-rapido-modal-close-btn">
                             <i class="fas fa-times"></i> Cancelar
                         </button>
-                        <button type="submit" id="btnSaveProveedorRapido" class="btn-primary">
+                        <button type="submit" id="btnSaveProveedorRapido" class="btn-primary" style="background-color: #111111; color: white;">
                             <i class="fas fa-save"></i> Guardar
                         </button>
                     </div>
@@ -727,15 +813,6 @@
                 </button>
             </div>
         </div>
-    </div>
-
-    <!-- Toast para notificaciones -->
-    <div id="toast" class="toast hidden">
-        <div class="toast-content">
-            <div class="toast-title">Título</div>
-            <div class="toast-message">Mensaje</div>
-        </div>
-        <button class="toast-close"><i class="fas fa-times"></i></button>
     </div>
 
     <script th:src="@{/js/inventario.js}"></script>
@@ -878,7 +955,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-dark devolver-lote-modal-close-btn" style="background-color: #212529; color: white; padding: 10px 20px; font-size: 16px; border-radius: 4px; border: none; cursor: pointer; margin-right: 10px;">
+                <button type="button" class="btn btn-dark devolver-lote-modal-close-btn" style="background-color: #111111; color: white; padding: 10px 20px; font-size: 16px; border-radius: 4px; border: none; cursor: pointer; margin-right: 10px;">
                     <i class="fas fa-times"></i> Cancelar
                 </button>
                 <button type="button" id="procesarDevolucionLoteBtn" class="btn btn-danger" style="background-color: #dc3545; color: white; padding: 10px 20px; font-size: 16px; border-radius: 4px; border: none; cursor: pointer;">

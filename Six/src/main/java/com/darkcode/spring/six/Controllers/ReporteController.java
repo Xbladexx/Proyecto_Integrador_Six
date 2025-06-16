@@ -102,8 +102,8 @@ public class ReporteController {
             
             log.info("Fechas efectivas: desde={}, hasta={}", desde, hasta);
             
-            // Obtener ventas en el rango de fechas
-            List<Venta> ventas = ventaRepository.findByFechaBetween(desde, hasta);
+            // Obtener ventas en el rango de fechas (solo COMPLETADAS)
+            List<Venta> ventas = ventaRepository.findByEstadoAndFechaBetween("COMPLETADA", desde, hasta);
             log.info("Ventas encontradas: {}", ventas.size());
             
             // Procesar los datos para el formato esperado por el gráfico
@@ -184,8 +184,8 @@ public class ReporteController {
             
             log.info("Fechas efectivas: desde={}, hasta={}", desde, hasta);
             
-            // Obtener ventas en el rango de fechas
-            List<Venta> ventas = ventaRepository.findByFechaBetween(desde, hasta);
+            // Obtener ventas en el rango de fechas (solo COMPLETADAS)
+            List<Venta> ventas = ventaRepository.findByEstadoAndFechaBetween("COMPLETADA", desde, hasta);
             log.info("Ventas encontradas: {}", ventas.size());
             
             // Agrupar por categoría y calcular totales
@@ -244,8 +244,8 @@ public class ReporteController {
                 hasta = LocalDateTime.now();
             }
             
-            // Obtener ventas en el rango de fechas
-            List<Venta> ventas = ventaRepository.findByFechaBetween(desde, hasta);
+            // Obtener ventas en el rango de fechas (solo COMPLETADAS)
+            List<Venta> ventas = ventaRepository.findByEstadoAndFechaBetween("COMPLETADA", desde, hasta);
             
             // Mapa para almacenar datos agrupados por variante
             Map<Long, Map<String, Object>> productosPorVariante = new HashMap<>();
@@ -323,15 +323,15 @@ public class ReporteController {
                 hasta = LocalDateTime.now();
             }
             
-            // Obtener ventas del período actual
-            List<Venta> ventasActuales = ventaRepository.findByFechaBetween(desde, hasta);
+            // Obtener ventas del período actual (solo COMPLETADAS)
+            List<Venta> ventasActuales = ventaRepository.findByEstadoAndFechaBetween("COMPLETADA", desde, hasta);
             
-            // Obtener ventas del período anterior (mismo rango de tiempo)
+            // Obtener ventas del período anterior (mismo rango de tiempo, solo COMPLETADAS)
             long diasEnPeriodo = java.time.Duration.between(desde, hasta).toDays();
             LocalDateTime desdeAnterior = desde.minusDays(diasEnPeriodo);
             LocalDateTime hastaAnterior = desde.minusNanos(1);
             
-            List<Venta> ventasAnteriores = ventaRepository.findByFechaBetween(desdeAnterior, hastaAnterior);
+            List<Venta> ventasAnteriores = ventaRepository.findByEstadoAndFechaBetween("COMPLETADA", desdeAnterior, hastaAnterior);
             
             // Calcular totales y métricas
             BigDecimal totalVentas = BigDecimal.ZERO;
@@ -566,16 +566,16 @@ public class ReporteController {
         try {
             log.info("Obteniendo datos de rendimiento de productos para reportes");
             
-            // Si no se especifican fechas, usar los últimos 3 meses
+            // Si no se especifican fechas, usar los últimos 6 meses
             if (desde == null) {
-                desde = LocalDateTime.now().minusMonths(3);
+                desde = LocalDateTime.now().minusMonths(6);
             }
             if (hasta == null) {
                 hasta = LocalDateTime.now();
             }
             
-            // Obtener ventas en el rango de fechas
-            List<Venta> ventas = ventaRepository.findByFechaBetween(desde, hasta);
+            // Obtener ventas en el rango de fechas (solo COMPLETADAS)
+            List<Venta> ventas = ventaRepository.findByEstadoAndFechaBetween("COMPLETADA", desde, hasta);
             
             // Mapa para almacenar datos agrupados por producto
             Map<Long, Map<String, Object>> datosPorProducto = new HashMap<>();
@@ -667,22 +667,32 @@ public class ReporteController {
         try {
             log.info("Obteniendo datos de tendencias de productos para reportes");
             
-            // Si no se especifican fechas, usar los últimos 6 meses
-            if (desde == null) {
-                desde = LocalDateTime.now().minusMonths(6);
-            }
+            // Si no se especifican fechas, usar los últimos 2 meses para el período actual
             if (hasta == null) {
                 hasta = LocalDateTime.now();
             }
+            if (desde == null) {
+                desde = hasta.minusMonths(2);
+            }
             
-            // Calculamos el punto medio para comparar tendencias
-            LocalDateTime puntoMedio = desde.plus(java.time.Duration.between(desde, hasta).dividedBy(2));
+            // Período 1 (actual): desde hasta la fecha actual
+            LocalDateTime finPeriodo1 = hasta;
+            LocalDateTime inicioPeriodo1 = desde;
             
-            // Periodo 1: desde hasta puntoMedio
-            List<Venta> ventasEnPeriodo1 = ventaRepository.findByFechaBetween(desde, puntoMedio);
+            // Período 2 (anterior): mismo rango de tiempo antes del período 1
+            long diasPeriodo = java.time.Duration.between(inicioPeriodo1, finPeriodo1).toDays();
+            LocalDateTime finPeriodo2 = inicioPeriodo1.minusNanos(1);
+            LocalDateTime inicioPeriodo2 = finPeriodo2.minusDays(diasPeriodo);
             
-            // Periodo 2: puntoMedio hasta hasta
-            List<Venta> ventasEnPeriodo2 = ventaRepository.findByFechaBetween(puntoMedio, hasta);
+            log.info("Período 1: {} - {}", inicioPeriodo1, finPeriodo1);
+            log.info("Período 2: {} - {}", inicioPeriodo2, finPeriodo2);
+            
+            // Obtener ventas de cada período (solo COMPLETADAS)
+            List<Venta> ventasEnPeriodo1 = ventaRepository.findByEstadoAndFechaBetween("COMPLETADA", inicioPeriodo1, finPeriodo1);
+            List<Venta> ventasEnPeriodo2 = ventaRepository.findByEstadoAndFechaBetween("COMPLETADA", inicioPeriodo2, finPeriodo2);
+            
+            log.info("Ventas período 1: {}", ventasEnPeriodo1.size());
+            log.info("Ventas período 2: {}", ventasEnPeriodo2.size());
             
             // Mapas para almacenar ventas por producto en cada periodo
             Map<Long, Integer> ventasPorProductoPeriodo1 = new HashMap<>();
@@ -737,8 +747,8 @@ public class ReporteController {
             }
             
             Map<String, Object> resultado = new HashMap<>();
-            resultado.put("periodo1", desde.toString() + " - " + puntoMedio.toString());
-            resultado.put("periodo2", puntoMedio.toString() + " - " + hasta.toString());
+            resultado.put("periodo1", desde.toString() + " - " + finPeriodo1.toString());
+            resultado.put("periodo2", inicioPeriodo2.toString() + " - " + finPeriodo2.toString());
             resultado.put("tendencias", tendencias);
             
             return ResponseEntity.ok(resultado);
@@ -1068,102 +1078,14 @@ public class ReporteController {
                                    CellStyle headerStyle,
                                    LocalDateTime desde, LocalDateTime hasta) {
         
-        // Obtener datos de resumen de ventas
-        Map<String, Object> resumenVentas = new HashMap<>();
-        try {
-            ResponseEntity<?> response = obtenerResumenVentas(desde, hasta);
-            if (response != null && response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> responseBody = (Map<String, Object>) response.getBody();
-                resumenVentas = responseBody;
-            }
-        } catch (Exception e) {
-            log.error("Error al obtener resumen de ventas para Excel", e);
-        }
+        // Obtener ventas en el rango de fechas (solo COMPLETADAS)
+        List<Venta> ventas = ventaRepository.findByEstadoAndFechaBetween("COMPLETADA", desde, hasta);
         
-        // Crear encabezado de resumen
-        Row resumenHeaderRow = sheet.createRow(4);
-        Cell resumenHeaderCell = resumenHeaderRow.createCell(0);
-        resumenHeaderCell.setCellValue("Resumen de Ventas");
-        resumenHeaderCell.setCellStyle(headerStyle);
-        
-        // Crear datos de resumen
-        int rowNum = 5;
-        
-        // Total ventas
-        Row totalVentasRow = sheet.createRow(rowNum++);
-        totalVentasRow.createCell(0).setCellValue("Total Ventas:");
-        totalVentasRow.createCell(1).setCellValue("S/. " + (resumenVentas != null && resumenVentas.get("totalVentas") != null ? 
-                new BigDecimal(resumenVentas.get("totalVentas").toString()).setScale(2, RoundingMode.HALF_UP) : "0.00"));
-            
-        // Transacciones
-        Row transaccionesRow = sheet.createRow(rowNum++);
-        transaccionesRow.createCell(0).setCellValue("Transacciones:");
-        transaccionesRow.createCell(1).setCellValue(resumenVentas != null && resumenVentas.get("transacciones") != null ? 
-            ((Number)resumenVentas.get("transacciones")).intValue() : 0);
-        
-        // Ticket promedio
-        Row ticketRow = sheet.createRow(rowNum++);
-        ticketRow.createCell(0).setCellValue("Ticket Promedio:");
-        ticketRow.createCell(1).setCellValue("S/. " + (resumenVentas != null && resumenVentas.get("ticketPromedio") != null ? 
-                new BigDecimal(resumenVentas.get("ticketPromedio").toString()).setScale(2, RoundingMode.HALF_UP) : "0.00"));
-            
-        // Margen bruto
-        Row margenRow = sheet.createRow(rowNum++);
-        margenRow.createCell(0).setCellValue("Margen Bruto:");
-        margenRow.createCell(1).setCellValue((resumenVentas != null && resumenVentas.get("margenBruto") != null ? 
-                new BigDecimal(resumenVentas.get("margenBruto").toString()).multiply(new BigDecimal("100")).setScale(1, RoundingMode.HALF_UP) : "0.0") + "%");
-        
-        // Dejar una fila en blanco
-        rowNum++;
-        
-        // Obtener datos de productos más vendidos
-        List<Map<String, Object>> productosMasVendidos = new ArrayList<>();
-        try {
-            ResponseEntity<?> response = obtenerProductosMasVendidos(desde, hasta);
-            if (response != null && response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> responseBody = (List<Map<String, Object>>) response.getBody();
-                productosMasVendidos = responseBody;
-            }
-        } catch (Exception e) {
-            log.error("Error al obtener productos más vendidos para Excel", e);
-        }
-        
-        // Crear encabezado de productos
-        Row productosHeaderRow = sheet.createRow(rowNum++);
-        Cell productosHeaderCell = productosHeaderRow.createCell(0);
-        productosHeaderCell.setCellValue("Productos Más Vendidos");
-        productosHeaderCell.setCellStyle(headerStyle);
-        
-        // Crear encabezados de la tabla
-        Row tableHeaderRow = sheet.createRow(rowNum++);
-        String[] productosHeaders = {"Producto", "Categoría", "Unidades", "Ingresos"};
-        for (int i = 0; i < productosHeaders.length; i++) {
-            Cell cell = tableHeaderRow.createCell(i);
-            cell.setCellValue(productosHeaders[i]);
-            cell.setCellStyle(headerStyle);
-        }
-        
-        // Añadir datos de productos
-        if (productosMasVendidos != null) {
-            for (Map<String, Object> producto : productosMasVendidos) {
-                if (producto != null) {
-                    Row row = sheet.createRow(rowNum++);
-                    row.createCell(0).setCellValue(producto.get("producto") != null ? producto.get("producto").toString() : "");
-                    row.createCell(1).setCellValue(producto.get("categoria") != null ? producto.get("categoria").toString() : "");
-                    row.createCell(2).setCellValue(producto.get("unidades") != null ? ((Number)producto.get("unidades")).intValue() : 0);
+        // Crear encabezados
+        Row headerRow = sheet.createRow(0);
+        String[] headers = new String[]{"ID", "Código", "Fecha", "Cliente", "Usuario", "Subtotal", "IGV", "Total", "Método Pago"};
                     
-                    // Formatear valores monetarios
-                    Object ingresos = producto.get("ingresos");
-                    if (ingresos != null) {
-                        row.createCell(3).setCellValue(((Number)ingresos).doubleValue());
-                    } else {
-                        row.createCell(3).setCellValue(0.0);
-                    }
-                }
-            }
-        }
+        // ... resto del código sin cambios ...
     }
     
     private void generarReporteExcelInventario(XSSFWorkbook workbook, 

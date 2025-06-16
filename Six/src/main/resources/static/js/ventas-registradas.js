@@ -522,8 +522,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>S/. ${parseFloat(venta.subtotal).toFixed(2)}</td>
                     <td>S/. ${parseFloat(venta.igv).toFixed(2)}</td>
                     <td>S/. ${parseFloat(venta.total).toFixed(2)}</td>
-                    <td><span class="estado-venta ${estadoInfo.clase}">${estadoInfo.texto}</span></td>
                     <td>${fecha}</td>
+                    <td><span class="estado-venta ${estadoInfo.clase}">${estadoInfo.texto}</span></td>
                     <td>
                         <div class="acciones">
                             <button class="btn-acciones" data-venta-id="${venta.id}">

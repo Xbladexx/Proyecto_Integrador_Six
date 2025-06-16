@@ -522,8 +522,8 @@ input,
     position: fixed;
     bottom: 20px;
     right: 20px;
-    width: 300px;
-    padding: 16px;
+    width: 200px;
+    padding: 0.4rem 0.6rem;
     background-color: white;
     border-radius: 8px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -531,6 +531,7 @@ input,
     z-index: 9999;
     display: flex;
     justify-content: space-between;
+    font-size: 0.75rem;
 }
 
 .toast.hidden {
@@ -539,15 +540,15 @@ input,
 }
 
 .toast-success {
-    border-left: 4px solid #10b981;
+    border-left: 2px solid #10b981;
 }
 
 .toast-error {
-    border-left: 4px solid #ef4444;
+    border-left: 2px solid #ef4444;
 }
 
 .toast-info {
-    border-left: 4px solid #3b82f6;
+    border-left: 2px solid #3b82f6;
 }
 
 .toast-content {
@@ -557,12 +558,14 @@ input,
 .toast-title {
     font-weight: 600;
     color: #111827;
-    margin-bottom: 4px;
+    margin-bottom: 0.2rem;
+    font-size: 0.8rem;
 }
 
 .toast-message {
     color: #6b7280;
-    font-size: 0.875rem;
+    font-size: 0.7rem;
+    line-height: 1.2;
 }
 
 .toast-close {
@@ -570,9 +573,9 @@ input,
     border: none;
     color: #9ca3af;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 14px;
     padding: 0;
-    margin-left: 8px;
+    margin-left: 5px;
 }
 
 .toast-close:hover {

@@ -139,36 +139,23 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Función para mostrar el toast
-    function mostrarToast(titulo, mensaje, tipo, isHtml = false) {
-        toastTitle.textContent = titulo;
+    // Función para mostrar toast
+    function showToast(title, message, type = 'success') {
+        const toast = document.getElementById('toast');
+        const toastTitle = toast.querySelector('.toast-title');
+        const toastMessage = toast.querySelector('.toast-message');
         
-        // Manejar contenido HTML si es necesario
-        if (isHtml) {
-            toastMessage.innerHTML = mensaje;
-        } else {
-            toastMessage.textContent = mensaje;
-        }
+        toastTitle.textContent = title;
+        toastMessage.textContent = message;
         
-        toast.className = 'toast';
-        toast.classList.add(`toast-${tipo}`);
-        toast.classList.remove('hidden');
+        // Eliminar solo las clases de tipo anteriores sin eliminar las clases de estilo
+        toast.classList.remove('success', 'error', 'info', 'warning', 'hidden');
+        toast.classList.add(type);
         
-        // Auto-ocultar después de 8 segundos para mensajes de éxito
-        // Aumentamos el tiempo para que el usuario pueda leer la información de credenciales
-        if (tipo === 'success') {
-            setTimeout(() => {
-                toast.classList.add('hidden');
-            }, 8000);
-        }
-        
-        // Para mensajes de error, dejamos que el usuario los cierre manualmente
-        // Pero aún así los ocultamos después de 10 segundos
-        if (tipo === 'error') {
-            setTimeout(() => {
-                toast.classList.add('hidden');
-            }, 10000);
-        }
+        // Ocultar el toast después de 3 segundos
+        setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 3000); // Reducido a 3 segundos
     }
 
     // Función para abrir el modal de nuevo usuario
@@ -274,11 +261,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
 
                 // Mostrar mensaje de éxito con la información del usuario recibida del backend
-                mostrarToast(
+                showToast(
                     'Usuario Creado',
                     mensaje,
-                    'success',
-                    true // Indicar que contiene HTML
+                    'success'
                 );
 
                 // Cerrar modal
@@ -289,7 +275,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error al crear usuario:', error);
-                mostrarToast('Error', error.message, 'error');
+                showToast('Error', error.message, 'error');
                 mostrarErrorEnFormulario(error.message);
             });
     }

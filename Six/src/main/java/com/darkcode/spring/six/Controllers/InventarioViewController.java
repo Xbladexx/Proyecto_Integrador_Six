@@ -38,6 +38,22 @@ public class InventarioViewController {
             Inventario inventario = inventarioOpt.get();
             VarianteProducto variante = inventario.getVariante();
             
+            // Verificar que la variante no sea nula
+            if (variante == null) {
+                log.error("La variante es nula para el inventario ID: {}", inventarioId);
+                model.addAttribute("error", "No se encontró información de variante para este inventario");
+                model.addAttribute("esAdmin", authService.esAdmin(session));
+                return "redirect:/inventario";
+            }
+            
+            // Verificar que el producto no sea nulo
+            if (variante.getProducto() == null) {
+                log.error("El producto es nulo para la variante ID: {}", variante.getId());
+                model.addAttribute("error", "No se encontró información del producto para este inventario");
+                model.addAttribute("esAdmin", authService.esAdmin(session));
+                return "redirect:/inventario";
+            }
+            
             model.addAttribute("inventario", inventario);
             model.addAttribute("variante", variante);
             model.addAttribute("producto", variante.getProducto());

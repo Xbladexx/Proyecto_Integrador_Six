@@ -12,9 +12,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.darkcode.spring.six.models.entities.DevolucionLote;
 import com.darkcode.spring.six.models.entities.Inventario;
 import com.darkcode.spring.six.models.entities.LoteProducto;
 import com.darkcode.spring.six.models.entities.MovimientoStock;
@@ -23,6 +24,7 @@ import com.darkcode.spring.six.models.entities.MovimientoStock.TipoMovimiento;
 import com.darkcode.spring.six.models.entities.Proveedor;
 import com.darkcode.spring.six.models.entities.Usuario;
 import com.darkcode.spring.six.models.entities.VarianteProducto;
+import com.darkcode.spring.six.models.repositories.DevolucionLoteRepository;
 import com.darkcode.spring.six.models.repositories.InventarioRepository;
 import com.darkcode.spring.six.models.repositories.LoteProductoRepository;
 import com.darkcode.spring.six.models.repositories.MovimientoStockRepository;
@@ -45,6 +47,7 @@ public class LoteProductoService {
     private final UsuarioRepository usuarioRepository;
     private final ProveedorRepository proveedorRepository;
     private final AlertaService alertaService;
+    private final DevolucionLoteRepository devolucionLoteRepository;
     
     // Definir umbrales de stock
     private static final int STOCK_CRITICO = 3;
@@ -420,13 +423,9 @@ public class LoteProductoService {
             Integer cantidadActual = lote.getCantidadActual();
             log.info("Procesando devolución del lote #{} con cantidad: {}", loteId, cantidadActual);
             
-            // Actualizar el inventario en una transacción separada
-            try {
-                log.info("Iniciando actualización de inventario para devolución de lote #{} con cantidad: {}", loteId, cantidadActual);
-                actualizarInventarioParaDevolucion(variante.getId(), cantidadActual, loteId);
-            } catch (Exception e) {
-                log.error("Error al actualizar inventario para lote #{}: {}. Continuando con la devolución.", loteId, e.getMessage());
-            }
+            // Actualizar el inventario - Ya no capturamos la excepción aquí
+            log.info("Iniciando actualización de inventario para devolución de lote #{} con cantidad: {}", loteId, cantidadActual);
+            actualizarInventarioParaDevolucion(variante.getId(), cantidadActual, loteId);
             
             // Actualizar estado del lote
             lote.setEstado("DEVUELTO");
@@ -437,11 +436,39 @@ public class LoteProductoService {
             // No modificar la cantidad actual del lote, solo marcar como devuelto
             // lote.setCantidadActual(0); -- Comentado para mantener la cantidad original
             
-            // Registrar movimiento de stock en una transacción separada
+            // Registrar movimiento de stock - Mantenemos el try/catch aquí ya que es secundario
             try {
                 registrarMovimientoParaDevolucion(variante, usuario, cantidadActual, lote.getNumeroLote(), loteId, motivo, comentarios);
             } catch (Exception e) {
                 log.error("Error al registrar movimiento: {}. Continuando con la devolución.", e.getMessage());
+            }
+            
+            // Crear registro en la tabla de devoluciones_lote
+            try {
+                DevolucionLote devolucionLote = new DevolucionLote();
+                devolucionLote.setLote(lote);
+                devolucionLote.setCantidad(cantidadActual);
+                devolucionLote.setEstado("DEVUELTO");
+                devolucionLote.setFechaDevolucion(LocalDateTime.now());
+                devolucionLote.setMotivo(motivo != null ? motivo : "No especificado");
+                devolucionLote.setComentarios(comentarios != null ? comentarios : "");
+                
+                // Calcular valor total
+                BigDecimal valorTotal = BigDecimal.ZERO;
+                if (lote.getCostoUnitario() != null) {
+                    valorTotal = lote.getCostoUnitario().multiply(BigDecimal.valueOf(cantidadActual));
+                }
+                devolucionLote.setValorTotal(valorTotal);
+                
+                // Establecer proveedor y usuario
+                devolucionLote.setProveedor(lote.getProveedor());
+                devolucionLote.setUsuario(usuario);
+                
+                // Guardar la devolución
+                devolucionLoteRepository.save(devolucionLote);
+                log.info("Registro de devolución de lote creado con ID: {}", devolucionLote.getId());
+            } catch (Exception e) {
+                log.error("Error al crear registro de devolución de lote: {}. Continuando con la devolución.", e.getMessage());
             }
             
             // Guardar y devolver el lote actualizado
@@ -494,43 +521,48 @@ public class LoteProductoService {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void actualizarInventarioParaDevolucion(Long varianteId, int cantidad, Long loteId) {
-        // Buscar el registro de inventario para esta variante
-        Optional<Inventario> inventarioOpt = inventarioRepository.findByVarianteId(varianteId);
-        
-        if (!inventarioOpt.isPresent()) {
-            log.warn("No se encontró registro de inventario para la variante ID: {}. Omitiendo actualización de inventario.", 
-                    varianteId);
-            return;
+        try {
+            // Buscar el registro de inventario para esta variante
+            Optional<Inventario> inventarioOpt = inventarioRepository.findByVarianteId(varianteId);
+            
+            if (!inventarioOpt.isPresent()) {
+                log.warn("No se encontró registro de inventario para la variante ID: {}. Omitiendo actualización de inventario.", 
+                        varianteId);
+                return;
+            }
+            
+            // Al devolver un lote, SE DEBE REDUCIR el stock del inventario,
+            // ya que estamos sacando el producto del inventario y devolviéndolo al proveedor
+            Inventario inventario = inventarioOpt.get();
+            
+            // Obtener el stock actual
+            int stockActual = inventario.getStock();
+            
+            // Calcular el nuevo stock después de la devolución (restar la cantidad devuelta)
+            int nuevoStock = stockActual - cantidad;
+            
+            // Si el nuevo stock sería negativo, ajustarlo a cero y registrar advertencia
+            if (nuevoStock < 0) {
+                log.warn("La devolución del lote #{} resultaría en stock negativo. Ajustando stock a 0.", loteId);
+                nuevoStock = 0;
+            }
+            
+            log.info("Procesando devolución de lote. Lote ID: {}, Cantidad: {}, Stock anterior: {}, Nuevo stock: {}", 
+                    loteId, cantidad, stockActual, nuevoStock);
+                    
+            // Actualizar el stock en el inventario
+            inventario.setStock(nuevoStock);
+            inventario.setUltimaActualizacion(LocalDateTime.now());
+            
+            // Guardar los cambios en el inventario
+            inventarioRepository.save(inventario);
+            
+            log.info("Inventario actualizado correctamente para devolución de lote. Variante ID: {}. Stock anterior: {}, Stock nuevo: {}", 
+                    varianteId, stockActual, nuevoStock);
+        } catch (Exception e) {
+            log.error("Error al actualizar inventario para devolución de lote #{}: {}", loteId, e.getMessage(), e);
+            throw e; // Re-lanzar para que sea manejada por el método que llama
         }
-        
-        // Al devolver un lote, SE DEBE REDUCIR el stock del inventario,
-        // ya que estamos sacando el producto del inventario y devolviéndolo al proveedor
-        Inventario inventario = inventarioOpt.get();
-        
-        // Obtener el stock actual
-        int stockActual = inventario.getStock();
-        
-        // Calcular el nuevo stock después de la devolución (restar la cantidad devuelta)
-        int nuevoStock = stockActual - cantidad;
-        
-        // Si el nuevo stock sería negativo, ajustarlo a cero y registrar advertencia
-        if (nuevoStock < 0) {
-            log.warn("La devolución del lote #{} resultaría en stock negativo. Ajustando stock a 0.", loteId);
-            nuevoStock = 0;
-        }
-        
-        log.info("Procesando devolución de lote. Lote ID: {}, Cantidad: {}, Stock anterior: {}, Nuevo stock: {}", 
-                loteId, cantidad, stockActual, nuevoStock);
-                
-        // Actualizar el stock en el inventario
-        inventario.setStock(nuevoStock);
-        inventario.setUltimaActualizacion(LocalDateTime.now());
-        
-        // Guardar los cambios en el inventario
-        inventarioRepository.save(inventario);
-        
-        log.info("Inventario actualizado correctamente para devolución de lote. Variante ID: {}. Stock anterior: {}, Stock nuevo: {}", 
-                varianteId, stockActual, nuevoStock);
     }
     
     /**
@@ -578,57 +610,42 @@ public class LoteProductoService {
     
     /**
      * Obtiene las devoluciones de lotes
-     * @param desde Fecha desde la que filtrar (opcional)
-     * @param hasta Fecha hasta la que filtrar (opcional)
      * @return Lista de devoluciones de lotes
      */
-    public List<Map<String, Object>> obtenerDevolucionesLotes(LocalDate desde, LocalDate hasta) {
-        // Buscar lotes devueltos
-        List<LoteProducto> lotes;
+    public List<Map<String, Object>> obtenerDevolucionesLotes() {
+        // Obtener todas las devoluciones de lote de la nueva tabla
+        List<DevolucionLote> devoluciones = devolucionLoteRepository.findAllByOrderByFechaDevolucionDesc();
         
-        if (desde != null && hasta != null) {
-            // Convertir LocalDate a LocalDateTime para el inicio y fin del día
-            LocalDateTime fechaDesde = desde.atStartOfDay();
-            LocalDateTime fechaHasta = hasta.atTime(23, 59, 59);
-            lotes = loteRepository.findByEstadoAndFechaDevolucionBetween("DEVUELTO", fechaDesde, fechaHasta);
-        } else {
-            lotes = loteRepository.findByEstado("DEVUELTO");
-        }
-        
-        // Ordenar por fecha descendente
-        lotes.sort((l1, l2) -> {
-            if (l2.getFechaDevolucion() == null) return -1;
-            if (l1.getFechaDevolucion() == null) return 1;
-            return l2.getFechaDevolucion().compareTo(l1.getFechaDevolucion());
-        });
-        
-        // Convertir a mapas con la información necesaria
         List<Map<String, Object>> resultado = new ArrayList<>();
         
-        for (LoteProducto lote : lotes) {
+        for (DevolucionLote devolucion : devoluciones) {
+            LoteProducto lote = devolucion.getLote();
+            if (lote == null) {
+                log.warn("Devolución de lote con ID {} no tiene lote asociado", devolucion.getId());
+                continue;
+            }
+            
             Map<String, Object> devolucionMap = new HashMap<>();
+            devolucionMap.put("id", devolucion.getId());
+            devolucionMap.put("loteId", lote.getId());
+            devolucionMap.put("codigo", lote.getNumeroLote() != null ? lote.getNumeroLote() : "LOT-" + lote.getId());
+            devolucionMap.put("fecha", devolucion.getFechaDevolucion());
+            devolucionMap.put("estado", devolucion.getEstado());
+            devolucionMap.put("motivo", devolucion.getMotivo());
+            devolucionMap.put("comentarios", devolucion.getComentarios());
             
-            // Información básica del lote
-            devolucionMap.put("id", lote.getId());
-            devolucionMap.put("codigo", lote.getNumeroLote());
-            devolucionMap.put("fechaRecepcion", lote.getFechaEntrada());
-            devolucionMap.put("fechaDevolucion", lote.getFechaDevolucion());
-            devolucionMap.put("motivoDevolucion", lote.getMotivoDevolucion());
-            devolucionMap.put("comentarios", lote.getComentariosDevolucion());
-            devolucionMap.put("estado", lote.getEstado());
-            
-            // Información del lote para la tabla
+            // Información del lote
             Map<String, Object> loteInfo = new HashMap<>();
             loteInfo.put("id", lote.getId());
             loteInfo.put("codigo", lote.getNumeroLote() != null ? lote.getNumeroLote() : "LOT-" + lote.getId());
             devolucionMap.put("lote", loteInfo);
             
             // Información del proveedor
-            if (lote.getProveedor() != null) {
+            if (devolucion.getProveedor() != null) {
                 Map<String, Object> proveedorMap = new HashMap<>();
-                proveedorMap.put("id", lote.getProveedor().getId());
-                proveedorMap.put("nombre", lote.getProveedor().getNombre());
-                proveedorMap.put("ruc", lote.getProveedor().getRuc());
+                proveedorMap.put("id", devolucion.getProveedor().getId());
+                proveedorMap.put("nombre", devolucion.getProveedor().getNombre());
+                proveedorMap.put("ruc", devolucion.getProveedor().getRuc());
                 devolucionMap.put("proveedor", proveedorMap);
             } else {
                 // Proveedor predeterminado si no hay información
@@ -646,39 +663,44 @@ public class LoteProductoService {
                 productoMap.put("id", lote.getVariante().getProducto().getId());
                 productoMap.put("nombre", lote.getVariante().getProducto().getNombre());
                 productoMap.put("sku", lote.getVariante().getSku());
-                productoMap.put("cantidad", lote.getCantidadInicial() != null ? lote.getCantidadInicial() : 0);
+                productoMap.put("cantidad", devolucion.getCantidad());
                 productoMap.put("precioUnitario", lote.getCostoUnitario() != null ? lote.getCostoUnitario() : BigDecimal.ZERO);
                 productos.add(productoMap);
             }
             devolucionMap.put("productos", productos);
             
             // Cantidad total devuelta
-            int cantidad = lote.getCantidadInicial() != null ? lote.getCantidadInicial() : 0;
-            devolucionMap.put("cantidad", cantidad);
+            devolucionMap.put("cantidad", devolucion.getCantidad());
             
             // Información del usuario que procesó la devolución
-            String motivoDetalle = "Devolución de lote #" + (lote.getNumeroLote() != null ? lote.getNumeroLote() : lote.getId());
-            List<MovimientoStock> movimientos = movimientoRepository.findByMotivoDetalleContainingAndFechaGreaterThanEqual(
-                    motivoDetalle, lote.getFechaDevolucion() != null ? lote.getFechaDevolucion().minusMinutes(1) : LocalDateTime.now().minusDays(30));
-            
-            if (!movimientos.isEmpty()) {
-                MovimientoStock movimiento = movimientos.get(0);
-                if (movimiento.getUsuario() != null) {
+            if (devolucion.getUsuario() != null) {
+                Map<String, Object> usuarioMap = new HashMap<>();
+                usuarioMap.put("id", devolucion.getUsuario().getId());
+                usuarioMap.put("nombre", devolucion.getUsuario().getNombre());
+                usuarioMap.put("username", devolucion.getUsuario().getUsuario());
+                devolucionMap.put("usuario", usuarioMap);
+                devolucionMap.put("responsable", devolucion.getUsuario().getNombre() + 
+                    (devolucion.getUsuario().getRol() != null ? " (" + devolucion.getUsuario().getRol() + ")" : ""));
+            } else {
+                // Si no hay usuario asignado, buscar un administrador como responsable por defecto
+                List<Usuario> admins = usuarioRepository.findAllByRol("ADMIN");
+                if (!admins.isEmpty()) {
+                    Usuario admin = admins.get(0);
                     Map<String, Object> usuarioMap = new HashMap<>();
-                    usuarioMap.put("id", movimiento.getUsuario().getId());
-                    usuarioMap.put("nombre", movimiento.getUsuario().getNombre());
+                    usuarioMap.put("id", admin.getId());
+                    usuarioMap.put("nombre", admin.getNombre());
+                    usuarioMap.put("username", admin.getUsuario());
                     devolucionMap.put("usuario", usuarioMap);
-                    devolucionMap.put("responsable", movimiento.getUsuario().getNombre());
+                    devolucionMap.put("responsable", admin.getNombre() + " (Admin)");
+                } else {
+                    // Si no hay administradores, asignar "Sistema" como responsable
+                    devolucionMap.put("responsable", "Sistema");
                 }
             }
             
             // Calcular el total
-            BigDecimal total = BigDecimal.ZERO;
-            if (lote.getCostoUnitario() != null && lote.getCantidadInicial() != null) {
-                total = lote.getCostoUnitario().multiply(BigDecimal.valueOf(lote.getCantidadInicial()));
-            }
-            devolucionMap.put("total", total);
-            devolucionMap.put("valor", total);
+            devolucionMap.put("total", devolucion.getValorTotal());
+            devolucionMap.put("valor", devolucion.getValorTotal());
             
             resultado.add(devolucionMap);
         }

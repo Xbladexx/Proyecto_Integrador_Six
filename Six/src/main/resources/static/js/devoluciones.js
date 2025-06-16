@@ -107,10 +107,10 @@ function renderizarTablaDevolucionesVentas(devoluciones) {
             const primerDetalle = dev.detalles[0];
             
             // Intentar obtener el nombre del producto desde diferentes estructuras posibles
-            if (primerDetalle.variante && primerDetalle.variante.producto) {
-                productoTexto = primerDetalle.variante.producto.nombre || 'Producto sin nombre';
-            } else if (primerDetalle.producto) {
+            if (primerDetalle.producto) {
                 productoTexto = primerDetalle.producto.nombre || 'Producto sin nombre';
+            } else if (primerDetalle.variante && primerDetalle.variante.producto) {
+                productoTexto = primerDetalle.variante.producto.nombre || 'Producto sin nombre';
             }
             
             // Si hay más de un producto, indicarlo
@@ -118,10 +118,15 @@ function renderizarTablaDevolucionesVentas(devoluciones) {
                 productoTexto += ` y ${dev.detalles.length - 1} más`;
             }
             
-            // Calcular cantidad total
-            cantidad = dev.detalles.reduce((sum, det) => {
-                return sum + (det.cantidad || 0);
-            }, 0);
+            // Obtener la cantidad directamente del detalle o del campo cantidad
+            cantidad = primerDetalle.cantidad || 0;
+            
+            // Calcular cantidad total si hay múltiples detalles
+            if (dev.detalles.length > 1) {
+                cantidad = dev.detalles.reduce((sum, det) => {
+                    return sum + (det.cantidad || 0);
+                }, 0);
+            }
         }
         
         // Formatear monto

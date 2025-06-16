@@ -205,8 +205,7 @@
                         <div class="card-content">
                             <div class="product-details">
                                 <div class="product-image">
-                                    <img th:if="${producto.urlImagen != null}" th:src="${producto.urlImagen}" alt="Imagen del producto">
-                                    <div th:if="${producto.urlImagen == null}" class="no-image">
+                                    <div class="no-image">
                                         <i class="fas fa-image"></i>
                                         <p>Sin imagen</p>
                                     </div>
@@ -460,7 +459,8 @@
                 toastTitle.textContent = title;
                 toastMessage.textContent = message;
                 
-                toast.className = 'toast';
+                // Eliminar solo las clases de tipo anteriores sin eliminar las clases de estilo
+                toast.classList.remove('success', 'error', 'info', 'warning', 'hidden');
                 toast.classList.add(type);
                 
                 toastClose.addEventListener('click', () => {
@@ -469,7 +469,7 @@
                 
                 setTimeout(() => {
                     toast.classList.add('hidden');
-                }, 5000);
+                }, 3000);
             };
         });
     </script>

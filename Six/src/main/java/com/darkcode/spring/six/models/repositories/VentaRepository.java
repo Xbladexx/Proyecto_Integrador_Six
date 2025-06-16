@@ -54,9 +54,14 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     List<Venta> findTop20ByOrderByFechaDesc();
     
     /**
+     * Obtiene las 20 ventas completadas más recientes, ordenadas por fecha de más reciente a más antigua
+     */
+    List<Venta> findTop20ByEstadoOrderByFechaDesc(String estado);
+    
+    /**
      * Cuenta el número de ventas realizadas en el mes actual
      */
-    @Query("SELECT COUNT(v) FROM Venta v WHERE YEAR(v.fecha) = YEAR(CURRENT_DATE) AND MONTH(v.fecha) = MONTH(CURRENT_DATE)")
+    @Query("SELECT COUNT(v) FROM Venta v WHERE YEAR(v.fecha) = YEAR(CURRENT_DATE) AND MONTH(v.fecha) = MONTH(CURRENT_DATE) AND v.estado = 'COMPLETADA'")
     Long countVentasMesActual();
     
     /**
@@ -66,6 +71,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     @Query(value = "SELECT DAYOFWEEK(v.fecha) as dia, SUM(v.total) as total " +
            "FROM ventas v " +
            "WHERE v.fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) " +
+           "AND v.estado = 'COMPLETADA' " +
            "GROUP BY DAYOFWEEK(v.fecha) " +
            "ORDER BY dia ASC", nativeQuery = true)
     List<Object[]> findVentasUltimos7Dias();
@@ -77,6 +83,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     @Query(value = "SELECT MONTH(v.fecha) as mes, SUM(v.total) as total " +
            "FROM ventas v " +
            "WHERE v.fecha >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH) " +
+           "AND v.estado = 'COMPLETADA' " +
            "GROUP BY MONTH(v.fecha) " +
            "ORDER BY mes ASC", nativeQuery = true)
     List<Object[]> findVentasUltimos12Meses();
@@ -88,6 +95,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     @Query(value = "SELECT YEAR(v.fecha) as ano, SUM(v.total) as total " +
            "FROM ventas v " +
            "WHERE v.fecha >= DATE_SUB(CURDATE(), INTERVAL 5 YEAR) " +
+           "AND v.estado = 'COMPLETADA' " +
            "GROUP BY YEAR(v.fecha) " +
            "ORDER BY ano ASC", nativeQuery = true)
     List<Object[]> findVentasUltimos5Anos();

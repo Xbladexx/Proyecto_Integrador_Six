@@ -1,10 +1,35 @@
+// Función para formatear fechas correctamente, evitando el problema de zona horaria
+function formatearFechaCorrecta(fechaStr) {
+    if (!fechaStr) return '-';
+    
+    // Parsear la fecha como UTC para evitar ajustes de zona horaria
+    const partes = fechaStr.split('T')[0].split('-');
+    if (partes.length !== 3) return '-';
+    
+    const año = parseInt(partes[0]);
+    const mes = parseInt(partes[1]);
+    const dia = parseInt(partes[2]);
+    
+    // Crear fecha con los componentes exactos (sin ajuste de zona horaria)
+    return `${dia.toString().padStart(2, '0')}/${mes.toString().padStart(2, '0')}/${año}`;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM cargado en inventario.js');
+    
     // Referencias a elementos del DOM
     const sidebar = document.querySelector('.sidebar');
     const mobileMenuButton = document.querySelector('.mobile-menu-button');
     const inventorySearch = document.getElementById('inventorySearch');
     const inventoryTableBody = document.getElementById('inventoryTableBody');
     const toastCloseButton = document.querySelector('.toast-close');
+    
+    // Referencias a los toasts específicos
+    const inventarioToast = document.getElementById('inventarioToast');
+    const lotesHistorialToast = document.getElementById('lotesHistorialToast');
+    
+    // Botones para cerrar los toasts
+    const toastCloseButtons = document.querySelectorAll('.toast-close');
     
     // Elementos para el modal de stock (solo en vista admin)
     const stockModal = document.getElementById('stockModal');
@@ -37,9 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Elementos para acciones de la tabla (solo en vista admin)
     const inventoryTable = document.getElementById('inventoryTable');
-    const addStockButtons = document.querySelectorAll('.add-stock-action');
-    const reduceStockButtons = document.querySelectorAll('.reduce-stock-action');
-    const addLoteButtons = document.querySelectorAll('.add-lote-action');
 
     // Verificar si estamos en la vista de administrador
     let esAdmin = false;
@@ -55,39 +77,147 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Función para mostrar toast (común para ambas vistas)
-    window.showToast = function(title, message, type = 'success') {
-        const toast = document.getElementById('toast');
-        if (!toast) return;
+    window.showToast = function(title, message, type = 'success', section = null) {
+        // Si no se especifica una sección, usar 'inventario' por defecto
+        if (!section) {
+            section = 'inventario';
+        }
+        
+        // Determinar qué toast usar según la sección
+        let toast;
+        if (section === 'inventario') {
+            toast = document.getElementById('inventarioToast');
+            console.log('Usando toast de inventario', toast);
+        } else if (section === 'lotes') {
+            toast = document.getElementById('lotesHistorialToast');
+            console.log('Usando toast de lotes', toast);
+        } else {
+            // Si la sección no coincide, usar el toast de inventario como fallback
+            toast = document.getElementById('inventarioToast');
+            console.log('Usando toast de inventario como fallback', toast);
+            
+            // Si aún no hay toast, intentar con el de lotes
+            if (!toast) {
+                toast = document.getElementById('lotesHistorialToast');
+                console.log('Intentando con toast de lotes', toast);
+            }
+            
+            // Si todavía no hay toast, crear uno genérico
+            if (!toast) {
+                toast = document.getElementById('toast');
+                console.log('Usando toast genérico', toast);
+                
+                // Si no existe el toast genérico, crearlo dinámicamente
+                if (!toast) {
+                    toast = document.createElement('div');
+                    toast.id = 'toast';
+                    toast.className = 'section-toast hidden';
+                    
+                    const toastContent = document.createElement('div');
+                    toastContent.className = 'toast-content';
+                    
+                    const toastTitle = document.createElement('div');
+                    toastTitle.className = 'toast-title';
+                    toastTitle.textContent = 'Título';
+                    
+                    const toastMessage = document.createElement('div');
+                    toastMessage.className = 'toast-message';
+                    toastMessage.textContent = 'Mensaje';
+                    
+                    const closeButton = document.createElement('button');
+                    closeButton.className = 'toast-close';
+                    closeButton.innerHTML = '&times;';
+                    
+                    toastContent.appendChild(toastTitle);
+                    toastContent.appendChild(toastMessage);
+                    toast.appendChild(toastContent);
+                    toast.appendChild(closeButton);
+                    
+                    // Añadir el toast al contenido principal
+                    const content = document.querySelector('.content');
+                    if (content) {
+                        content.appendChild(toast);
+                    } else {
+                        document.body.appendChild(toast);
+                    }
+                    
+                    // Añadir evento de cierre al botón
+                    closeButton.addEventListener('click', function() {
+                        toast.classList.add('hidden');
+                    });
+                }
+            }
+        }
+        
+        if (!toast) {
+            console.error('No se encontró elemento toast para la sección:', section);
+            return;
+        }
 
         const toastTitle = toast.querySelector('.toast-title');
         const toastMessage = toast.querySelector('.toast-message');
 
+        if (!toastTitle || !toastMessage) {
+            console.error('Estructura de toast incorrecta, faltan elementos:', toast);
+            return;
+        }
+
         toastTitle.textContent = title;
         toastMessage.textContent = message;
 
-        toast.classList.remove('hidden', 'success', 'error', 'info');
+        // Limpiar solo las clases de tipo anteriores, sin afectar otras clases de estilo
+        toast.classList.remove('success', 'error', 'info', 'warning', 'hidden');
         toast.classList.add(type);
 
-        // Ocultar el toast después de 5 segundos
-        setTimeout(() => {
+        // Asegurarse de que el toast esté visible en la página y en la posición correcta
+        toast.style.display = 'flex';
+        toast.style.zIndex = '1100';
+        toast.style.position = 'absolute';
+        toast.style.top = '50%';
+        toast.style.left = '85%';
+        toast.style.transform = 'translateY(-50%)';
+        toast.style.minWidth = '180px';
+        toast.style.maxWidth = '220px';
+        
+        // Mostrar el toast inmediatamente
+        toast.classList.remove('hidden');
+        
+        // Limpiar cualquier temporizador anterior para evitar conflictos
+        if (toast.timeoutId) {
+            clearTimeout(toast.timeoutId);
+        }
+
+        // Ocultar el toast después de exactamente 5 segundos
+        console.log(`Configurando timeout de 5000ms para toast de ${section}`);
+        toast.timeoutId = setTimeout(() => {
+            console.log(`Ejecutando timeout para toast de ${section}`);
             toast.classList.add('hidden');
         }, 5000);
     };
 
-    // Cerrar toast al hacer clic en el botón de cerrar (común para ambas vistas)
-    if (toastCloseButton) {
-        toastCloseButton.addEventListener('click', function() {
-            const toast = document.getElementById('toast');
+    // Configurar los botones de cierre de los toasts
+    toastCloseButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const toast = this.closest('.section-toast, .toast');
             if (toast) toast.classList.add('hidden');
         });
-    }
+    });
 
     // Manejar clic en el botón de menú móvil (común para ambas vistas)
-    if (mobileMenuButton) {
+    if (mobileMenuButton && sidebar) {
         mobileMenuButton.addEventListener('click', function() {
             sidebar.classList.toggle('open');
         });
     }
+
+    // Cerrar el menú al hacer clic fuera de él
+    document.addEventListener('click', function(event) {
+        if (sidebar && sidebar.classList.contains('open') && 
+            !sidebar.contains(event.target) && 
+            event.target !== mobileMenuButton) {
+            sidebar.classList.remove('open');
+        }
+    });
 
     // FUNCIONALIDAD ESPECÍFICA PARA LA VISTA DE ADMINISTRADOR
     if (esAdmin && stockModal) {
@@ -101,59 +231,74 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Configurar los botones de toggle para los menús de acciones
-        document.querySelectorAll('.actions-toggle').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.stopPropagation(); // Evitar que el clic se propague
-                const menu = this.nextElementSibling;
-                menu.classList.toggle('show');
-            });
+        // Usando delegación de eventos para los botones de acciones en la tabla de inventario
+        if (inventoryTable) {
+            inventoryTable.addEventListener('click', function(e) {
+                const target = e.target;
+                
+                // Para los botones de toggle de menú
+                if (target.classList.contains('actions-toggle') || target.closest('.actions-toggle')) {
+                    e.stopPropagation();
+                    const toggleBtn = target.classList.contains('actions-toggle') ? target : target.closest('.actions-toggle');
+                    const menu = toggleBtn.nextElementSibling;
+                    
+                    // Cerrar todos los demás menús primero
+                    document.querySelectorAll('.actions-menu.show').forEach(openMenu => {
+                        if (openMenu !== menu) {
+                            openMenu.classList.remove('show');
+                        }
         });
 
-        // Configurar los botones de añadir stock
-        addStockButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
+                    // Toggle el menú actual
+                    menu.classList.toggle('show');
+                }
+                
+                // Para los botones de añadir stock
+                if (target.classList.contains('add-stock-action') || target.closest('.add-stock-action')) {
                 e.preventDefault();
-                const id = this.getAttribute('data-id');
-                const nombre = this.getAttribute('data-nombre');
-                const color = this.getAttribute('data-color');
-                const talla = this.getAttribute('data-talla');
+                    const btn = target.classList.contains('add-stock-action') ? target : target.closest('.add-stock-action');
+                    
+                    const id = btn.getAttribute('data-id');
+                    const nombre = btn.getAttribute('data-nombre');
+                    const color = btn.getAttribute('data-color');
+                    const talla = btn.getAttribute('data-talla');
+                    
                 openStockModal({
                     id: id,
                     nombreProducto: nombre,
                     color: color,
                     talla: talla
                 }, 'add');
-            });
-        });
+                }
 
-        // Configurar los botones de reducir stock
-        reduceStockButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
+                // Para los botones de reducir stock
+                if (target.classList.contains('reduce-stock-action') || target.closest('.reduce-stock-action')) {
                 e.preventDefault();
-                const id = this.getAttribute('data-id');
-                const nombre = this.getAttribute('data-nombre');
-                const color = this.getAttribute('data-color');
-                const talla = this.getAttribute('data-talla');
+                    const btn = target.classList.contains('reduce-stock-action') ? target : target.closest('.reduce-stock-action');
+                    
+                    const id = btn.getAttribute('data-id');
+                    const nombre = btn.getAttribute('data-nombre');
+                    const color = btn.getAttribute('data-color');
+                    const talla = btn.getAttribute('data-talla');
+                    
                 openStockModal({
                     id: id,
                     nombreProducto: nombre,
                     color: color,
                     talla: talla
                 }, 'reduce');
-            });
-        });
+                }
 
-        // Configurar los botones de añadir lote
-        if (addLoteButtons) {
-            addLoteButtons.forEach(button => {
-                button.addEventListener('click', function(e) {
+                // Para los botones de añadir lote
+                if (target.classList.contains('add-lote-action') || target.closest('.add-lote-action')) {
                     e.preventDefault();
-                    const id = this.getAttribute('data-id');
-                    const nombre = this.getAttribute('data-nombre');
-                    const color = this.getAttribute('data-color');
-                    const talla = this.getAttribute('data-talla');
-                    const productoId = this.getAttribute('data-producto-id');
+                    const btn = target.classList.contains('add-lote-action') ? target : target.closest('.add-lote-action');
+                    
+                    const id = btn.getAttribute('data-id');
+                    const nombre = btn.getAttribute('data-nombre');
+                    const color = btn.getAttribute('data-color');
+                    const talla = btn.getAttribute('data-talla');
+                    const productoId = btn.getAttribute('data-producto-id');
                     
                     openLoteModal({
                         id: id,
@@ -162,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         talla: talla,
                         productoId: productoId
                     });
-                });
+                }
             });
         }
 
@@ -177,9 +322,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Configurar la acción (añadir o reducir)
             stockAction.value = action;
+            
+            // Configurar las opciones del motivo según la acción
+            const stockReasonSelect = document.getElementById('stockReason');
+            stockReasonSelect.innerHTML = ''; // Limpiar opciones existentes
+            
+            if (action === 'add') {
+                // Opciones para añadir stock
+                stockReasonSelect.innerHTML = `
+                    <option value="reposition">Reposición de stock</option>
+                    <option value="other">Otro motivo</option>
+                `;
+            } else {
+                // Opciones para reducir stock
+                stockReasonSelect.innerHTML = `
+                    <option value="damaged">Producto deteriorado</option>
+                    <option value="other">Otro motivo</option>
+                `;
+            }
+            
+            // Ocultar el campo de otro motivo
+            document.getElementById('otherReasonGroup').style.display = 'none';
 
             // Mostrar el modal
             stockModal.style.display = 'block';
+            
+            // Centrar el modal en la pantalla
+            centerModal(stockModal);
         }
 
         // Función para abrir el modal de registro de lote
@@ -190,6 +359,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Configurar la información del producto
             loteProductInfo.value = `${product.nombreProducto} - ${product.color} - ${product.talla}`;
             loteVarianteId.value = product.id;
+            
+            // La fecha de entrada será la fecha actual (se maneja automáticamente en el backend)
             
             // Asegurar que tengamos el ID del producto
             if (!product.productoId) {
@@ -238,6 +409,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Mostrar el modal
             loteModal.style.display = 'block';
+            
+            // Centrar el modal en la pantalla
+            centerModal(loteModal);
+            
+            // Asegurarse de que no haya barras de desplazamiento duplicadas
+            loteModal.querySelector('.modal-body').style.overflowX = 'hidden';
         }
         
         // Función para obtener el costo unitario de un producto
@@ -363,6 +540,10 @@ document.addEventListener('DOMContentLoaded', function() {
             stockModal.style.display = 'none';
             // Resetear formulario
             document.getElementById('stockForm').reset();
+            // Ocultar el campo de otro motivo
+            document.getElementById('otherReasonGroup').style.display = 'none';
+            // Limpiar el campo de otro motivo
+            document.getElementById('otherReason').value = '';
         }
 
         // Función para cerrar el modal de lote
@@ -405,13 +586,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Validar cantidad
                 if (isNaN(quantity) || quantity <= 0) {
-                    showToast('Error', 'La cantidad debe ser un número mayor que cero', 'error');
+                    showToast('Error', 'La cantidad debe ser un número mayor que cero', 'error', 'inventario');
                     return;
                 }
 
                 // Validar motivo personalizado
                 if (reason === 'other' && !reasonDetail.trim()) {
-                    showToast('Error', 'Debe especificar el motivo', 'error');
+                    showToast('Error', 'Debe especificar el motivo', 'error', 'inventario');
                     return;
                 }
 
@@ -483,20 +664,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     showToast(
                         'Éxito',
                         mensaje,
-                        'success'
+                        'success',
+                        'inventario'
                     );
                     closeStockModal();
                     
                     // Recargar la página para mostrar los cambios
-                    // Dar un pequeño retraso para que el usuario vea el mensaje de éxito
+                    // Dar un retraso más corto para que el usuario vea el mensaje de éxito
                     setTimeout(() => {
-                        window.location.reload();
+                        console.log('Recargando página para reflejar los cambios en el inventario...');
+                        // Usar reload(true) para forzar una recarga completa desde el servidor
+                        window.location.reload(true);
                     }, 1000);
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     const errorMessage = error.message || 'No se pudo actualizar el stock';
-                    showToast('Error', errorMessage, 'error');
+                    showToast('Error', errorMessage, 'error', 'inventario');
                 });
             });
         }
@@ -516,12 +700,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Validaciones
                 if (isNaN(cantidad) || cantidad <= 0) {
-                    showToast('Error', 'La cantidad debe ser un número mayor que cero', 'error');
+                    showToast('Error', 'La cantidad debe ser un número mayor que cero', 'error', 'lotes');
                     return;
                 }
                 
                 if (isNaN(costoUnitario) || costoUnitario <= 0) {
-                    showToast('Error', 'El costo unitario debe ser un número mayor que cero', 'error');
+                    showToast('Error', 'El costo unitario debe ser un número mayor que cero', 'error', 'lotes');
                     return;
                 }
                 
@@ -568,21 +752,78 @@ document.addEventListener('DOMContentLoaded', function() {
                     return response.json();
                 })
                 .then(data => {
-                    showToast('Éxito', 'Lote registrado correctamente', 'success');
+                    // Mostrar el toast en la sección de inventario
+                    showToast('Éxito', 'Lote registrado correctamente', 'success', 'inventario');
                     closeLoteModal();
                     
-                    // Recargar la página para mostrar los cambios
+                    // Recargar la página para mostrar los cambios y garantizar que los botones sigan funcionando
+                    // Dar un retraso más corto para que el usuario vea el mensaje de éxito
                     setTimeout(() => {
-                        window.location.reload();
+                        console.log('Recargando página para reflejar los cambios en el inventario...');
+                        // Usar reload(true) para forzar una recarga completa desde el servidor
+                        window.location.reload(true);
                     }, 1000);
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     const errorMessage = error.message || 'No se pudo registrar el lote';
-                    showToast('Error', errorMessage, 'error');
+                    showToast('Error', errorMessage, 'error', 'inventario');
                 });
             });
         }
+    }
+
+    // Función para actualizar el valor de stock en la tabla de inventario sin recargar la página
+    function actualizarStockEnTabla(varianteId, cantidadAgregada) {
+        // Obtener los datos actualizados del inventario
+        fetch(`/api/inventario/variante/${varianteId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error al obtener los datos actualizados del inventario');
+                }
+                return response.json();
+            })
+            .then(inventario => {
+                // Buscar la fila correspondiente en la tabla de inventario
+                const inventoryRows = document.querySelectorAll('#inventoryTableBody tr');
+                let filaActualizada = false;
+                
+                // Primero intentamos actualizar por ID de variante
+                inventoryRows.forEach(row => {
+                    const actionCell = row.querySelector('.actions-cell');
+                    if (actionCell) {
+                        const addStockBtn = actionCell.querySelector('.add-stock-action');
+                        const stockCell = row.querySelector('.stock-column span');
+                        
+                        if (addStockBtn && addStockBtn.getAttribute('data-id') == varianteId && stockCell) {
+                            // Actualizar el valor del stock
+                            const nuevoStock = inventario.stock;
+                            stockCell.textContent = nuevoStock;
+                            
+                            // Actualizar la clase de la celda según el valor del stock
+                            stockCell.className = '';
+                            if (nuevoStock <= 3) {
+                                stockCell.classList.add('stock-badge', 'stock-critical');
+                            } else if (nuevoStock <= 10) {
+                                stockCell.classList.add('stock-badge', 'stock-warning');
+                            } else {
+                                stockCell.classList.add('stock-badge', 'stock-normal');
+                            }
+                            
+                            filaActualizada = true;
+                            console.log(`Stock actualizado en UI: Variante ${varianteId}, nuevo stock: ${nuevoStock}`);
+                        }
+                    }
+                });
+                
+                // Si no se actualizó ninguna fila, puede ser porque la tabla se carga por otro medio
+                if (!filaActualizada) {
+                    console.log('No se encontró la fila para actualizar. Puede ser necesario recargar la página.');
+                }
+            })
+            .catch(error => {
+                console.error('Error al actualizar el stock en la tabla:', error);
+            });
     }
 
     // FUNCIONALIDAD COMÚN PARA AMBAS VISTAS (ADMIN Y EMPLEADO)
@@ -606,6 +847,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     row.style.display = 'none';
                 }
             });
+        });
+    }
+
+    // Evento para el botón de búsqueda (sin mostrar toast de prueba)
+    if (document.getElementById('inventorySearch')) {
+        document.getElementById('inventorySearch').addEventListener('click', function() {
+            // No mostrar mensaje de prueba
         });
     }
 
@@ -741,8 +989,10 @@ document.addEventListener('DOMContentLoaded', function() {
         let html = '';
         
         lotes.forEach(lote => {
-            const fechaEntrada = lote.fechaEntrada ? new Date(lote.fechaEntrada).toLocaleDateString() : '-';
-            const fechaVencimiento = lote.fechaVencimiento ? new Date(lote.fechaVencimiento).toLocaleDateString() : '-';
+            // Formatear fechas correctamente ajustando la zona horaria
+            const fechaEntrada = lote.fechaEntrada ? formatearFechaCorrecta(lote.fechaEntrada) : '-';
+            const fechaFabricacion = lote.fechaFabricacion ? formatearFechaCorrecta(lote.fechaFabricacion) : '-';
+            const fechaVencimiento = lote.fechaVencimiento ? formatearFechaCorrecta(lote.fechaVencimiento) : '-';
             
             // Determinar el estado del lote
             let estadoLote = "DISPONIBLE";
@@ -778,6 +1028,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>S/ ${lote.costoUnitario ? lote.costoUnitario.toFixed(2) : '0.00'}</td>
                     <td>${lote.proveedorNombre || '-'}</td>
                     <td>${fechaEntrada}</td>
+                    <td>${fechaFabricacion}</td>
                     <td>${fechaVencimiento}</td>
                     <td class="text-center">
                         <span class="${estadoClase}">${estadoLote}</span>
@@ -788,11 +1039,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="fas fa-ellipsis-v"></i>
                         </button>
                             <div class="actions-menu">
-                                <a href="#" class="view-lote-action" onclick="verDetalleLote(${JSON.stringify(lote).replace(/"/g, '&quot;')})">
+                                <a href="#" class="view-lote-action" onclick="verDetalleLote(${JSON.stringify(lote).replace(/"/g, '&quot;')}, event)">
                                     <i class="fas fa-eye"></i> Ver Detalle
                                 </a>
                                 ${estadoLote !== "DEVUELTO" ? `
-                                <a href="#" class="devolver-lote-action" onclick="abrirDevolucionLote(${JSON.stringify(lote).replace(/"/g, '&quot;')})">
+                                <a href="#" class="devolver-lote-action" onclick="abrirDevolucionLote(${JSON.stringify(lote).replace(/"/g, '&quot;')}, event)">
                                     <i class="fas fa-undo-alt"></i> Devolver Lote
                                 </a>` : ''}
                             </div>
@@ -829,7 +1080,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Ver detalle de lote
-    window.verDetalleLote = function(lote) {
+    window.verDetalleLote = function(lote, event) {
+        // Prevenir el comportamiento predeterminado del enlace
+        event.preventDefault();
+        
+        // Guardar la posición actual del scroll
+        const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+        
         loteActualDetalle = lote;
         
         // Actualizar información en el modal
@@ -849,9 +1106,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('loteDetalleCostoTotal').textContent = `S/ ${costoTotal.toFixed(2)}`;
         
         // Actualizar fechas
-        document.getElementById('loteDetalleFechaEntrada').textContent = lote.fechaEntrada ? new Date(lote.fechaEntrada).toLocaleDateString() : '-';
-        document.getElementById('loteDetalleFechaFabricacion').textContent = lote.fechaFabricacion ? new Date(lote.fechaFabricacion).toLocaleDateString() : '-';
-        document.getElementById('loteDetalleFechaVencimiento').textContent = lote.fechaVencimiento ? new Date(lote.fechaVencimiento).toLocaleDateString() : '-';
+        document.getElementById('loteDetalleFechaEntrada').textContent = lote.fechaEntrada ? formatearFechaCorrecta(lote.fechaEntrada) : '-';
+        document.getElementById('loteDetalleFechaFabricacion').textContent = lote.fechaFabricacion ? formatearFechaCorrecta(lote.fechaFabricacion) : '-';
+        document.getElementById('loteDetalleFechaVencimiento').textContent = lote.fechaVencimiento ? formatearFechaCorrecta(lote.fechaVencimiento) : '-';
         
         // Actualizar otros datos
         document.getElementById('loteDetalleProveedor').textContent = lote.proveedorNombre || '-';
@@ -884,6 +1141,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (modal) {
             modal.style.display = 'flex';
         }
+        
+        // Restaurar la posición del scroll después de mostrar el modal
+        setTimeout(() => {
+            window.scrollTo(0, scrollPosition);
+        }, 0);
     }
 
     // Manejar botones para cerrar modal de detalle de lote
@@ -897,13 +1159,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Manejar clic en el botón "Devolver Lote" desde el detalle
     if (btnDevolverLoteDetalle) {
-        btnDevolverLoteDetalle.addEventListener('click', function() {
+        btnDevolverLoteDetalle.addEventListener('click', function(event) {
             // Cerrar el modal de detalle
             loteDetalleModal.style.display = 'none';
             
             // Abrir el modal de devolución con el lote actual
             if (loteActualDetalle) {
-                abrirDevolucionLote(loteActualDetalle);
+                abrirDevolucionLote(loteActualDetalle, event);
             } else {
                 showToast('Error', 'No se encontró información del lote', 'error');
             }
@@ -948,7 +1210,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Función para abrir el modal de devolución de un lote específico
-    window.abrirDevolucionLote = function(lote) {
+    window.abrirDevolucionLote = function(lote, event) {
+        // Prevenir el comportamiento predeterminado del enlace
+        event.preventDefault();
+        
+        // Guardar la posición actual del scroll
+        const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+        
         const devolverLoteModal = document.getElementById('devolverLoteModal');
         if (!devolverLoteModal) {
             console.error('Modal de devolución de lote no encontrado');
@@ -963,12 +1231,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log('Abriendo modal para devolver lote:', lote);
         
-        // Mostrar el modal
-        devolverLoteModal.style.display = 'block';
-        
+        // Primero configuramos todo el contenido del modal
         // Mostrar información del lote directamente (sin necesidad de selección)
         document.getElementById('loteCodigo').textContent = lote.numeroLote || '-';
-        document.getElementById('loteFecha').textContent = lote.fechaEntrada ? new Date(lote.fechaEntrada).toLocaleDateString() : '-';
+        document.getElementById('loteFecha').textContent = lote.fechaEntrada ? formatearFechaCorrecta(lote.fechaEntrada) : '-';
         
         // Usar cantidadInicial para calcular el total
         const cantidad = lote.cantidadInicial || 0;
@@ -1018,6 +1284,21 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Mostrar los productos del lote sin llamada API
         mostrarProductosDesdeDatosLote(lote);
+        
+        // Asegurarse de que no haya barras de desplazamiento duplicadas
+        devolverLoteModal.querySelector('.modal-body').style.overflowX = 'hidden';
+        
+        // Ahora que todo el contenido está configurado, mostramos el modal
+        devolverLoteModal.style.display = 'block';
+        
+        // Usar setTimeout para asegurar que el DOM se actualice antes de centrar
+        setTimeout(() => {
+            // Centrar el modal en la pantalla
+            centerModal(devolverLoteModal);
+            
+            // Restaurar la posición del scroll después de mostrar el modal
+            window.scrollTo(0, scrollPosition);
+        }, 10);
     };
     
     // Función para mostrar productos directamente desde los datos del lote sin llamada API
@@ -1099,20 +1380,32 @@ document.addEventListener('DOMContentLoaded', function() {
     function centerModal(modalElement) {
         if (!modalElement) return;
         
+        // Asegurar que el modal esté visible para calcular correctamente sus dimensiones
+        const originalDisplay = modalElement.style.display;
+        if (originalDisplay !== 'block' && originalDisplay !== 'flex') {
+            modalElement.style.visibility = 'hidden';
+            modalElement.style.display = 'block';
+        }
+        
         // Calcular la posición vertical óptima
         const windowHeight = window.innerHeight;
-        const modalHeight = modalElement.querySelector('.modal-content').offsetHeight;
+        const modalContent = modalElement.querySelector('.modal-content');
         
-        // Si el modal es más pequeño que la ventana, centrarlo
-        if (modalHeight < windowHeight * 0.8) {
+        // Forzar un reflow para asegurar que el navegador calcule las dimensiones correctas
+        void modalContent.offsetHeight;
+        
+        const modalHeight = modalContent.offsetHeight;
+        
+        // Centrar el modal verticalmente
             const topPosition = Math.max(10, (windowHeight - modalHeight) / 2);
-            modalElement.querySelector('.modal-content').style.marginTop = topPosition + 'px';
-            modalElement.querySelector('.modal-content').style.marginBottom = '20px';
+        modalContent.style.marginTop = topPosition + 'px';
+        modalContent.style.marginBottom = '20px';
+        
+        // Restaurar la visibilidad si se cambió
+        if (originalDisplay !== 'block' && originalDisplay !== 'flex') {
+            modalElement.style.visibility = '';
         }
     }
-
-    // Configurar los botones de acciones si ya existen en el DOM
-    configureActionButtons();
 
     // Función para cargar proveedores para devolución de lotes
     function cargarProveedoresParaDevolucion(lotePreseleccionado = null) {
@@ -1246,7 +1539,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Mostrar información del lote
                 document.getElementById('loteCodigo').textContent = loteData.codigo || '-';
-                document.getElementById('loteFecha').textContent = loteData.fechaRecepcion ? new Date(loteData.fechaRecepcion).toLocaleDateString() : '-';
+                document.getElementById('loteFecha').textContent = loteData.fechaRecepcion ? formatearFechaCorrecta(loteData.fechaRecepcion) : '-';
                 document.getElementById('loteTotal').textContent = loteData.total ? `S/ ${parseFloat(loteData.total).toFixed(2)}` : 'S/ 0.00';
                 document.getElementById('proveedorNombre').textContent = document.getElementById('proveedorSelect').options[document.getElementById('proveedorSelect').selectedIndex].text;
                 
@@ -1304,7 +1597,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (motivoSelect.value === 'OTRO') {
                 const otroMotivoInput = document.getElementById('otroMotivo');
                 if (!otroMotivoInput || !otroMotivoInput.value.trim()) {
-                    showToast('Error', 'Debe especificar el motivo de la devolución', 'error');
+                    showToast('Error', 'Debe especificar el motivo de la devolución', 'error', 'inventario');
                     return;
                 }
                 motivoDevolucion = otroMotivoInput.value.trim();
@@ -1383,17 +1676,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Cerrar el modal
                 document.getElementById('devolverLoteModal').style.display = 'none';
                 
-                // Mostrar mensaje de éxito
-                showToast('Éxito', result.mensaje || 'El lote ha sido devuelto correctamente', 'success');
+                // Mostrar mensaje de éxito en la tabla de historial de lotes
+                showToast(
+                    'Éxito', 
+                    'Lote devuelto correctamente', 
+                    'success',
+                    'lotes'
+                );
                 
                 console.log('Cantidad devuelta:', result.cantidadDevuelta);
                 
                 // Recargar la lista de lotes
                 setTimeout(() => {
                     cargarHistorialLotes();
-                    
-                    // Mostrar mensaje adicional con detalles
-                    showToast('Información', `Se ha devuelto un lote con ${result.cantidadDevuelta} unidades`, 'info');
                     
                     console.log('Actualizando inventario después de devolución de lote...');
                     
@@ -1402,7 +1697,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log('Recargando página para reflejar los cambios en el inventario...');
                         // Usar reload(true) para forzar una recarga completa desde el servidor
                         window.location.reload(true);
-                    }, 3000);
+                    }, 1000);
                 }, 1500);
             })
             .catch(error => {
@@ -1426,7 +1721,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                     
-                showToast('Error', errorMsg, 'error');
+                showToast('Error', errorMsg, 'error', 'lotes');
             })
             .finally(() => {
                 // Restaurar el botón

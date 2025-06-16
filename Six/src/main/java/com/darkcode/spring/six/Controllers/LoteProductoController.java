@@ -3,13 +3,11 @@ package com.darkcode.spring.six.Controllers;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.HashMap;
-import java.util.ArrayList;
-
-import jakarta.servlet.http.HttpSession;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -22,14 +20,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.darkcode.spring.six.models.entities.DevolucionLote;
 import com.darkcode.spring.six.models.entities.LoteProducto;
-import com.darkcode.spring.six.models.entities.Usuario;
-import com.darkcode.spring.six.models.entities.Producto;
 import com.darkcode.spring.six.models.entities.MovimientoStock;
-import com.darkcode.spring.six.models.repositories.MovimientoStockRepository;
+import com.darkcode.spring.six.models.entities.Producto;
+import com.darkcode.spring.six.models.entities.Usuario;
+import com.darkcode.spring.six.models.repositories.DevolucionLoteRepository;
 import com.darkcode.spring.six.models.repositories.LoteProductoRepository;
+import com.darkcode.spring.six.models.repositories.MovimientoStockRepository;
 import com.darkcode.spring.six.services.LoteProductoService;
 
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,6 +43,7 @@ public class LoteProductoController {
     private final LoteProductoService loteService;
     private final MovimientoStockRepository movimientoStockRepository;
     private final LoteProductoRepository loteRepository;
+    private final DevolucionLoteRepository devolucionLoteRepository;
     
     /**
      * Obtiene todos los lotes
@@ -407,8 +409,48 @@ public class LoteProductoController {
                         lote.setMotivoDevolucion(motivo);
                         lote.setComentariosDevolucion(comentarios);
                         
+                        // Actualizar el inventario para reflejar la devolución
+                        if (lote.getVariante() != null) {
+                            log.info("Actualizando inventario para devolución alternativa de lote #{}", loteId);
+                            loteService.actualizarInventarioParaDevolucion(
+                                lote.getVariante().getId(), 
+                                cantidadOriginal, 
+                                loteId
+                            );
+                        } else {
+                            log.warn("No se pudo actualizar el inventario: el lote #{} no tiene variante asociada", loteId);
+                        }
+                        
                         // Guardar los cambios
                         LoteProducto loteActualizado = loteService.guardarLoteSinTransaccion(lote);
+                        
+                        // Crear registro en la tabla de devoluciones_lote
+                        try {
+                            DevolucionLote devolucionLote = new DevolucionLote();
+                            devolucionLote.setLote(loteActualizado);
+                            devolucionLote.setCantidad(cantidadOriginal);
+                            devolucionLote.setEstado("DEVUELTO");
+                            devolucionLote.setFechaDevolucion(LocalDateTime.now());
+                            devolucionLote.setMotivo(motivo != null ? motivo : "No especificado");
+                            devolucionLote.setComentarios(comentarios != null ? comentarios : "");
+                            
+                            // Calcular valor total
+                            BigDecimal valorTotal = BigDecimal.ZERO;
+                            if (lote.getCostoUnitario() != null) {
+                                valorTotal = lote.getCostoUnitario().multiply(BigDecimal.valueOf(cantidadOriginal));
+                            }
+                            devolucionLote.setValorTotal(valorTotal);
+                            
+                            // Establecer proveedor y usuario
+                            devolucionLote.setProveedor(lote.getProveedor());
+                            devolucionLote.setUsuario(usuario);
+                            
+                            // Guardar la devolución
+                            devolucionLoteRepository.save(devolucionLote);
+                            log.info("Registro de devolución de lote creado con ID: {}", devolucionLote.getId());
+                        } catch (Exception e2) {
+                            log.error("Error al crear registro de devolución de lote: {}. Continuando con la devolución.", e2.getMessage());
+                        }
                         
                         // Responder con el resultado
                         Map<String, Object> respuesta = new HashMap<>();
@@ -441,13 +483,14 @@ public class LoteProductoController {
      * Obtiene las devoluciones de lotes
      */
     @GetMapping("/devoluciones")
-    public ResponseEntity<List<Map<String, Object>>> obtenerDevolucionesLotes(
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate desde,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate hasta) {
+    public ResponseEntity<List<Map<String, Object>>> obtenerDevolucionesLote(
+            @RequestParam(name = "desde", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(name = "hasta", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
         try {
-            log.info("Obteniendo devoluciones de lotes - desde: {}, hasta: {}", desde, hasta);
+            log.info("Obteniendo devoluciones de lotes");
             
-            List<Map<String, Object>> devoluciones = loteService.obtenerDevolucionesLotes(desde, hasta);
+            // Usar el nuevo método sin parámetros
+            List<Map<String, Object>> devoluciones = loteService.obtenerDevolucionesLotes();
             return ResponseEntity.ok(devoluciones);
         } catch (Exception e) {
             log.error("Error al obtener devoluciones de lotes", e);

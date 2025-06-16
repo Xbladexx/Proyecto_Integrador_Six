@@ -210,47 +210,57 @@
         /* Toast para notificaciones */
         .toast {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
+            top: 10px;
+            right: 10px;
+            padding: 0;
             border-radius: 4px;
-            color: white;
-            max-width: 350px;
+            color: #333;
+            max-width: 200px;
             z-index: 1100;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-size: 0.75rem;
         }
         .toast.success {
-            background-color: #28a745;
+            background-color: white;
+            border-left: 2px solid #28a745;
         }
         .toast.error {
-            background-color: #dc3545;
+            background-color: white;
+            border-left: 2px solid #dc3545;
         }
         .toast.info {
-            background-color: #17a2b8;
+            background-color: white;
+            border-left: 2px solid #17a2b8;
         }
         .toast.hidden {
             display: none;
         }
         .toast-content {
             flex: 1;
+            padding: 0.4rem 0.6rem;
         }
         .toast-title {
             font-weight: 600;
-            margin-bottom: 5px;
+            margin-bottom: 0.2rem;
+            font-size: 0.8rem;
+            color: #333;
         }
         .toast-message {
-            font-size: 14px;
+            font-size: 0.7rem;
+            line-height: 1.2;
+            color: #555;
         }
         .toast-close {
             background: none;
             border: none;
-            color: white;
-            font-size: 20px;
+            color: #666;
+            font-size: 14px;
             cursor: pointer;
-            margin-left: 10px;
+            margin-left: 5px;
+            padding: 0.2rem;
         }
         /* Nuevos estilos para mejorar la interfaz */
         .provider-card {

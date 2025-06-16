@@ -128,15 +128,15 @@ function mostrarToast(titulo, mensaje, tipo = 'info') {
     toastTitle.textContent = titulo;
     toastMessage.textContent = mensaje;
 
-    // Establecer clase según el tipo
-    toast.className = 'toast';
+    // Establecer clase según el tipo sin eliminar otras clases de estilo
+    toast.classList.remove('info', 'success', 'error', 'warning', 'hidden');
     toast.classList.add(tipo);
 
     // Mostrar el toast
     toast.classList.remove('hidden');
 
-    // Ocultar automáticamente después de 5 segundos
+    // Ocultar automáticamente después de 3 segundos
     setTimeout(function() {
         toast.classList.add('hidden');
-    }, 5000);
+    }, 3000); // Reducido a 3 segundos
 }
